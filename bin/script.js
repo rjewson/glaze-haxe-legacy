@@ -641,15 +641,15 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.useProgram(program);
 		this.gl.bindBuffer(34962,this.vertexBuffer);
 		this.gl.bufferSubData(34962,0,this.verticies);
-		this.gl.vertexAttribPointer(program.vertexPositionAttribute,2,5126,false,0,0);
+		this.gl.vertexAttribPointer(program.aVertexPosition,2,5126,false,0,0);
 		this.gl.bindBuffer(34962,this.uvBuffer);
 		this.gl.bufferSubData(34962,0,this.uvs);
-		this.gl.vertexAttribPointer(program.textureCoordAttribute,2,5126,false,0,0);
+		this.gl.vertexAttribPointer(program.aTextureCoord,2,5126,false,0,0);
 		this.gl.activeTexture(33984);
 		this.gl.bindTexture(3553,this.sprite.texture.baseTexture.texture);
 		this.gl.bindBuffer(34962,this.colorBuffer);
 		this.gl.bufferSubData(34962,0,this.colors);
-		this.gl.vertexAttribPointer(program.colorAttribute,1,5126,false,0,0);
+		this.gl.vertexAttribPointer(program.aColor,1,5126,false,0,0);
 		this.gl.bindBuffer(34963,this.indexBuffer);
 		var len = end - start;
 		this.gl.drawElements(4,len * 6,5123,start * 2 * 6);
@@ -753,17 +753,17 @@ wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
 	ActivateSpriteShader: function() {
 		this.gl.useProgram(this.spriteShader);
-		this.gl.enableVertexAttribArray(this.spriteShader.vertexPositionAttribute);
-		this.gl.enableVertexAttribArray(this.spriteShader.textureCoordAttribute);
-		this.gl.enableVertexAttribArray(this.spriteShader.colorAttribute);
+		this.gl.enableVertexAttribArray(this.spriteShader.aVertexPosition);
+		this.gl.enableVertexAttribArray(this.spriteShader.aTextureCoord);
+		this.gl.enableVertexAttribArray(this.spriteShader.aColor);
 	}
 	,InitSpriteShader: function() {
 		this.spriteShader = wgr.renderers.webgl.WebGLShaders.CompileProgram(this.gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER);
 		this.gl.useProgram(this.spriteShader);
-		this.spriteShader.vertexPositionAttribute = this.gl.getAttribLocation(this.spriteShader,"aVertexPosition");
+		this.spriteShader.aVertexPosition = this.gl.getAttribLocation(this.spriteShader,"aVertexPosition");
 		this.spriteShader.projectionVector = this.gl.getUniformLocation(this.spriteShader,"projectionVector");
-		this.spriteShader.textureCoordAttribute = this.gl.getAttribLocation(this.spriteShader,"aTextureCoord");
-		this.spriteShader.colorAttribute = this.gl.getAttribLocation(this.spriteShader,"aColor");
+		this.spriteShader.aTextureCoord = this.gl.getAttribLocation(this.spriteShader,"aTextureCoord");
+		this.spriteShader.aColor = this.gl.getAttribLocation(this.spriteShader,"aColor");
 		this.spriteShader.samplerUniform = this.gl.getUniformLocation(this.spriteShader,"uSampler");
 	}
 	,onContextRestored: function(event) {

@@ -26,6 +26,7 @@ class WebGLRenderer
     private var contextLost:Bool;
 
     public var spriteShader:Program;
+    
     public var spriteBatch:WebGLBatch;
 
     public function new(stage:Stage,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=true) {
@@ -95,19 +96,19 @@ class WebGLRenderer
         spriteShader = WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER);
         gl.useProgram(spriteShader);
 
-        untyped spriteShader.vertexPositionAttribute = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
+        untyped spriteShader.aVertexPosition = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
         untyped spriteShader.projectionVector = gl.getUniformLocation(spriteShader, "projectionVector");
-        untyped spriteShader.textureCoordAttribute = gl.getAttribLocation(spriteShader, "aTextureCoord");
-        untyped spriteShader.colorAttribute = gl.getAttribLocation(spriteShader, "aColor");
+        untyped spriteShader.aTextureCoord = gl.getAttribLocation(spriteShader, "aTextureCoord");
+        untyped spriteShader.aColor = gl.getAttribLocation(spriteShader, "aColor");
         untyped spriteShader.samplerUniform = gl.getUniformLocation(spriteShader, "uSampler");        
        // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     }
 
     private function ActivateSpriteShader() {
         gl.useProgram(spriteShader);
-        untyped gl.enableVertexAttribArray(spriteShader.vertexPositionAttribute);
-        untyped gl.enableVertexAttribArray(spriteShader.textureCoordAttribute);
-        untyped gl.enableVertexAttribArray(spriteShader.colorAttribute);
+        untyped gl.enableVertexAttribArray(spriteShader.aVertexPosition);
+        untyped gl.enableVertexAttribArray(spriteShader.aTextureCoord);
+        untyped gl.enableVertexAttribArray(spriteShader.aColor);
     }
 
 }
