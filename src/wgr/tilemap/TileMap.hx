@@ -7,6 +7,7 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
 import wgr.geom.Point;
+import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.WebGLShaders;
 import wgr.tilemap.TileLayer;
 
@@ -74,7 +75,7 @@ class TileMap {
 
     public var layers:Array<TileLayer>;
 
-    public var tilemapShader:Program;
+    public var tilemapShader:ShaderWrapper;
 
     public function new(gl:RenderingContext)
     {
@@ -98,7 +99,6 @@ class TileMap {
                 -1, -1, 0, 1,
                  1, -1, 1, 1,
                  1,  1, 1, 0,
-                 1,  1, 1, 0,
 
                 -1, -1, 0, 1,
                  1,  1, 1, 0,
@@ -107,8 +107,7 @@ class TileMap {
         );
 
         gl.bufferData(RenderingContext.ARRAY_BUFFER, quadVerts, RenderingContext.STATIC_DRAW);
-        tilemapShader = WebGLShaders.CompileProgram(gl,TILEMAP_VERTEX_SHADER,TILEMAP_FRAGMENT_SHADER);
-        trace(tilemapShader);
+        tilemapShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,TILEMAP_VERTEX_SHADER,TILEMAP_FRAGMENT_SHADER));
     }
 
     public function Resize(width:Int,height:Int) {
@@ -162,27 +161,27 @@ class TileMap {
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
 
-        gl.useProgram(tilemapShader);
+        gl.useProgram(tilemapShader.program);
 
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER, quadVertBuffer);
 
-        gl.enableVertexAttribArray(untyped tilemapShader.position);
-        gl.enableVertexAttribArray(untyped tilemapShader.texture);
-        gl.vertexAttribPointer(untyped tilemapShader.position, 2, RenderingContext.FLOAT, false, 16, 0);
-        gl.vertexAttribPointer(untyped tilemapShader.texture, 2, RenderingContext.FLOAT, false, 16, 8);
+        gl.enableVertexAttribArray(untyped tilemapShader.attribute.position);
+        gl.enableVertexAttribArray(untyped tilemapShader.attribute.texture);
+        gl.vertexAttribPointer(untyped tilemapShader.attribute.position, 2, RenderingContext.FLOAT, false, 16, 0);
+        gl.vertexAttribPointer(untyped tilemapShader.attribute.texture, 2, RenderingContext.FLOAT, false, 16, 8);
 
-        gl.uniform2fv(untyped tilemapShader.viewportSize, scaledViewportSize);
-        gl.uniform2fv(untyped tilemapShader.inverseSpriteTextureSize, inverseSpriteTextureSize);
-        gl.uniform1f(untyped tilemapShader.tileSize, tileSize);
-        gl.uniform1f(untyped tilemapShader.inverseTileSize, 1/tileSize);
+        gl.uniform2fv(untyped tilemapShader.uniform.viewportSize, scaledViewportSize);
+        gl.uniform2fv(untyped tilemapShader.uniform.inverseSpriteTextureSize, inverseSpriteTextureSize);
+        gl.uniform1f(untyped tilemapShader.uniform.tileSize, tileSize);
+        gl.uniform1f(untyped tilemapShader.uniform.inverseTileSize, 1/tileSize);
 
         gl.activeTexture(RenderingContext.TEXTURE0);
-        gl.uniform1i(untyped tilemapShader.sprites, 0);
+        gl.uniform1i(untyped tilemapShader.uniform.sprites, 0);
         gl.bindTexture(RenderingContext.TEXTURE_2D, spriteSheet);
 
         gl.activeTexture(RenderingContext.TEXTURE1);
-        gl.uniform1i(untyped tilemapShader.tiles, 1);    
-trace(layers);
+        gl.uniform1i(untyped tilemapShader.uniform.tiles, 1);    
+
         var i = layers.length;
         while (i>0) {
             i--;
@@ -190,8 +189,8 @@ trace(layers);
             trace("layer="+layer);
             var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
             var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
-            gl.uniform2f(untyped tilemapShader.viewOffset, pX, pY);
-            gl.uniform2fv(untyped tilemapShader.inverseTileTextureSize, layer.inverseTextureSize);
+            gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
+            gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);
             gl.drawArrays(RenderingContext.TRIANGLES, 0, 6);
         }

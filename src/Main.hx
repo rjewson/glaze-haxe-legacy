@@ -56,16 +56,14 @@ class Main
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
             tileMap.tileSize = 16;
             tileMap.TileScale(2);
-            tileMap.Resize(200, 200);
+            tileMap.Resize(renderer.width, renderer.height);
 
-            renderer.gl.clearColor(0.0, 0.0, 0.1, 1.0);
-            renderer.gl.clearDepth(1.0);
-            renderer.gl.viewport(0, 0, 200, 200);
-            renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
+            // renderer.gl.clearColor(0.0, 0.0, 0.1, 1.0);
+            //renderer.gl.clearDepth(1.0);
+            // renderer.gl.viewport(0, 0, 200, 200);
+            //renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
  
-            tileMap.Draw(1,1);
-            
-           
+            tileMap.Draw(100,100);
 
             function r() {
                 renderer.Render();

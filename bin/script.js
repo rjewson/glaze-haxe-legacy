@@ -68,12 +68,8 @@ Main.main = function() {
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
-		tileMap.Resize(200,200);
-		renderer.gl.clearColor(0.0,0.0,0.1,1.0);
-		renderer.gl.clearDepth(1.0);
-		renderer.gl.viewport(0,0,200,200);
-		renderer.gl.clear(16640);
-		tileMap.Draw(1,1);
+		tileMap.Resize(renderer.width,renderer.height);
+		tileMap.Draw(100,100);
 		var r = (function($this) {
 			var $r;
 			var r1 = null;
@@ -604,6 +600,29 @@ wgr.geom.Rectangle.prototype = {
 }
 wgr.renderers = {}
 wgr.renderers.webgl = {}
+wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
+	this.program = program;
+	this.attribute = { };
+	this.uniform = { };
+	var cnt = gl.getProgramParameter(program,35721);
+	var i = 0;
+	while(i < cnt) {
+		var attrib = gl.getActiveAttrib(program,i);
+		this.attribute[attrib.name] = gl.getAttribLocation(program,attrib.name);
+		i++;
+	}
+	cnt = gl.getProgramParameter(program,35718);
+	i = 0;
+	while(i < cnt) {
+		var attrib = gl.getActiveUniform(program,i);
+		this.uniform[attrib.name] = gl.getUniformLocation(program,attrib.name);
+		i++;
+	}
+};
+wgr.renderers.webgl.ShaderWrapper.__name__ = true;
+wgr.renderers.webgl.ShaderWrapper.prototype = {
+	__class__: wgr.renderers.webgl.ShaderWrapper
+}
 wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.gl = gl;
 	this.size = 1;
@@ -913,32 +932,30 @@ wgr.tilemap.TileMap = function(gl) {
 	this.inverseSpriteTextureSize = new Float32Array(2);
 	this.quadVertBuffer = gl.createBuffer();
 	gl.bindBuffer(34962,this.quadVertBuffer);
-	var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
+	var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
 	gl.bufferData(34962,quadVerts,35044);
-	this.tilemapShader = wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER,wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER);
-	console.log(this.tilemapShader);
+	this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER,wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER));
 };
 wgr.tilemap.TileMap.__name__ = true;
 wgr.tilemap.TileMap.prototype = {
 	Draw: function(x,y) {
 		this.gl.enable(3042);
 		this.gl.blendFunc(770,771);
-		this.gl.useProgram(this.tilemapShader);
+		this.gl.useProgram(this.tilemapShader.program);
 		this.gl.bindBuffer(34962,this.quadVertBuffer);
-		this.gl.enableVertexAttribArray(this.tilemapShader.position);
-		this.gl.enableVertexAttribArray(this.tilemapShader.texture);
-		this.gl.vertexAttribPointer(this.tilemapShader.position,2,5126,false,16,0);
-		this.gl.vertexAttribPointer(this.tilemapShader.texture,2,5126,false,16,8);
-		this.gl.uniform2fv(this.tilemapShader.viewportSize,this.scaledViewportSize);
-		this.gl.uniform2fv(this.tilemapShader.inverseSpriteTextureSize,this.inverseSpriteTextureSize);
-		this.gl.uniform1f(this.tilemapShader.tileSize,this.tileSize);
-		this.gl.uniform1f(this.tilemapShader.inverseTileSize,1 / this.tileSize);
+		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.position);
+		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.texture);
+		this.gl.vertexAttribPointer(this.tilemapShader.attribute.position,2,5126,false,16,0);
+		this.gl.vertexAttribPointer(this.tilemapShader.attribute.texture,2,5126,false,16,8);
+		this.gl.uniform2fv(this.tilemapShader.uniform.viewportSize,this.scaledViewportSize);
+		this.gl.uniform2fv(this.tilemapShader.uniform.inverseSpriteTextureSize,this.inverseSpriteTextureSize);
+		this.gl.uniform1f(this.tilemapShader.uniform.tileSize,this.tileSize);
+		this.gl.uniform1f(this.tilemapShader.uniform.inverseTileSize,1 / this.tileSize);
 		this.gl.activeTexture(33984);
-		this.gl.uniform1i(this.tilemapShader.sprites,0);
+		this.gl.uniform1i(this.tilemapShader.uniform.sprites,0);
 		this.gl.bindTexture(3553,this.spriteSheet);
 		this.gl.activeTexture(33985);
-		this.gl.uniform1i(this.tilemapShader.tiles,1);
-		console.log(this.layers);
+		this.gl.uniform1i(this.tilemapShader.uniform.tiles,1);
 		var i = this.layers.length;
 		while(i > 0) {
 			i--;
@@ -946,8 +963,8 @@ wgr.tilemap.TileMap.prototype = {
 			console.log("layer=" + Std.string(layer));
 			var pX = x * this.tileScale * layer.scrollScale.x;
 			var pY = y * this.tileScale * layer.scrollScale.y;
-			this.gl.uniform2f(this.tilemapShader.viewOffset,pX,pY);
-			this.gl.uniform2fv(this.tilemapShader.inverseTileTextureSize,layer.inverseTextureSize);
+			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
+			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
 			this.gl.bindTexture(3553,layer.tileTexture);
 			this.gl.drawArrays(4,0,6);
 		}
