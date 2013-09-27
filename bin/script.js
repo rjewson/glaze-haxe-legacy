@@ -61,7 +61,7 @@ Main.main = function() {
 		var batch = new wgr.renderers.webgl.WebGLBatch(renderer.gl);
 		batch.GrowBatch();
 		batch.sprite = spr1;
-		renderer.spriteBatch = batch;
+		renderer.spriteRender.spriteBatch = batch;
 		renderer.Render();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
@@ -69,7 +69,7 @@ Main.main = function() {
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
 		tileMap.Resize(renderer.width,renderer.height);
-		tileMap.Draw(100,100);
+		tileMap.Render(100,100);
 		return;
 		var r = (function($this) {
 			var $r;
@@ -602,6 +602,11 @@ wgr.geom.Rectangle.prototype = {
 }
 wgr.renderers = {}
 wgr.renderers.webgl = {}
+wgr.renderers.webgl.IRenderer = function() { }
+wgr.renderers.webgl.IRenderer.__name__ = true;
+wgr.renderers.webgl.IRenderer.prototype = {
+	__class__: wgr.renderers.webgl.IRenderer
+}
 wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 	this.program = program;
 	gl.useProgram(this.program);
@@ -625,6 +630,30 @@ wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 wgr.renderers.webgl.ShaderWrapper.__name__ = true;
 wgr.renderers.webgl.ShaderWrapper.prototype = {
 	__class__: wgr.renderers.webgl.ShaderWrapper
+}
+wgr.renderers.webgl.SpriteRenderer = function() {
+};
+wgr.renderers.webgl.SpriteRenderer.__name__ = true;
+wgr.renderers.webgl.SpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
+wgr.renderers.webgl.SpriteRenderer.prototype = {
+	Render: function(x,y) {
+		this.gl.useProgram(this.spriteShader.program);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
+		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
+		this.spriteBatch.Render(0,1,this.spriteShader);
+	}
+	,Resize: function(width,height) {
+		this.projection.x = width / 2;
+		this.projection.y = height / 2;
+	}
+	,Init: function(gl) {
+		this.gl = gl;
+		this.projection = new wgr.geom.Point();
+		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
+	}
+	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
 wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.gl = gl;
@@ -747,21 +776,18 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,view,width,height,transparent
 	this.contextAttributes.antialias = antialias;
 	this.contextAttributes.premultipliedAlpha = false;
 	this.contextAttributes.stencil = false;
+	this.renderers = new Array();
 	this.InitalizeWebGlContext();
-	this.InitSpriteShader();
-	this.ActivateSpriteShader();
+	this.spriteRender = new wgr.renderers.webgl.SpriteRenderer();
+	this.spriteRender.Init(this.gl);
+	this.spriteRender.Resize(width,height);
 	this.Resize(width,height);
 };
 wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
 	ActivateSpriteShader: function() {
-		this.gl.useProgram(this.spriteShader.program);
-		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
-		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
-		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 	}
 	,InitSpriteShader: function() {
-		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(this.gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(this.gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
 	}
 	,onContextRestored: function(event) {
 		this.contextLost = false;
@@ -778,9 +804,13 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.gl.colorMask(true,true,true,this.contextAttributes.alpha);
 		this.gl.bindFramebuffer(36160,null);
 		this.gl.clear(16384);
-		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
 		this.gl.blendFunc(1,771);
-		this.spriteBatch.Render(0,1,this.spriteShader);
+		this.spriteRender.Render(0,0);
+	}
+	,AddRenderer: function(renderer) {
+		renderer.Init(this.gl);
+		renderer.Resize(this.width,this.height);
+		this.renderers.push(renderer);
 	}
 	,Resize: function(width,height) {
 		this.width = width;
@@ -788,8 +818,6 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.view.width = width;
 		this.view.height = height;
 		this.gl.viewport(0,0,width,height);
-		this.projection.x = width / 2;
-		this.projection.y = height / 2;
 	}
 	,InitalizeWebGlContext: function() {
 		this.view.addEventListener("webglcontextlost",$bind(this,this.onContextLost),false);
@@ -800,7 +828,6 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.gl.enable(3042);
 		this.gl.colorMask(true,true,true,this.contextAttributes.alpha);
 		this.gl.clearColor(0,0,0,1);
-		this.projection = new wgr.geom.Point();
 	}
 	,__class__: wgr.renderers.webgl.WebGLRenderer
 }
@@ -934,8 +961,9 @@ wgr.tilemap.TileMap = function(gl) {
 	this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER,wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER));
 };
 wgr.tilemap.TileMap.__name__ = true;
+wgr.tilemap.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.tilemap.TileMap.prototype = {
-	Draw: function(x,y) {
+	Render: function(x,y) {
 		this.gl.enable(3042);
 		this.gl.blendFunc(770,771);
 		this.gl.useProgram(this.tilemapShader.program);
@@ -1007,6 +1035,8 @@ wgr.tilemap.TileMap.prototype = {
 		this.viewportSize.y = height;
 		this.scaledViewportSize[0] = width / this.tileScale;
 		this.scaledViewportSize[1] = height / this.tileScale;
+	}
+	,Init: function(gl) {
 	}
 	,__class__: wgr.tilemap.TileMap
 }

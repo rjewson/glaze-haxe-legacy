@@ -48,9 +48,11 @@ class Main
             var batch = new WebGLBatch(renderer.gl);
             batch.GrowBatch();
             batch.sprite = spr1;
-            renderer.spriteBatch = batch;
+            renderer.spriteRender.spriteBatch = batch;
+
             renderer.Render();
 
+return;
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
@@ -63,7 +65,7 @@ class Main
             // renderer.gl.viewport(0, 0, 200, 200);
             //renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
  
-            tileMap.Draw(100,100);
+            tileMap.Render(100,100);
 return;
 
             function r() {

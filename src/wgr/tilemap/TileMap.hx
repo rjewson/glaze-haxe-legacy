@@ -7,11 +7,13 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
 import wgr.geom.Point;
+import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.WebGLShaders;
 import wgr.tilemap.TileLayer;
 
-class TileMap {
+class TileMap implements IRenderer
+{
 
     public static var TILEMAP_VERTEX_SHADER:Array<String> = [
         "attribute vec2 position;",
@@ -110,6 +112,9 @@ class TileMap {
         tilemapShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,TILEMAP_VERTEX_SHADER,TILEMAP_FRAGMENT_SHADER));
     }
 
+    public function Init(gl:RenderingContext) {
+    }
+
     public function Resize(width:Int,height:Int) {
         viewportSize.x = width;
         viewportSize.y = height;
@@ -157,7 +162,7 @@ class TileMap {
         layers.push(layer);
     }
 
-    public function Draw(x:Float,y:Float) {
+    public function Render(x:Float,y:Float) {
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
 
