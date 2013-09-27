@@ -64,6 +64,7 @@ class Main
             //renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
  
             tileMap.Draw(100,100);
+return;
 
             function r() {
                 renderer.Render();
@@ -71,7 +72,7 @@ class Main
                 spr1.rotation += 0.01;
             }
 
-            //r();            
+            r();            
 
         } );
 

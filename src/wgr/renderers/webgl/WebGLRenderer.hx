@@ -8,6 +8,7 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import wgr.display.Stage;
 import wgr.geom.Point;
+import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLShaders;
 
@@ -25,7 +26,7 @@ class WebGLRenderer
     public var projection:Point;
     private var contextLost:Bool;
 
-    public var spriteShader:Program;
+    public var spriteShader:ShaderWrapper;
     
     public var spriteBatch:WebGLBatch;
 
@@ -77,7 +78,7 @@ class WebGLRenderer
         gl.colorMask(true,true,true,contextAttributes.alpha);
         gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);
         gl.clear(RenderingContext.COLOR_BUFFER_BIT);
-        gl.uniform2f(untyped spriteShader.projectionVector,projection.x,projection.y);            
+        gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
         gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
         spriteBatch.Render(0,1,spriteShader);
     }
@@ -93,22 +94,22 @@ class WebGLRenderer
     }
 
     private function InitSpriteShader() {
-        spriteShader = WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER);
-        gl.useProgram(spriteShader);
+        spriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER));
+       //  gl.useProgram(spriteShader);
 
-        untyped spriteShader.aVertexPosition = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
-        untyped spriteShader.projectionVector = gl.getUniformLocation(spriteShader, "projectionVector");
-        untyped spriteShader.aTextureCoord = gl.getAttribLocation(spriteShader, "aTextureCoord");
-        untyped spriteShader.aColor = gl.getAttribLocation(spriteShader, "aColor");
-        untyped spriteShader.samplerUniform = gl.getUniformLocation(spriteShader, "uSampler");        
-       // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+       //  untyped spriteShader.aVertexPosition = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
+       //  untyped spriteShader.projectionVector = gl.getUniformLocation(spriteShader, "projectionVector");
+       //  untyped spriteShader.aTextureCoord = gl.getAttribLocation(spriteShader, "aTextureCoord");
+       //  untyped spriteShader.aColor = gl.getAttribLocation(spriteShader, "aColor");
+       //  untyped spriteShader.uSampler = gl.getUniformLocation(spriteShader, "uSampler");        
+       // // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     }
 
     private function ActivateSpriteShader() {
-        gl.useProgram(spriteShader);
-        untyped gl.enableVertexAttribArray(spriteShader.aVertexPosition);
-        untyped gl.enableVertexAttribArray(spriteShader.aTextureCoord);
-        untyped gl.enableVertexAttribArray(spriteShader.aColor);
+        gl.useProgram(spriteShader.program);
+        gl.enableVertexAttribArray(untyped spriteShader.attribute.aVertexPosition);
+        gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);
+        gl.enableVertexAttribArray(untyped spriteShader.attribute.aColor);
     }
 
 }

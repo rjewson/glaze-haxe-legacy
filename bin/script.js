@@ -70,6 +70,7 @@ Main.main = function() {
 		tileMap.TileScale(2);
 		tileMap.Resize(renderer.width,renderer.height);
 		tileMap.Draw(100,100);
+		return;
 		var r = (function($this) {
 			var $r;
 			var r1 = null;
@@ -81,6 +82,7 @@ Main.main = function() {
 			$r = r1;
 			return $r;
 		}(this));
+		r();
 	});
 	assets.SetImagesToLoad(["1up.png","spelunky-tiles.png","spelunky0.png"]);
 }
@@ -602,6 +604,7 @@ wgr.renderers = {}
 wgr.renderers.webgl = {}
 wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 	this.program = program;
+	gl.useProgram(this.program);
 	this.attribute = { };
 	this.uniform = { };
 	var cnt = gl.getProgramParameter(program,35721);
@@ -635,21 +638,21 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 };
 wgr.renderers.webgl.WebGLBatch.__name__ = true;
 wgr.renderers.webgl.WebGLBatch.prototype = {
-	Render: function(start,end,program) {
+	Render: function(start,end,shader) {
 		this.Refresh();
 		this.Update();
-		this.gl.useProgram(program);
+		this.gl.useProgram(shader.program);
 		this.gl.bindBuffer(34962,this.vertexBuffer);
 		this.gl.bufferSubData(34962,0,this.verticies);
-		this.gl.vertexAttribPointer(program.aVertexPosition,2,5126,false,0,0);
+		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,0,0);
 		this.gl.bindBuffer(34962,this.uvBuffer);
 		this.gl.bufferSubData(34962,0,this.uvs);
-		this.gl.vertexAttribPointer(program.aTextureCoord,2,5126,false,0,0);
+		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,0,0);
 		this.gl.activeTexture(33984);
 		this.gl.bindTexture(3553,this.sprite.texture.baseTexture.texture);
 		this.gl.bindBuffer(34962,this.colorBuffer);
 		this.gl.bufferSubData(34962,0,this.colors);
-		this.gl.vertexAttribPointer(program.aColor,1,5126,false,0,0);
+		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,0,0);
 		this.gl.bindBuffer(34963,this.indexBuffer);
 		var len = end - start;
 		this.gl.drawElements(4,len * 6,5123,start * 2 * 6);
@@ -752,19 +755,13 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,view,width,height,transparent
 wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
 	ActivateSpriteShader: function() {
-		this.gl.useProgram(this.spriteShader);
-		this.gl.enableVertexAttribArray(this.spriteShader.aVertexPosition);
-		this.gl.enableVertexAttribArray(this.spriteShader.aTextureCoord);
-		this.gl.enableVertexAttribArray(this.spriteShader.aColor);
+		this.gl.useProgram(this.spriteShader.program);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
+		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 	}
 	,InitSpriteShader: function() {
-		this.spriteShader = wgr.renderers.webgl.WebGLShaders.CompileProgram(this.gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER);
-		this.gl.useProgram(this.spriteShader);
-		this.spriteShader.aVertexPosition = this.gl.getAttribLocation(this.spriteShader,"aVertexPosition");
-		this.spriteShader.projectionVector = this.gl.getUniformLocation(this.spriteShader,"projectionVector");
-		this.spriteShader.aTextureCoord = this.gl.getAttribLocation(this.spriteShader,"aTextureCoord");
-		this.spriteShader.aColor = this.gl.getAttribLocation(this.spriteShader,"aColor");
-		this.spriteShader.samplerUniform = this.gl.getUniformLocation(this.spriteShader,"uSampler");
+		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(this.gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(this.gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
 	}
 	,onContextRestored: function(event) {
 		this.contextLost = false;
@@ -781,7 +778,7 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.gl.colorMask(true,true,true,this.contextAttributes.alpha);
 		this.gl.bindFramebuffer(36160,null);
 		this.gl.clear(16384);
-		this.gl.uniform2f(this.spriteShader.projectionVector,this.projection.x,this.projection.y);
+		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
 		this.gl.blendFunc(1,771);
 		this.spriteBatch.Render(0,1,this.spriteShader);
 	}

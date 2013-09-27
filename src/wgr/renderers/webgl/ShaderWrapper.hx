@@ -13,6 +13,7 @@ class ShaderWrapper
 
     public function new(gl:RenderingContext,program:Program) {
         this.program = program;
+        gl.useProgram(this.program);
         attribute = cast {};
         uniform = cast {};
         untyped { 

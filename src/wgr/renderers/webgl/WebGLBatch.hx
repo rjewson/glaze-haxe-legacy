@@ -8,6 +8,7 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import wgr.display.DisplayObject;
 import wgr.display.Sprite;
+import wgr.renderers.webgl.ShaderWrapper;
 
 class WebGLBatch 
 {
@@ -150,26 +151,26 @@ class WebGLBatch
 
     }
 
-    public function Render(start:Int,end:Int,program:Program) {
+    public function Render(start:Int,end:Int,shader:ShaderWrapper) {
         Refresh();
         Update();
 
-        gl.useProgram(program);
+        gl.useProgram(shader.program);
 
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER,vertexBuffer);
         gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,verticies);
-        gl.vertexAttribPointer(untyped program.aVertexPosition,2,RenderingContext.FLOAT,false,0,0);
+        gl.vertexAttribPointer(untyped shader.attribute.aVertexPosition,2,RenderingContext.FLOAT,false,0,0);
 
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER,uvBuffer);
         gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,uvs);
-        gl.vertexAttribPointer(untyped program.aTextureCoord,2,RenderingContext.FLOAT,false,0,0);
+        gl.vertexAttribPointer(untyped shader.attribute.aTextureCoord,2,RenderingContext.FLOAT,false,0,0);
         
         gl.activeTexture(RenderingContext.TEXTURE0);
         gl.bindTexture(RenderingContext.TEXTURE_2D,sprite.texture.baseTexture.texture);
         
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER,colorBuffer);
         gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,colors);
-        gl.vertexAttribPointer(untyped program.aColor,1,RenderingContext.FLOAT,false, 0, 0);
+        gl.vertexAttribPointer(untyped shader.attribute.aColor,1,RenderingContext.FLOAT,false, 0, 0);
 
         gl.bindBuffer(RenderingContext.ELEMENT_ARRAY_BUFFER,indexBuffer);
         
