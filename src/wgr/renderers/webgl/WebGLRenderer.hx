@@ -30,7 +30,7 @@ class WebGLRenderer
 
     public var renderers:Array<IRenderer>;
 
-    public var spriteRender:SpriteRenderer;
+    //public var spriteRender:SpriteRenderer;
 
     //public var spriteShader:ShaderWrapper;
     
@@ -52,9 +52,9 @@ class WebGLRenderer
         InitalizeWebGlContext();
         //InitSpriteShader();
         //ActivateSpriteShader();
-        spriteRender = new SpriteRenderer();
-        spriteRender.Init(gl);
-        spriteRender.Resize(width,height);
+        // spriteRender = new SpriteRenderer();
+        // spriteRender.Init(gl);
+        // spriteRender.Resize(width,height);
         Resize(width,height);
     }
 
@@ -97,7 +97,8 @@ class WebGLRenderer
         gl.clear(RenderingContext.COLOR_BUFFER_BIT);
         //gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
         gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
-        spriteRender.Render(0,0);
+        for (renderer in renderers)
+            renderer.Render(0,0);
         //spriteBatch.Render(0,1,spriteShader);
     }
 

@@ -58,18 +58,19 @@ Main.main = function() {
 		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
 		spr1.texture = texture1up;
+		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		var batch = new wgr.renderers.webgl.WebGLBatch(renderer.gl);
 		batch.GrowBatch();
 		batch.sprite = spr1;
-		renderer.spriteRender.spriteBatch = batch;
-		renderer.Render();
+		spriteRender.spriteBatch = batch;
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
-		tileMap.Resize(renderer.width,renderer.height);
-		tileMap.Render(100,100);
+		renderer.AddRenderer(tileMap);
+		renderer.AddRenderer(spriteRender);
+		renderer.Render();
 		return;
 		var r = (function($this) {
 			var $r;
@@ -778,9 +779,6 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,view,width,height,transparent
 	this.contextAttributes.stencil = false;
 	this.renderers = new Array();
 	this.InitalizeWebGlContext();
-	this.spriteRender = new wgr.renderers.webgl.SpriteRenderer();
-	this.spriteRender.Init(this.gl);
-	this.spriteRender.Resize(width,height);
 	this.Resize(width,height);
 };
 wgr.renderers.webgl.WebGLRenderer.__name__ = true;
@@ -805,7 +803,12 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.gl.bindFramebuffer(36160,null);
 		this.gl.clear(16384);
 		this.gl.blendFunc(1,771);
-		this.spriteRender.Render(0,0);
+		var _g = 0, _g1 = this.renderers;
+		while(_g < _g1.length) {
+			var renderer = _g1[_g];
+			++_g;
+			renderer.Render(0,0);
+		}
 	}
 	,AddRenderer: function(renderer) {
 		renderer.Init(this.gl);

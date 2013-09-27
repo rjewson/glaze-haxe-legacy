@@ -10,6 +10,7 @@ import wgr.display.Stage;
 import wgr.geom.Matrix3;
 import wgr.geom.Point;
 import wgr.geom.Rectangle;
+import wgr.renderers.webgl.SpriteRenderer;
 import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLRenderer;
 import wgr.texture.Texture;
@@ -45,27 +46,39 @@ class Main
             var texture1up = new Texture(basetexture1up,new Rectangle(0,0,256,256));
             spr1.texture = texture1up;
 
+            var spriteRender = new SpriteRenderer();
+            //spriteRender.Init(gl);
+            //spriteRender.Resize(width,height);
+
             var batch = new WebGLBatch(renderer.gl);
             batch.GrowBatch();
             batch.sprite = spr1;
-            renderer.spriteRender.spriteBatch = batch;
+            spriteRender.spriteBatch = batch;
 
-            renderer.Render();
+            // renderer.Render();
 
-return;
+//return;
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
             tileMap.tileSize = 16;
             tileMap.TileScale(2);
-            tileMap.Resize(renderer.width, renderer.height);
+            //tileMap.Resize(renderer.width, renderer.height);
 
             // renderer.gl.clearColor(0.0, 0.0, 0.1, 1.0);
             //renderer.gl.clearDepth(1.0);
             // renderer.gl.viewport(0, 0, 200, 200);
             //renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
  
-            tileMap.Render(100,100);
+            //tileMap.Render(100,100);
+
+
+                renderer.AddRenderer(tileMap);
+                            renderer.AddRenderer(spriteRender);
+
+                renderer.Render();
+
+
 return;
 
             function r() {
