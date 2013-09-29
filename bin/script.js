@@ -58,20 +58,15 @@ Main.main = function() {
 		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
 		spr1.texture = texture1up;
-		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
-		var batch = new wgr.renderers.webgl.WebGLBatch(renderer.gl);
-		batch.GrowBatch();
-		batch.sprite = spr1;
-		spriteRender.spriteBatch = batch;
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
 		tileMap.tileSize = 16;
-		tileMap.TileScale(2);
+		tileMap.TileScale(1);
 		renderer.AddRenderer(tileMap);
+		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		renderer.AddRenderer(spriteRender);
-		renderer.Render();
-		return;
+		spriteRender.spriteBatch.sprite = spr1;
 		var r = (function($this) {
 			var $r;
 			var r1 = null;
@@ -79,6 +74,7 @@ Main.main = function() {
 				renderer.Render();
 				js.Browser.window.requestAnimationFrame(r1);
 				spr1.rotation += 0.01;
+				stage.position.x += 1;
 			};
 			$r = r1;
 			return $r;
@@ -653,6 +649,8 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl = gl;
 		this.projection = new wgr.geom.Point();
 		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
+		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
+		this.spriteBatch.GrowBatch();
 	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
@@ -783,11 +781,7 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,view,width,height,transparent
 };
 wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
-	ActivateSpriteShader: function() {
-	}
-	,InitSpriteShader: function() {
-	}
-	,onContextRestored: function(event) {
+	onContextRestored: function(event) {
 		this.contextLost = false;
 		console.log("webGL Context Restored");
 	}
@@ -988,7 +982,6 @@ wgr.tilemap.TileMap.prototype = {
 		while(i > 0) {
 			i--;
 			var layer = this.layers[i];
-			console.log("layer=" + Std.string(layer));
 			var pX = x * this.tileScale * layer.scrollScale.x;
 			var pY = y * this.tileScale * layer.scrollScale.y;
 			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);

@@ -25,16 +25,9 @@ class WebGLRenderer
     public var gl:RenderingContext;
     public var contextAttributes:ContextAttributes;
 
-//    public var projection:Point;
     private var contextLost:Bool;
 
     public var renderers:Array<IRenderer>;
-
-    //public var spriteRender:SpriteRenderer;
-
-    //public var spriteShader:ShaderWrapper;
-    
-    //public var spriteBatch:WebGLBatch;
 
     public function new(stage:Stage,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=true) {
         this.stage = stage;
@@ -50,11 +43,6 @@ class WebGLRenderer
         renderers = new Array<IRenderer>();
 
         InitalizeWebGlContext();
-        //InitSpriteShader();
-        //ActivateSpriteShader();
-        // spriteRender = new SpriteRenderer();
-        // spriteRender.Init(gl);
-        // spriteRender.Resize(width,height);
         Resize(width,height);
     }
 
@@ -68,7 +56,6 @@ class WebGLRenderer
         gl.enable(RenderingContext.BLEND);
         gl.colorMask(true,true,true,contextAttributes.alpha);
         gl.clearColor(0,0,0,1);
-//        projection = new Point();
     }
 
     public function Resize(width:Int,height:Int) {
@@ -77,8 +64,6 @@ class WebGLRenderer
         view.width = width;
         view.height = height;
         gl.viewport(0,0,width,height);
-  //      projection.x = width/2;
-   //     projection.y = height/2;
     }
 
     public function AddRenderer(renderer:IRenderer) {
@@ -88,18 +73,16 @@ class WebGLRenderer
     }
 
     public function Render() {
-        if (contextLost) return;
-
+        if (contextLost) 
+            return;
         stage.updateTransform();
         gl.viewport(0,0,width,height);
         gl.colorMask(true,true,true,contextAttributes.alpha);
         gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);
         gl.clear(RenderingContext.COLOR_BUFFER_BIT);
-        //gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
         gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
         for (renderer in renderers)
             renderer.Render(0,0);
-        //spriteBatch.Render(0,1,spriteShader);
     }
 
     private function onContextLost(event:Event) {
@@ -110,26 +93,6 @@ class WebGLRenderer
     private function onContextRestored(event:Event) {
         contextLost = false;
         trace("webGL Context Restored");
-    }
-
-    private function InitSpriteShader() {
-       // spriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER));
-       
-       //  gl.useProgram(spriteShader);
-
-       //  untyped spriteShader.aVertexPosition = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
-       //  untyped spriteShader.projectionVector = gl.getUniformLocation(spriteShader, "projectionVector");
-       //  untyped spriteShader.aTextureCoord = gl.getAttribLocation(spriteShader, "aTextureCoord");
-       //  untyped spriteShader.aColor = gl.getAttribLocation(spriteShader, "aColor");
-       //  untyped spriteShader.uSampler = gl.getUniformLocation(spriteShader, "uSampler");        
-       // // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    }
-
-    private function ActivateSpriteShader() {
-        // gl.useProgram(spriteShader.program);
-        // gl.enableVertexAttribArray(untyped spriteShader.attribute.aVertexPosition);
-        // gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);
-        // gl.enableVertexAttribArray(untyped spriteShader.attribute.aColor);
     }
 
 }

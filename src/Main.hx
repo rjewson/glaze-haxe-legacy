@@ -46,45 +46,23 @@ class Main
             var texture1up = new Texture(basetexture1up,new Rectangle(0,0,256,256));
             spr1.texture = texture1up;
 
-            var spriteRender = new SpriteRenderer();
-            //spriteRender.Init(gl);
-            //spriteRender.Resize(width,height);
-
-            var batch = new WebGLBatch(renderer.gl);
-            batch.GrowBatch();
-            batch.sprite = spr1;
-            spriteRender.spriteBatch = batch;
-
-            // renderer.Render();
-
-//return;
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
             tileMap.tileSize = 16;
-            tileMap.TileScale(2);
-            //tileMap.Resize(renderer.width, renderer.height);
+            tileMap.TileScale(1);
 
-            // renderer.gl.clearColor(0.0, 0.0, 0.1, 1.0);
-            //renderer.gl.clearDepth(1.0);
-            // renderer.gl.viewport(0, 0, 200, 200);
-            //renderer.gl.clear(js.html.webgl.RenderingContext.COLOR_BUFFER_BIT | js.html.webgl.RenderingContext.DEPTH_BUFFER_BIT);
- 
-            //tileMap.Render(100,100);
+            renderer.AddRenderer(tileMap);
 
-
-                renderer.AddRenderer(tileMap);
-                            renderer.AddRenderer(spriteRender);
-
-                renderer.Render();
-
-
-return;
+            var spriteRender = new SpriteRenderer();
+            renderer.AddRenderer(spriteRender);
+            spriteRender.spriteBatch.sprite = spr1;
 
             function r() {
                 renderer.Render();
                 Browser.window.requestAnimationFrame(cast r);
                 spr1.rotation += 0.01;
+                stage.position.x +=1;
             }
 
             r();            

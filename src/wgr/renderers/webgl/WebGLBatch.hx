@@ -31,8 +31,6 @@ class WebGLBatch
 
     public var sprite:Sprite;
 
-    //public var spriteShader:Program;
-
     public function new(gl:RenderingContext) {
         this.gl = gl;
         this.size = 1;
@@ -42,9 +40,6 @@ class WebGLBatch
         this.colorBuffer =  gl.createBuffer();
         this.blendMode = 0;
         this.dynamicSize = 1;
-
-        //InitSpriteShader();
-        //ActivateSpriteShader();
     }
 
     public function Clean() {
@@ -177,26 +172,5 @@ class WebGLBatch
         var len = end-start;
         gl.drawElements(RenderingContext.TRIANGLES,len*6,RenderingContext.UNSIGNED_SHORT,start*2*6);
     }
-
-    // private function InitSpriteShader() {
-    //     spriteShader = WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER);
-    //     gl.useProgram(spriteShader);
-
-    //     untyped spriteShader.vertexPositionAttribute = gl.getAttribLocation(spriteShader, "aVertexPosition"); 
-    //     untyped spriteShader.projectionVector = gl.getUniformLocation(spriteShader, "projectionVector");
-    //     untyped spriteShader.textureCoordAttribute = gl.getAttribLocation(spriteShader, "aTextureCoord");
-    //     untyped spriteShader.colorAttribute = gl.getAttribLocation(spriteShader, "aColor");
-    //     untyped spriteShader.samplerUniform = gl.getUniformLocation(spriteShader, "uSampler");        
-    //    // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    // }
-
-    // private function ActivateSpriteShader() {
-    //     gl.useProgram(spriteShader);
-    //     untyped gl.enableVertexAttribArray(spriteShader.vertexPositionAttribute);
-    //     untyped gl.enableVertexAttribArray(spriteShader.textureCoordAttribute);
-    //     untyped gl.enableVertexAttribArray(spriteShader.colorAttribute);
-    // }
-
-
 
 }

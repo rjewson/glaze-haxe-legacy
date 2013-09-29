@@ -191,7 +191,6 @@ class TileMap implements IRenderer
         while (i>0) {
             i--;
             var layer = layers[i];
-            trace("layer="+layer);
             var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
             var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);

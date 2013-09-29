@@ -24,6 +24,8 @@ class SpriteRenderer implements IRenderer
         this.gl = gl;
         projection = new Point();
         spriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER));
+        spriteBatch = new WebGLBatch(gl);
+        spriteBatch.GrowBatch();
     }
 
     public function Resize(width:Int,height:Int) {
