@@ -6,6 +6,7 @@ import js.html.webgl.Buffer;
 import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
+import wgr.display.Camera;
 import wgr.geom.Point;
 import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
@@ -78,6 +79,8 @@ class TileMap implements IRenderer
     public var layers:Array<TileLayer>;
 
     public var tilemapShader:ShaderWrapper;
+
+    public var camera:Camera;
 
     public function new(gl:RenderingContext)
     {
@@ -162,7 +165,17 @@ class TileMap implements IRenderer
         layers.push(layer);
     }
 
+    public function SetCamera(camera:Camera) {
+        this.camera = camera;
+    }
+
     public function Render(x:Float,y:Float) {
+        x = 0;//-camera.position.x;///tileScale;
+        y = 0;//-camera.position.y;///tileScale;
+        x = -400/(tileScale*2);
+        y = -300/(tileScale*2);
+        x+=8;
+        y+=8;
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
 
@@ -189,10 +202,11 @@ class TileMap implements IRenderer
 
         var i = layers.length;
         while (i>0) {
-            i--;
+            i--; 
             var layer = layers[i];
-            var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
-            var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
+            var pX = Math.floor(x * tileScale * layer.scrollScale.x);
+            var pY = Math.floor(y * tileScale * layer.scrollScale.y);
+            trace(">",pX,pY);
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);

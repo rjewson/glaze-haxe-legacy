@@ -14,6 +14,9 @@ class Sprite extends DisplayObjectContainer
     private var width:Float;
     private var height:Float;
 
+    public var prev:Sprite;
+    public var next:Sprite;
+
     public function new() {
         super();
         anchor = new Point();

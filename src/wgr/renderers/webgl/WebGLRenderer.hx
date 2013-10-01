@@ -76,11 +76,11 @@ class WebGLRenderer
         if (contextLost) 
             return;
         stage.updateTransform();
-        gl.viewport(0,0,width,height);
-        gl.colorMask(true,true,true,contextAttributes.alpha);
-        gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);
-        gl.clear(RenderingContext.COLOR_BUFFER_BIT);
-        gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
+        //gl.viewport(0,0,width,height);
+        // gl.colorMask(true,true,true,contextAttributes.alpha);
+        // gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);
+        // gl.clear(RenderingContext.COLOR_BUFFER_BIT);
+        // gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
         for (renderer in renderers)
             renderer.Render(0,0);
     }

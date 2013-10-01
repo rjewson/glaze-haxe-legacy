@@ -44,29 +44,43 @@ Main.main = function() {
 	var assets = new utils.ImageLoader();
 	assets.addEventListener("loaded",function(event) {
 		var stage = new wgr.display.Stage();
-		var spr1 = new wgr.display.Sprite();
-		spr1.id = "spr1";
-		stage.addChild(spr1);
-		spr1.position.x = 128;
-		spr1.position.y = 128;
-		spr1.pivot.x = 128;
-		spr1.pivot.y = 128;
-		stage.updateTransform();
+		var camera = new wgr.display.Camera();
+		stage.addChild(camera);
 		var canvasView = js.Boot.__cast(js.Browser.document.getElementById("view") , HTMLCanvasElement);
 		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,canvasView);
 		var tm = new wgr.texture.TextureManager(renderer.gl);
 		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
+		camera.Resize(renderer.width,renderer.height);
+		var spr1 = new wgr.display.Sprite();
+		spr1.id = "spr1";
 		spr1.texture = texture1up;
+		spr1.position.x = 128;
+		spr1.position.y = 128;
+		spr1.pivot.x = 128;
+		spr1.pivot.y = 128;
+		camera.addChild(spr1);
+		var spr2 = new wgr.display.Sprite();
+		spr2.id = "spr2";
+		camera.addChild(spr2);
+		var spr21 = new wgr.display.Sprite();
+		spr21.id = "spr21";
+		spr2.addChild(spr21);
+		var spr211 = new wgr.display.Sprite();
+		spr211.id = "spr211";
+		spr21.addChild(spr211);
+		stage.Flatten();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
 		tileMap.tileSize = 16;
-		tileMap.TileScale(1);
+		tileMap.TileScale(2);
+		tileMap.SetCamera(camera);
 		renderer.AddRenderer(tileMap);
 		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		renderer.AddRenderer(spriteRender);
 		spriteRender.spriteBatch.sprite = spr1;
+		var startTime = new Date().getTime();
 		var r = (function($this) {
 			var $r;
 			var r1 = null;
@@ -74,7 +88,12 @@ Main.main = function() {
 				renderer.Render();
 				js.Browser.window.requestAnimationFrame(r1);
 				spr1.rotation += 0.01;
-				stage.position.x += 1;
+				var elapsed = new Date().getTime() - startTime;
+				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 128;
+				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 170;
+				xp = 0;
+				yp = 0;
+				camera.Focus(xp,yp);
 			};
 			$r = r1;
 			return $r;
@@ -91,6 +110,11 @@ Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
 }
 var haxe = {}
+haxe.Log = function() { }
+haxe.Log.__name__ = true;
+haxe.Log.trace = function(v,infos) {
+	js.Boot.__trace(v,infos);
+}
 haxe.ds = {}
 haxe.ds.StringMap = function() {
 	this.h = { };
@@ -112,6 +136,23 @@ haxe.ds.StringMap.prototype = {
 var js = {}
 js.Boot = function() { }
 js.Boot.__name__ = true;
+js.Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+}
+js.Boot.__trace = function(v,i) {
+	var msg = i != null?i.fileName + ":" + i.lineNumber + ": ":"";
+	msg += js.Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0, _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js.Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof(console) != "undefined" && console.log != null) console.log(msg);
+}
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
@@ -280,7 +321,7 @@ utils.ImageLoader.prototype = $extend(utils.EventTarget.prototype,{
 		this.completeCount--;
 		if(this.completeCount == 0) {
 			utils.EventTarget.prototype.dispatchEvent.call(this,{ type : "loaded", count : this.completeCount});
-			console.log("+++");
+			haxe.Log.trace("+++",{ fileName : "ImageLoader.hx", lineNumber : 35, className : "utils.ImageLoader", methodName : "onLoad"});
 		}
 	}
 	,SetImagesToLoad: function(urls) {
@@ -365,6 +406,27 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 	}
 	,__class__: wgr.display.DisplayObjectContainer
 });
+wgr.display.Camera = function() {
+	wgr.display.DisplayObjectContainer.call(this);
+	this.id = "Camera";
+	this.viewportSize = new wgr.geom.Point();
+	this.halfViewportSize = new wgr.geom.Point();
+};
+wgr.display.Camera.__name__ = true;
+wgr.display.Camera.__super__ = wgr.display.DisplayObjectContainer;
+wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
+	Resize: function(width,height) {
+		this.viewportSize.x = width;
+		this.viewportSize.y = height;
+		this.halfViewportSize.x = width / 2;
+		this.halfViewportSize.y = height / 2;
+	}
+	,Focus: function(x,y) {
+		this.position.x = -x + this.halfViewportSize.x;
+		this.position.y = -y + this.halfViewportSize.y;
+	}
+	,__class__: wgr.display.Camera
+});
 wgr.display.Sprite = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.anchor = new wgr.geom.Point();
@@ -376,11 +438,51 @@ wgr.display.Sprite.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 });
 wgr.display.Stage = function() {
 	wgr.display.DisplayObjectContainer.call(this);
+	this.id = "Stage";
 };
 wgr.display.Stage.__name__ = true;
 wgr.display.Stage.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
-	updateTransform: function() {
+	Traverse: function(node) {
+		haxe.Log.trace(node.id,{ fileName : "Stage.hx", lineNumber : 40, className : "wgr.display.Stage", methodName : "Traverse"});
+		if(js.Boot.__instanceof(node,wgr.display.Sprite)) {
+			if(this.head == null) {
+				this.head = node;
+				this.head.prev = this.head.next = null;
+			} else {
+				var sprite = node;
+				if(this.tail == null) {
+					this.tail = sprite;
+					this.head.next = this.tail;
+					this.tail.prev = this.head;
+				} else {
+					this.tail.next = sprite;
+					sprite.prev = this.tail;
+					this.tail = sprite;
+				}
+			}
+		}
+		if(js.Boot.__instanceof(node,wgr.display.DisplayObjectContainer)) {
+			var doc = node;
+			var _g = 0, _g1 = doc.children;
+			while(_g < _g1.length) {
+				var child = _g1[_g];
+				++_g;
+				this.Traverse(child);
+			}
+		}
+	}
+	,Flatten: function() {
+		this.head = null;
+		this.tail = null;
+		this.Traverse(this);
+		var sprite = this.head;
+		while(sprite != null) {
+			haxe.Log.trace(sprite,{ fileName : "Stage.hx", lineNumber : 34, className : "wgr.display.Stage", methodName : "Flatten"});
+			sprite = sprite.next;
+		}
+	}
+	,updateTransform: function() {
 		var _g = 0, _g1 = this.children;
 		while(_g < _g1.length) {
 			var child = _g1[_g];
@@ -783,20 +885,15 @@ wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
 	onContextRestored: function(event) {
 		this.contextLost = false;
-		console.log("webGL Context Restored");
+		haxe.Log.trace("webGL Context Restored",{ fileName : "WebGLRenderer.hx", lineNumber : 95, className : "wgr.renderers.webgl.WebGLRenderer", methodName : "onContextRestored"});
 	}
 	,onContextLost: function(event) {
 		this.contextLost = true;
-		console.log("webGL Context Lost");
+		haxe.Log.trace("webGL Context Lost",{ fileName : "WebGLRenderer.hx", lineNumber : 90, className : "wgr.renderers.webgl.WebGLRenderer", methodName : "onContextLost"});
 	}
 	,Render: function() {
 		if(this.contextLost) return;
 		this.stage.updateTransform();
-		this.gl.viewport(0,0,this.width,this.height);
-		this.gl.colorMask(true,true,true,this.contextAttributes.alpha);
-		this.gl.bindFramebuffer(36160,null);
-		this.gl.clear(16384);
-		this.gl.blendFunc(1,771);
 		var _g = 0, _g1 = this.renderers;
 		while(_g < _g1.length) {
 			var renderer = _g1[_g];
@@ -961,6 +1058,12 @@ wgr.tilemap.TileMap.__name__ = true;
 wgr.tilemap.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.tilemap.TileMap.prototype = {
 	Render: function(x,y) {
+		x = 0;
+		y = 0;
+		x = -400 / (this.tileScale * 2);
+		y = -300 / (this.tileScale * 2);
+		x += 8;
+		y += 8;
 		this.gl.enable(3042);
 		this.gl.blendFunc(770,771);
 		this.gl.useProgram(this.tilemapShader.program);
@@ -982,13 +1085,17 @@ wgr.tilemap.TileMap.prototype = {
 		while(i > 0) {
 			i--;
 			var layer = this.layers[i];
-			var pX = x * this.tileScale * layer.scrollScale.x;
-			var pY = y * this.tileScale * layer.scrollScale.y;
+			var pX = Math.floor(x * this.tileScale * layer.scrollScale.x);
+			var pY = Math.floor(y * this.tileScale * layer.scrollScale.y);
+			haxe.Log.trace(">",{ fileName : "TileMap.hx", lineNumber : 209, className : "wgr.tilemap.TileMap", methodName : "Render", customParams : [pX,pY]});
 			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
 			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
 			this.gl.bindTexture(3553,layer.tileTexture);
 			this.gl.drawArrays(4,0,6);
 		}
+	}
+	,SetCamera: function(camera) {
+		this.camera = camera;
 	}
 	,SetTileLayer: function(image,layerId,scrollScaleX,scrollScaleY) {
 		var layer = new wgr.tilemap.TileLayer();
@@ -1059,6 +1166,8 @@ String.prototype.__class__ = String;
 String.__name__ = true;
 Array.prototype.__class__ = Array;
 Array.__name__ = true;
+Date.prototype.__class__ = Date;
+Date.__name__ = ["Date"];
 var Int = { __name__ : ["Int"]};
 var Dynamic = { __name__ : ["Dynamic"]};
 var Float = Number;
