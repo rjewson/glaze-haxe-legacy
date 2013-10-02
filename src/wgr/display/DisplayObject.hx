@@ -37,6 +37,8 @@ class DisplayObject
     }
 
     public function updateTransform() {
+        position.x = Math.floor(position.x);
+        position.y = Math.floor(position.y);
         var sinR = Math.sin(rotation);
         var cosR = Math.cos(rotation);
         

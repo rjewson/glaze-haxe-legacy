@@ -10,6 +10,7 @@ class Stage extends DisplayObjectContainer
 
     public var head:Sprite;
     public var tail:Sprite;
+    public var count:Int;
 
     public function new() {
         super();
@@ -28,17 +29,19 @@ class Stage extends DisplayObjectContainer
     public function Flatten() {
         head = null;
         tail = null;
+        count = 0;
         Traverse(this);
         var sprite = head;
         while (sprite!=null) {
-            trace(sprite);
             sprite = sprite.next;
         }
+        trace("Total Sprites:"+count);
     }
 
     public function Traverse(node:DisplayObject) {
         trace(node.id);
         if (Std.is(node, Sprite)) {
+            count++;
             if (head==null) {
                 head = cast node;
                 head.prev = head.next = null;

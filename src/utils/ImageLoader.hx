@@ -32,7 +32,6 @@ class ImageLoader extends EventTarget
         completeCount--;
         if (completeCount==0) {
             super.dispatchEvent({type:"loaded",count:completeCount});
-            trace("+++");
         }
     }
 

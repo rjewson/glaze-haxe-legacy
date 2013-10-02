@@ -48,6 +48,11 @@ class Main
 
             var spr2 = new Sprite();
             spr2.id = "spr2";
+            spr2.texture = texture1up;
+            spr2.position.x = 228;
+            spr2.position.y = 228;
+            spr2.pivot.x = 128;
+            spr2.pivot.y = 128;
             camera.addChild(spr2);
 
             var spr21 = new Sprite();
@@ -74,22 +79,17 @@ class Main
 
             var startTime = Date.now().getTime();
 
-            function r() {
-                renderer.Render();
-                Browser.window.requestAnimationFrame(cast r);
+            function tick() {
                 spr1.rotation += 0.01;
-
-                //camera.position.x +=0.5;
                 var elapsed = Date.now().getTime() - startTime;
-                var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 128;
-                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 170;
-                xp=000;
-                yp=000;
-                //trace(xp,yp);
+                var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
+                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 370;
                 camera.Focus(xp,yp);
+                renderer.Render();
+                Browser.window.requestAnimationFrame(cast tick);
             }
 
-            r();            
+            tick();            
 
         } );
 

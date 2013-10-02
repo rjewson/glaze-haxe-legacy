@@ -31,7 +31,7 @@ class TileMap implements IRenderer
         "void main(void) {",
         "   pixelCoord = (texture * viewportSize) + viewOffset;",
         "   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;",
-        "   gl_Position = vec4(position, 0.0, 1.0);",
+        "   gl_Position = vec4(position, 0.0, 1.0);",//" + vec4(0.00125,0.001666667,0,0);",
         "}"
     ];
 
@@ -170,12 +170,19 @@ class TileMap implements IRenderer
     }
 
     public function Render(x:Float,y:Float) {
+        /*
         x = 0;//-camera.position.x;///tileScale;
         y = 0;//-camera.position.y;///tileScale;
         x = -400/(tileScale*2);
         y = -300/(tileScale*2);
         x+=8;
         y+=8;
+        */
+        x = -camera.position.x / (tileScale*2);
+        y = -camera.position.y / (tileScale*2);
+        x += tileSize/2;
+        y += tileSize/2;
+
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
 
@@ -200,13 +207,13 @@ class TileMap implements IRenderer
         gl.activeTexture(RenderingContext.TEXTURE1);
         gl.uniform1i(untyped tilemapShader.uniform.tiles, 1);    
 
-        var i = layers.length;
+        var i = layers.length; 
         while (i>0) {
             i--; 
             var layer = layers[i];
-            var pX = Math.floor(x * tileScale * layer.scrollScale.x);
-            var pY = Math.floor(y * tileScale * layer.scrollScale.y);
-            trace(">",pX,pY);
+            var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
+            var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
+            
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);

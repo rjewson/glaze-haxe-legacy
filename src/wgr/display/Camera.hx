@@ -18,6 +18,7 @@ class Camera extends DisplayObjectContainer
     }
 
     public function Focus(x:Float,y:Float) {
+        //Need to move the camera container the oposite way to the actual coords
         position.x = -x+halfViewportSize.x;
         position.y = -y+halfViewportSize.y;
     }
