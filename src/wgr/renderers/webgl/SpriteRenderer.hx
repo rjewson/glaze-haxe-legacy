@@ -25,7 +25,7 @@ class SpriteRenderer implements IRenderer
         projection = new Point();
         spriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,WebGLShaders.SPRITE_VERTEX_SHADER,WebGLShaders.SPRITE_FRAGMENT_SHADER));
         spriteBatch = new WebGLBatch(gl);
-        spriteBatch.GrowBatch();
+        spriteBatch.GrowBatch(3);
     }
 
     public function Resize(width:Int,height:Int) {
@@ -39,7 +39,7 @@ class SpriteRenderer implements IRenderer
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aColor);
         gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
-        spriteBatch.Render(0,1,spriteShader);
+        spriteBatch.Render(0,3,spriteShader);
     }
 
 }

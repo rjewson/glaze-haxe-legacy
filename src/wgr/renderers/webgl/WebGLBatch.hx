@@ -29,7 +29,7 @@ class WebGLBatch
     public var uvs:Float32Array;
     public var colors:Float32Array;
 
-    public var sprite:Sprite;
+    public var spriteHead:Sprite;
 
     public function new(gl:RenderingContext) {
         this.gl = gl;
@@ -45,7 +45,10 @@ class WebGLBatch
     public function Clean() {
     }
 
-    public function GrowBatch() {
+    public function GrowBatch(size:Int) {
+        this.size = size;
+        this.dynamicSize = size;
+        
         verticies = new Float32Array(dynamicSize*8);
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER,vertexBuffer);
         gl.bufferData(RenderingContext.ARRAY_BUFFER,verticies,RenderingContext.DYNAMIC_DRAW);
@@ -78,72 +81,80 @@ class WebGLBatch
 
     public function Refresh() {
         var indexRun = 0;
-        var index = indexRun * 8;
-        var texture = sprite.texture.baseTexture.texture;
-        
-        var frame = sprite.texture.frame;
-        var tw = sprite.texture.baseTexture.width;
-        var th = sprite.texture.baseTexture.height;
+        var sprite = spriteHead;
+        while (sprite!=null) {
 
-        uvs[index + 0] = frame.x / tw;
-        uvs[index +1] = frame.y / th;
+            var index = indexRun * 8;
+            var texture = sprite.texture.baseTexture.texture;
+            
+            var frame = sprite.texture.frame;
+            var tw = sprite.texture.baseTexture.width;
+            var th = sprite.texture.baseTexture.height;
 
-        uvs[index +2] = (frame.x + frame.width) / tw;
-        uvs[index +3] = frame.y / th;
+            uvs[index + 0] = frame.x / tw;
+            uvs[index +1] = frame.y / th;
 
-        uvs[index +4] = (frame.x + frame.width) / tw;
-        uvs[index +5] = (frame.y + frame.height) / th; 
+            uvs[index +2] = (frame.x + frame.width) / tw;
+            uvs[index +3] = frame.y / th;
 
-        uvs[index +6] = frame.x / tw;
-        uvs[index +7] = (frame.y + frame.height) / th;
+            uvs[index +4] = (frame.x + frame.width) / tw;
+            uvs[index +5] = (frame.y + frame.height) / th; 
 
-        //sprite.updateFrame = false;
+            uvs[index +6] = frame.x / tw;
+            uvs[index +7] = (frame.y + frame.height) / th;
 
-        var colorIndex = indexRun * 4;
-        colors[colorIndex] = colors[colorIndex + 1] = colors[colorIndex + 2] = colors[colorIndex + 3] = 1;//TODO sprite.worldAlpha;
+            //sprite.updateFrame = false;
 
-        indexRun ++;       
+            var colorIndex = indexRun * 4;
+            colors[colorIndex] = colors[colorIndex + 1] = colors[colorIndex + 2] = colors[colorIndex + 3] = 1;//TODO sprite.worldAlpha;
+
+            indexRun++;
+            sprite = sprite.next;
+        }
 
     }
 
     public function Update() {
-
         var indexRun = 0;
+        var sprite = spriteHead;
+        while (sprite!=null) {
+            var width = sprite.texture.frame.width;
+            var height = sprite.texture.frame.height;
 
-        var width = sprite.texture.frame.width;
-        var height = sprite.texture.frame.height;
+            var aX = sprite.anchor.x;
+            var aY = sprite.anchor.y;
+            var w0 = width * (1-aX);
+            var w1 = width * -aX;
 
-        var aX = sprite.anchor.x;
-        var aY = sprite.anchor.y;
-        var w0 = width * (1-aX);
-        var w1 = width * -aX;
+            var h0 = height * (1-aY);
+            var h1 = height * -aY;
 
-        var h0 = height * (1-aY);
-        var h1 = height * -aY;
+            var index = indexRun * 8;
 
-        var index = indexRun * 8;
+            var worldTransform = sprite.worldTransform;
 
-        var worldTransform = sprite.worldTransform;
+            var a = worldTransform[0];
+            var b = worldTransform[3];
+            var c = worldTransform[1];
+            var d = worldTransform[4];
+            var tx = worldTransform[2];
+            var ty = worldTransform[5];
 
-        var a = worldTransform[0];
-        var b = worldTransform[3];
-        var c = worldTransform[1];
-        var d = worldTransform[4];
-        var tx = worldTransform[2];
-        var ty = worldTransform[5];
+            verticies[index + 0 ] = a * w1 + c * h1 + tx; 
+            verticies[index + 1 ] = d * h1 + b * w1 + ty;
 
-        verticies[index + 0 ] = a * w1 + c * h1 + tx; 
-        verticies[index + 1 ] = d * h1 + b * w1 + ty;
+            verticies[index + 2 ] = a * w0 + c * h1 + tx; 
+            verticies[index + 3 ] = d * h1 + b * w0 + ty; 
 
-        verticies[index + 2 ] = a * w0 + c * h1 + tx; 
-        verticies[index + 3 ] = d * h1 + b * w0 + ty; 
+            verticies[index + 4 ] = a * w0 + c * h0 + tx; 
+            verticies[index + 5 ] = d * h0 + b * w0 + ty; 
 
-        verticies[index + 4 ] = a * w0 + c * h0 + tx; 
-        verticies[index + 5 ] = d * h0 + b * w0 + ty; 
+            verticies[index + 6] =  a * w1 + c * h0 + tx; 
+            verticies[index + 7] =  d * h0 + b * w1 + ty;
 
-        verticies[index + 6] =  a * w1 + c * h0 + tx; 
-        verticies[index + 7] =  d * h0 + b * w1 + ty; 
-
+            indexRun++;
+            sprite = sprite.next;
+        }
     }
 
     public function Render(start:Int,end:Int,shader:ShaderWrapper) {
@@ -161,7 +172,7 @@ class WebGLBatch
         gl.vertexAttribPointer(untyped shader.attribute.aTextureCoord,2,RenderingContext.FLOAT,false,0,0);
         
         gl.activeTexture(RenderingContext.TEXTURE0);
-        gl.bindTexture(RenderingContext.TEXTURE_2D,sprite.texture.baseTexture.texture);
+        gl.bindTexture(RenderingContext.TEXTURE_2D,spriteHead.texture.baseTexture.texture);
         
         gl.bindBuffer(RenderingContext.ARRAY_BUFFER,colorBuffer);
         gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,colors);

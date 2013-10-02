@@ -57,11 +57,16 @@ class Main
 
             var spr21 = new Sprite();
             spr21.id = "spr21";
+            spr21.texture = texture1up;
+            spr21.position.x = 328;
+            spr21.position.y = 328;
+            spr21.pivot.x = 128;
+            spr21.pivot.y = 128;
             spr2.addChild(spr21);
 
-            var spr211 = new Sprite();
-            spr211.id = "spr211";
-            spr21.addChild(spr211);
+            // var spr211 = new Sprite();
+            // spr211.id = "spr211";
+            // spr21.addChild(spr211);
 
             stage.Flatten();
 
@@ -75,7 +80,7 @@ class Main
 
             var spriteRender = new SpriteRenderer();
             renderer.AddRenderer(spriteRender);
-            spriteRender.spriteBatch.sprite = spr1;
+            spriteRender.spriteBatch.spriteHead = stage.head;
 
             var startTime = Date.now().getTime();
 

@@ -70,10 +70,12 @@ Main.main = function() {
 		camera.addChild(spr2);
 		var spr21 = new wgr.display.Sprite();
 		spr21.id = "spr21";
+		spr21.texture = texture1up;
+		spr21.position.x = 328;
+		spr21.position.y = 328;
+		spr21.pivot.x = 128;
+		spr21.pivot.y = 128;
 		spr2.addChild(spr21);
-		var spr211 = new wgr.display.Sprite();
-		spr211.id = "spr211";
-		spr21.addChild(spr211);
 		stage.Flatten();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
@@ -84,7 +86,7 @@ Main.main = function() {
 		renderer.AddRenderer(tileMap);
 		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		renderer.AddRenderer(spriteRender);
-		spriteRender.spriteBatch.sprite = spr1;
+		spriteRender.spriteBatch.spriteHead = stage.head;
 		var startTime = new Date().getTime();
 		var tick = (function($this) {
 			var $r;
@@ -721,7 +723,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.spriteBatch.Render(0,1,this.spriteShader);
+		this.spriteBatch.Render(0,3,this.spriteShader);
 	}
 	,Resize: function(width,height) {
 		this.projection.x = width / 2;
@@ -732,7 +734,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.projection = new wgr.geom.Point();
 		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
 		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
-		this.spriteBatch.GrowBatch();
+		this.spriteBatch.GrowBatch(3);
 	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
@@ -759,7 +761,7 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.bufferSubData(34962,0,this.uvs);
 		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,0,0);
 		this.gl.activeTexture(33984);
-		this.gl.bindTexture(3553,this.sprite.texture.baseTexture.texture);
+		this.gl.bindTexture(3553,this.spriteHead.texture.baseTexture.texture);
 		this.gl.bindBuffer(34962,this.colorBuffer);
 		this.gl.bufferSubData(34962,0,this.colors);
 		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,0,0);
@@ -769,51 +771,62 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 	}
 	,Update: function() {
 		var indexRun = 0;
-		var width = this.sprite.texture.frame.width;
-		var height = this.sprite.texture.frame.height;
-		var aX = this.sprite.anchor.x;
-		var aY = this.sprite.anchor.y;
-		var w0 = width * (1 - aX);
-		var w1 = width * -aX;
-		var h0 = height * (1 - aY);
-		var h1 = height * -aY;
-		var index = indexRun * 8;
-		var worldTransform = this.sprite.worldTransform;
-		var a = worldTransform[0];
-		var b = worldTransform[3];
-		var c = worldTransform[1];
-		var d = worldTransform[4];
-		var tx = worldTransform[2];
-		var ty = worldTransform[5];
-		this.verticies[index] = a * w1 + c * h1 + tx;
-		this.verticies[index + 1] = d * h1 + b * w1 + ty;
-		this.verticies[index + 2] = a * w0 + c * h1 + tx;
-		this.verticies[index + 3] = d * h1 + b * w0 + ty;
-		this.verticies[index + 4] = a * w0 + c * h0 + tx;
-		this.verticies[index + 5] = d * h0 + b * w0 + ty;
-		this.verticies[index + 6] = a * w1 + c * h0 + tx;
-		this.verticies[index + 7] = d * h0 + b * w1 + ty;
+		var sprite = this.spriteHead;
+		while(sprite != null) {
+			var width = sprite.texture.frame.width;
+			var height = sprite.texture.frame.height;
+			var aX = sprite.anchor.x;
+			var aY = sprite.anchor.y;
+			var w0 = width * (1 - aX);
+			var w1 = width * -aX;
+			var h0 = height * (1 - aY);
+			var h1 = height * -aY;
+			var index = indexRun * 8;
+			var worldTransform = sprite.worldTransform;
+			var a = worldTransform[0];
+			var b = worldTransform[3];
+			var c = worldTransform[1];
+			var d = worldTransform[4];
+			var tx = worldTransform[2];
+			var ty = worldTransform[5];
+			this.verticies[index] = a * w1 + c * h1 + tx;
+			this.verticies[index + 1] = d * h1 + b * w1 + ty;
+			this.verticies[index + 2] = a * w0 + c * h1 + tx;
+			this.verticies[index + 3] = d * h1 + b * w0 + ty;
+			this.verticies[index + 4] = a * w0 + c * h0 + tx;
+			this.verticies[index + 5] = d * h0 + b * w0 + ty;
+			this.verticies[index + 6] = a * w1 + c * h0 + tx;
+			this.verticies[index + 7] = d * h0 + b * w1 + ty;
+			indexRun++;
+			sprite = sprite.next;
+		}
 	}
 	,Refresh: function() {
 		var indexRun = 0;
-		var index = indexRun * 8;
-		var texture = this.sprite.texture.baseTexture.texture;
-		var frame = this.sprite.texture.frame;
-		var tw = this.sprite.texture.baseTexture.width;
-		var th = this.sprite.texture.baseTexture.height;
-		this.uvs[index] = frame.x / tw;
-		this.uvs[index + 1] = frame.y / th;
-		this.uvs[index + 2] = (frame.x + frame.width) / tw;
-		this.uvs[index + 3] = frame.y / th;
-		this.uvs[index + 4] = (frame.x + frame.width) / tw;
-		this.uvs[index + 5] = (frame.y + frame.height) / th;
-		this.uvs[index + 6] = frame.x / tw;
-		this.uvs[index + 7] = (frame.y + frame.height) / th;
-		var colorIndex = indexRun * 4;
-		this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = 1;
-		indexRun++;
+		var sprite = this.spriteHead;
+		while(sprite != null) {
+			var index = indexRun * 8;
+			var texture = sprite.texture.baseTexture.texture;
+			var frame = sprite.texture.frame;
+			var tw = sprite.texture.baseTexture.width;
+			var th = sprite.texture.baseTexture.height;
+			this.uvs[index] = frame.x / tw;
+			this.uvs[index + 1] = frame.y / th;
+			this.uvs[index + 2] = (frame.x + frame.width) / tw;
+			this.uvs[index + 3] = frame.y / th;
+			this.uvs[index + 4] = (frame.x + frame.width) / tw;
+			this.uvs[index + 5] = (frame.y + frame.height) / th;
+			this.uvs[index + 6] = frame.x / tw;
+			this.uvs[index + 7] = (frame.y + frame.height) / th;
+			var colorIndex = indexRun * 4;
+			this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = 1;
+			indexRun++;
+			sprite = sprite.next;
+		}
 	}
-	,GrowBatch: function() {
+	,GrowBatch: function(size) {
+		this.size = size;
+		this.dynamicSize = size;
 		this.verticies = new Float32Array(this.dynamicSize * 8);
 		this.gl.bindBuffer(34962,this.vertexBuffer);
 		this.gl.bufferData(34962,this.verticies,35048);
