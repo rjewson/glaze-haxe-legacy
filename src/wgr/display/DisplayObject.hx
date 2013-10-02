@@ -12,7 +12,9 @@ class DisplayObject
     public var position:Point;
     public var scale:Point;
     public var pivot:Point;
-    public var rotation:Float;
+    public var rotation(get,set):Float;
+    private var _rotation:Float;
+    private var _rotationComponents:Point;
     public var alpha:Float;
     public var visible:Bool;
     public var renderable:Bool;
@@ -27,6 +29,7 @@ class DisplayObject
         position = new Point();
         scale = new Point(1,1);
         pivot = new Point();
+        _rotationComponents = new Point();
         rotation = 0;
         alpha = 1;
         visible = true;
@@ -36,11 +39,24 @@ class DisplayObject
         localTransform = Matrix3.Create();
     }
 
+    public inline function get_rotation():Float {  
+        return _rotation;
+    }
+
+    public function set_rotation(v:Float):Float {
+        _rotation = v;
+        _rotationComponents.x = Math.cos(_rotation);
+        _rotationComponents.y = Math.sin(_rotation);
+        return _rotation;
+    }
+
     public function updateTransform() {
+        //TODO Rounding at the moment...
         position.x = Math.floor(position.x);
         position.y = Math.floor(position.y);
-        var sinR = Math.sin(rotation);
-        var cosR = Math.cos(rotation);
+
+        var sinR = _rotationComponents.y;//Math.sin(rotation);
+        var cosR = _rotationComponents.x;//Math.cos(rotation);
         
         localTransform[0] =  cosR * scale.x;
         localTransform[1] = -sinR * scale.y;

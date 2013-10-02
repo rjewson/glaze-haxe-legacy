@@ -42,6 +42,10 @@ var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
 	var assets = new utils.ImageLoader();
+	var stop = false;
+	js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event) {
+		stop = true;
+	});
 	assets.addEventListener("loaded",function(event) {
 		var stage = new wgr.display.Stage();
 		var camera = new wgr.display.Camera();
@@ -75,6 +79,7 @@ Main.main = function() {
 		spr21.position.y = 328;
 		spr21.pivot.x = 128;
 		spr21.pivot.y = 128;
+		spr21.alpha = 0.9;
 		spr2.addChild(spr21);
 		stage.Flatten();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
@@ -92,13 +97,18 @@ Main.main = function() {
 			var $r;
 			var tick1 = null;
 			tick1 = function() {
-				spr1.rotation += 0.01;
+				var _g = spr1;
+				_g.set_rotation(_g._rotation + 0.01);
+				var _g = spr2;
+				_g.set_rotation(_g._rotation - 0.02);
+				var _g = spr21;
+				_g.set_rotation(_g._rotation + 0.04);
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 370;
 				camera.Focus(xp,yp);
 				renderer.Render();
-				js.Browser.window.requestAnimationFrame(tick1);
+				if(!stop) js.Browser.window.requestAnimationFrame(tick1);
 			};
 			$r = tick1;
 			return $r;
@@ -325,7 +335,8 @@ wgr.display.DisplayObject = function() {
 	this.position = new wgr.geom.Point();
 	this.scale = new wgr.geom.Point(1,1);
 	this.pivot = new wgr.geom.Point();
-	this.rotation = 0;
+	this._rotationComponents = new wgr.geom.Point();
+	this.set_rotation(0);
 	this.alpha = 1;
 	this.visible = true;
 	this.renderable = true;
@@ -338,8 +349,8 @@ wgr.display.DisplayObject.prototype = {
 	updateTransform: function() {
 		this.position.x = Math.floor(this.position.x);
 		this.position.y = Math.floor(this.position.y);
-		var sinR = Math.sin(this.rotation);
-		var cosR = Math.cos(this.rotation);
+		var sinR = this._rotationComponents.y;
+		var cosR = this._rotationComponents.x;
 		this.localTransform[0] = cosR * this.scale.x;
 		this.localTransform[1] = -sinR * this.scale.y;
 		this.localTransform[3] = sinR * this.scale.x;
@@ -357,6 +368,15 @@ wgr.display.DisplayObject.prototype = {
 		this.worldTransform[4] = b10 * a01 + b11 * a11;
 		this.worldTransform[5] = b10 * a02 + b11 * a12 + b12;
 		this.worldAlpha = this.alpha * this.parent.worldAlpha;
+	}
+	,set_rotation: function(v) {
+		this._rotation = v;
+		this._rotationComponents.x = Math.cos(this._rotation);
+		this._rotationComponents.y = Math.sin(this._rotation);
+		return this._rotation;
+	}
+	,get_rotation: function() {
+		return this._rotation;
 	}
 	,__class__: wgr.display.DisplayObject
 }
@@ -421,6 +441,7 @@ wgr.display.Sprite.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 wgr.display.Stage = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.id = "Stage";
+	this.worldAlpha = this.alpha;
 };
 wgr.display.Stage.__name__ = true;
 wgr.display.Stage.__super__ = wgr.display.DisplayObjectContainer;
@@ -723,7 +744,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.spriteBatch.Render(0,3,this.spriteShader);
+		this.spriteBatch.Render(this.spriteShader);
 	}
 	,Resize: function(width,height) {
 		this.projection.x = width / 2;
@@ -732,9 +753,9 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 	,Init: function(gl) {
 		this.gl = gl;
 		this.projection = new wgr.geom.Point();
-		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER));
+		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER));
 		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
-		this.spriteBatch.GrowBatch(3);
+		this.spriteBatch.GrowBatch(1000);
 	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
@@ -745,15 +766,71 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.indexBuffer = gl.createBuffer();
 	this.uvBuffer = gl.createBuffer();
 	this.colorBuffer = gl.createBuffer();
+	this.dataBuffer = gl.createBuffer();
 	this.blendMode = 0;
 	this.dynamicSize = 1;
 };
 wgr.renderers.webgl.WebGLBatch.__name__ = true;
 wgr.renderers.webgl.WebGLBatch.prototype = {
-	Render: function(start,end,shader) {
-		this.Refresh();
-		this.Update();
+	Render: function(shader) {
+		if(this.spriteHead == null) return;
 		this.gl.useProgram(shader.program);
+		this.gl.bindBuffer(34963,this.indexBuffer);
+		var indexRun = 0;
+		var sprite = this.spriteHead;
+		var currentTexture = sprite.texture.baseTexture.texture;
+		while(sprite != null) {
+			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
+				this.Flush(shader,currentTexture,indexRun);
+				indexRun = 0;
+				currentTexture = sprite.texture.baseTexture.texture;
+			}
+			this.AddSpriteToBatch(sprite,indexRun);
+			indexRun++;
+			sprite = sprite.next;
+		}
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+	}
+	,AddSpriteToBatch: function(sprite,indexRun) {
+		var index = indexRun * 8;
+		var frame = sprite.texture.frame;
+		var tw = sprite.texture.baseTexture.width;
+		var th = sprite.texture.baseTexture.height;
+		this.uvs[index] = frame.x / tw;
+		this.uvs[index + 1] = frame.y / th;
+		this.uvs[index + 2] = (frame.x + frame.width) / tw;
+		this.uvs[index + 3] = frame.y / th;
+		this.uvs[index + 4] = (frame.x + frame.width) / tw;
+		this.uvs[index + 5] = (frame.y + frame.height) / th;
+		this.uvs[index + 6] = frame.x / tw;
+		this.uvs[index + 7] = (frame.y + frame.height) / th;
+		var colorIndex = indexRun * 4;
+		this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = sprite.worldAlpha;
+		var width = sprite.texture.frame.width;
+		var height = sprite.texture.frame.height;
+		var aX = sprite.anchor.x;
+		var aY = sprite.anchor.y;
+		var w0 = width * (1 - aX);
+		var w1 = width * -aX;
+		var h0 = height * (1 - aY);
+		var h1 = height * -aY;
+		var worldTransform = sprite.worldTransform;
+		var a = worldTransform[0];
+		var b = worldTransform[3];
+		var c = worldTransform[1];
+		var d = worldTransform[4];
+		var tx = worldTransform[2];
+		var ty = worldTransform[5];
+		this.verticies[index] = a * w1 + c * h1 + tx;
+		this.verticies[index + 1] = d * h1 + b * w1 + ty;
+		this.verticies[index + 2] = a * w0 + c * h1 + tx;
+		this.verticies[index + 3] = d * h1 + b * w0 + ty;
+		this.verticies[index + 4] = a * w0 + c * h0 + tx;
+		this.verticies[index + 5] = d * h0 + b * w0 + ty;
+		this.verticies[index + 6] = a * w1 + c * h0 + tx;
+		this.verticies[index + 7] = d * h0 + b * w1 + ty;
+	}
+	,Flush: function(shader,texture,size) {
 		this.gl.bindBuffer(34962,this.vertexBuffer);
 		this.gl.bufferSubData(34962,0,this.verticies);
 		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,0,0);
@@ -761,13 +838,11 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.bufferSubData(34962,0,this.uvs);
 		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,0,0);
 		this.gl.activeTexture(33984);
-		this.gl.bindTexture(3553,this.spriteHead.texture.baseTexture.texture);
+		this.gl.bindTexture(3553,texture);
 		this.gl.bindBuffer(34962,this.colorBuffer);
 		this.gl.bufferSubData(34962,0,this.colors);
 		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,0,0);
-		this.gl.bindBuffer(34963,this.indexBuffer);
-		var len = end - start;
-		this.gl.drawElements(4,len * 6,5123,start * 2 * 6);
+		this.gl.drawElements(4,size * 6,5123,0);
 	}
 	,Update: function() {
 		var indexRun = 0;
@@ -819,7 +894,7 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 			this.uvs[index + 6] = frame.x / tw;
 			this.uvs[index + 7] = (frame.y + frame.height) / th;
 			var colorIndex = indexRun * 4;
-			this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = 1;
+			this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = sprite.worldAlpha;
 			indexRun++;
 			sprite = sprite.next;
 		}
@@ -837,10 +912,9 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.bindBuffer(34962,this.colorBuffer);
 		this.gl.bufferData(34962,this.colors,35048);
 		this.indices = new Uint16Array(this.dynamicSize * 6);
-		var length = this.indices.length / 6 | 0;
-		var _g = 0;
-		while(_g < length) {
-			var i = _g++;
+		var _g1 = 0, _g = this.dynamicSize;
+		while(_g1 < _g) {
+			var i = _g1++;
 			var index2 = i * 6;
 			var index3 = i * 4;
 			this.indices[index2] = index3;
@@ -887,7 +961,6 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 	,Render: function() {
 		if(this.contextLost) return;
 		this.stage.updateTransform();
-		this.gl.clear(16384);
 		var _g = 0, _g1 = this.renderers;
 		while(_g < _g1.length) {
 			var renderer = _g1[_g];
@@ -1169,8 +1242,8 @@ var Class = { __name__ : ["Class"]};
 var Enum = { };
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
-wgr.renderers.webgl.WebGLShaders.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
-wgr.renderers.webgl.WebGLShaders.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
+wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
+wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
 wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
 wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();

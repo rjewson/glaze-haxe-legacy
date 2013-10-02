@@ -15,10 +15,11 @@ class Stage extends DisplayObjectContainer
     public function new() {
         super();
         id = "Stage";
+        worldAlpha = alpha;
     }
 
     public override function updateTransform() {
-        for (child in children) {
+        for (child in children) { 
             child.updateTransform();
         }
     }

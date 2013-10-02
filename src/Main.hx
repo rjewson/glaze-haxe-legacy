@@ -23,6 +23,10 @@ class Main
 	public static function main() {
 
         var assets = new utils.ImageLoader();
+        var stop = false;
+        Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
+            stop=true;
+        });
 
         assets.addEventListener("loaded", function(event){
 
@@ -62,8 +66,24 @@ class Main
             spr21.position.y = 328;
             spr21.pivot.x = 128;
             spr21.pivot.y = 128;
+            spr21.alpha = 0.9;
             spr2.addChild(spr21);
-
+/*
+            var sprArray = new Array<Sprite>();
+            for (i in 0...1000) {
+                var newSpr = new Sprite();
+                newSpr.id="newSpr"+i;
+                newSpr.texture = texture1up;
+                newSpr.position.x = Std.random(400)+200;
+                newSpr.position.y = Std.random(400)+200;
+                newSpr.alpha = Math.random();
+                newSpr.pivot.x = 128;
+                newSpr.pivot.y = 128;
+                newSpr.rotation = Math.random();
+                camera.addChild(newSpr);
+                sprArray.push(newSpr);
+            }
+*/
             // var spr211 = new Sprite();
             // spr211.id = "spr211";
             // spr21.addChild(spr211);
@@ -86,12 +106,21 @@ class Main
 
             function tick() {
                 spr1.rotation += 0.01;
+                spr2.rotation -= 0.02;
+                spr21.rotation += 0.04;
+/*
+                for (spr in sprArray) {
+                    spr.rotation+=0.04;
+                    spr.alpha+=0.001;
+                    if(spr.alpha>1)spr.alpha=0;
+                }
+*/
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 370;
                 camera.Focus(xp,yp);
                 renderer.Render();
-                Browser.window.requestAnimationFrame(cast tick);
+                if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
 
             tick();            
