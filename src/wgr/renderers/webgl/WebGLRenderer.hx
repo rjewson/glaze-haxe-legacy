@@ -76,6 +76,7 @@ class WebGLRenderer
         if (contextLost) 
             return;
         stage.updateTransform();
+        stage.PreRender();
         //gl.viewport(0,0,width,height);
         // gl.colorMask(true,true,true,contextAttributes.alpha);
         // gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);

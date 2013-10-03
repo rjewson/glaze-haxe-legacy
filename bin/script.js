@@ -42,16 +42,12 @@ var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
 	var assets = new utils.ImageLoader();
-	var stop = false;
-	js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event) {
-		stop = true;
-	});
 	assets.addEventListener("loaded",function(event) {
 		var stage = new wgr.display.Stage();
 		var camera = new wgr.display.Camera();
 		stage.addChild(camera);
 		var canvasView = js.Boot.__cast(js.Browser.document.getElementById("view") , HTMLCanvasElement);
-		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,canvasView);
+		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,canvasView,800,600);
 		var tm = new wgr.texture.TextureManager(renderer.gl);
 		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
@@ -93,19 +89,29 @@ Main.main = function() {
 		renderer.AddRenderer(spriteRender);
 		spriteRender.spriteBatch.spriteHead = stage.head;
 		var startTime = new Date().getTime();
+		var stop = false;
 		var tick = (function($this) {
 			var $r;
 			var tick1 = null;
 			tick1 = function() {
 				var _g = spr1;
-				_g.set_rotation(_g._rotation + 0.01);
+				_g._rotation = _g._rotation + 0.01;
+				_g._rotationComponents.x = Math.cos(_g._rotation);
+				_g._rotationComponents.y = Math.sin(_g._rotation);
+				_g._rotation;
 				var _g = spr2;
-				_g.set_rotation(_g._rotation - 0.02);
+				_g._rotation = _g._rotation - 0.02;
+				_g._rotationComponents.x = Math.cos(_g._rotation);
+				_g._rotationComponents.y = Math.sin(_g._rotation);
+				_g._rotation;
 				var _g = spr21;
-				_g.set_rotation(_g._rotation + 0.04);
+				_g._rotation = _g._rotation + 0.04;
+				_g._rotationComponents.x = Math.cos(_g._rotation);
+				_g._rotationComponents.y = Math.sin(_g._rotation);
+				_g._rotation;
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
-				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 370;
+				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
 				camera.Focus(xp,yp);
 				renderer.Render();
 				if(!stop) js.Browser.window.requestAnimationFrame(tick1);
@@ -113,6 +119,23 @@ Main.main = function() {
 			$r = tick1;
 			return $r;
 		}(this));
+		js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event1) {
+			stop = true;
+		});
+		js.Browser.document.getElementById("startbutton").addEventListener("click",function(event1) {
+			if(stop == true) {
+				stop = false;
+				tick();
+			}
+		});
+		js.Browser.document.getElementById("action1").addEventListener("click",function(event1) {
+			camera.removeChild(spr2);
+			console.log(spr2);
+		});
+		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
+			camera.addChild(spr2);
+			console.log(spr2);
+		});
 		tick();
 	});
 	assets.SetImagesToLoad(["1up.png","spelunky-tiles.png","spelunky0.png"]);
@@ -336,17 +359,25 @@ wgr.display.DisplayObject = function() {
 	this.scale = new wgr.geom.Point(1,1);
 	this.pivot = new wgr.geom.Point();
 	this._rotationComponents = new wgr.geom.Point();
-	this.set_rotation(0);
+	this._rotation = 0;
+	this._rotationComponents.x = Math.cos(this._rotation);
+	this._rotationComponents.y = Math.sin(this._rotation);
+	this._rotation;
 	this.alpha = 1;
-	this.visible = true;
-	this.renderable = true;
+	this._visible = true;
+	if(this.stage != null) this.stage.dirty = true;
+	this._visible;
+	this.aabb = new wgr.geom.AABB();
 	this.parent = null;
 	this.worldTransform = wgr.geom.Matrix3.Create();
 	this.localTransform = wgr.geom.Matrix3.Create();
 };
 wgr.display.DisplayObject.__name__ = true;
 wgr.display.DisplayObject.prototype = {
-	updateTransform: function() {
+	applySlot: function(slot,p) {
+		slot(this,p);
+	}
+	,updateTransform: function() {
 		this.position.x = Math.floor(this.position.x);
 		this.position.y = Math.floor(this.position.y);
 		var sinR = this._rotationComponents.y;
@@ -369,6 +400,14 @@ wgr.display.DisplayObject.prototype = {
 		this.worldTransform[5] = b10 * a02 + b11 * a12 + b12;
 		this.worldAlpha = this.alpha * this.parent.worldAlpha;
 	}
+	,set_visible: function(v) {
+		this._visible = v;
+		if(this.stage != null) this.stage.dirty = true;
+		return this._visible;
+	}
+	,get_visible: function() {
+		return this._visible;
+	}
 	,set_rotation: function(v) {
 		this._rotation = v;
 		this._rotationComponents.x = Math.cos(this._rotation);
@@ -387,7 +426,16 @@ wgr.display.DisplayObjectContainer = function() {
 wgr.display.DisplayObjectContainer.__name__ = true;
 wgr.display.DisplayObjectContainer.__super__ = wgr.display.DisplayObject;
 wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject.prototype,{
-	updateTransform: function() {
+	applySlot: function(slot,p) {
+		wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p);
+		var _g = 0, _g1 = this.children;
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			child.applySlot(slot,p);
+		}
+	}
+	,updateTransform: function() {
 		wgr.display.DisplayObject.prototype.updateTransform.call(this);
 		var _g = 0, _g1 = this.children;
 		while(_g < _g1.length) {
@@ -398,13 +446,24 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 	}
 	,removeChild: function(child) {
 		var index = Lambda.indexOf(this.children,child);
-		if(index > 0) HxOverrides.remove(this.children,child);
-		child.parent = null;
+		if(index > 0) {
+			HxOverrides.remove(this.children,child);
+			child.parent = null;
+			child.applySlot(function(target,p) {
+				target.stage = null;
+			},null);
+			if(this.stage != null) this.stage.dirty = true;
+		}
 	}
 	,addChild: function(child) {
+		console.log(this);
 		if(child.parent != null) child.parent.removeChild(child);
 		this.children.push(child);
 		child.parent = this;
+		this.applySlot(function(target,p) {
+			target.stage = p;
+		},this.stage);
+		if(this.stage != null) this.stage.dirty = true;
 	}
 	,__class__: wgr.display.DisplayObjectContainer
 });
@@ -442,14 +501,14 @@ wgr.display.Stage = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.id = "Stage";
 	this.worldAlpha = this.alpha;
+	this.stage = this;
 };
 wgr.display.Stage.__name__ = true;
 wgr.display.Stage.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
 	Traverse: function(node) {
-		console.log(node.id);
+		if(node._visible == false) return;
 		if(js.Boot.__instanceof(node,wgr.display.Sprite)) {
-			this.count++;
 			if(this.head == null) {
 				this.head = node;
 				this.head.prev = this.head.next = null;
@@ -465,6 +524,7 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 					this.tail = sprite;
 				}
 			}
+			this.count++;
 		}
 		if(js.Boot.__instanceof(node,wgr.display.DisplayObjectContainer)) {
 			var doc = node;
@@ -485,6 +545,12 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		while(sprite != null) sprite = sprite.next;
 		console.log("Total Sprites:" + this.count);
 	}
+	,PreRender: function() {
+		if(this.dirty == true) {
+			this.Flatten();
+			this.dirty = false;
+		}
+	}
 	,updateTransform: function() {
 		var _g = 0, _g1 = this.children;
 		while(_g < _g1.length) {
@@ -496,6 +562,13 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 	,__class__: wgr.display.Stage
 });
 wgr.geom = {}
+wgr.geom.AABB = function() {
+	this.t = this.r = this.b = this.l = 0;
+};
+wgr.geom.AABB.__name__ = true;
+wgr.geom.AABB.prototype = {
+	__class__: wgr.geom.AABB
+}
 wgr.geom.Matrix3 = function() { }
 wgr.geom.Matrix3.__name__ = true;
 wgr.geom.Matrix3.Create = function() {
@@ -961,6 +1034,7 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 	,Render: function() {
 		if(this.contextLost) return;
 		this.stage.updateTransform();
+		this.stage.PreRender();
 		var _g = 0, _g1 = this.renderers;
 		while(_g < _g1.length) {
 			var renderer = _g1[_g];

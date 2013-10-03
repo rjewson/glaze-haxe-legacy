@@ -3,8 +3,10 @@ package wgr.display;
 
 import js.html.Float32Array;
 import wgr.display.DisplayObjectContainer;
+import wgr.display.Stage;
 import wgr.geom.Matrix3;
 import wgr.geom.Point;
+import wgr.geom.AABB;
 
 class DisplayObject 
 {
@@ -16,10 +18,14 @@ class DisplayObject
     private var _rotation:Float;
     private var _rotationComponents:Point;
     public var alpha:Float;
-    public var visible:Bool;
-    public var renderable:Bool;
+    public var visible(get,set):Bool;
+    private var _visible:Bool;
+
+    public var aabb:AABB;
 
     public var parent:DisplayObjectContainer;
+    // public var stage(get,never):Stage;
+    public var stage:Stage;
 
     public var worldTransform:Float32Array;
     public var worldAlpha:Float;
@@ -33,7 +39,7 @@ class DisplayObject
         rotation = 0;
         alpha = 1;
         visible = true;
-        renderable = true;
+        aabb = new AABB();
         parent = null;
         worldTransform = Matrix3.Create();
         localTransform = Matrix3.Create();
@@ -43,11 +49,22 @@ class DisplayObject
         return _rotation;
     }
 
-    public function set_rotation(v:Float):Float {
+    public inline function set_rotation(v:Float):Float {
         _rotation = v;
         _rotationComponents.x = Math.cos(_rotation);
         _rotationComponents.y = Math.sin(_rotation);
         return _rotation;
+    }
+
+    public inline function get_visible():Bool {  
+        return _visible;
+    }
+
+    public inline function set_visible(v:Bool):Bool {
+        _visible = v;
+        if (stage!=null)
+            stage.dirty = true;
+        return _visible;
     }
 
     public function updateTransform() {
@@ -88,5 +105,11 @@ class DisplayObject
         worldAlpha = alpha*parent.worldAlpha;
 
     }
+
+    //TODO Probably get rid of this...
+    public function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
+        slot(this,p);    
+    }
+
 
 }

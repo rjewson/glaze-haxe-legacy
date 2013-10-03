@@ -23,10 +23,6 @@ class Main
 	public static function main() {
 
         var assets = new utils.ImageLoader();
-        var stop = false;
-        Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
-            stop=true;
-        });
 
         assets.addEventListener("loaded", function(event){
 
@@ -35,7 +31,7 @@ class Main
             stage.addChild(camera);
 
             var canvasView:CanvasElement = cast(Browser.document.getElementById("view"),CanvasElement);
-            var renderer = new WebGLRenderer(stage,canvasView);
+            var renderer = new WebGLRenderer(stage,canvasView,800,600);
             var tm  = new wgr.texture.TextureManager(renderer.gl);
             var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
             var texture1up = new Texture(basetexture1up,new Rectangle(0,0,256,256));
@@ -57,6 +53,7 @@ class Main
             spr2.position.y = 228;
             spr2.pivot.x = 128;
             spr2.pivot.y = 128;
+            //spr2.visible = false;
             camera.addChild(spr2);
 
             var spr21 = new Sprite();
@@ -103,6 +100,7 @@ class Main
             spriteRender.spriteBatch.spriteHead = stage.head;
 
             var startTime = Date.now().getTime();
+            var stop = false;
 
             function tick() {
                 spr1.rotation += 0.01;
@@ -117,11 +115,29 @@ class Main
 */
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
-                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 370;
+                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
                 camera.Focus(xp,yp);
                 renderer.Render();
                 if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
+
+            Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
+                stop=true;
+            });
+            Browser.document.getElementById("startbutton").addEventListener("click",function(event){
+                if (stop==true) {
+                    stop=false;
+                    tick();                    
+                } 
+            });
+            Browser.document.getElementById("action1").addEventListener("click",function(event){
+                camera.removeChild(spr2);
+                trace(spr2);
+            });
+            Browser.document.getElementById("action2").addEventListener("click",function(event){
+                camera.addChild(spr2);
+                trace(spr2);
+            });
 
             tick();            
 
