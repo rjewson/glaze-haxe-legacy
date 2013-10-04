@@ -567,7 +567,23 @@ wgr.geom.AABB = function() {
 };
 wgr.geom.AABB.__name__ = true;
 wgr.geom.AABB.prototype = {
-	__class__: wgr.geom.AABB
+	addPoint: function(x,y) {
+		if(y < this.t) this.t = y;
+		if(x > this.r) this.r = x;
+		if(y > this.b) this.b = y;
+		if(x < this.l) this.l = x;
+	}
+	,addAABB: function(aabb) {
+		if(aabb.t < this.t) this.t = aabb.t;
+		if(aabb.r > this.r) this.r = aabb.r;
+		if(aabb.b > this.b) this.b = aabb.b;
+		if(aabb.l < this.l) this.l = aabb.l;
+	}
+	,reset: function() {
+		this.t = this.l = Math.POSITIVE_INFINITY;
+		this.r = this.b = Math.NEGATIVE_INFINITY;
+	}
+	,__class__: wgr.geom.AABB
 }
 wgr.geom.Matrix3 = function() { }
 wgr.geom.Matrix3.__name__ = true;
