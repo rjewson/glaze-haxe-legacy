@@ -23,6 +23,12 @@ class Main
 
 	public static function main() {
 
+        var a1 = new wgr.geom.AABB();
+        var a2 = new wgr.geom.AABB();
+        a2.addPoint(10,10);
+        a2.addPoint(20,20);
+        trace(a2.intersect(a1));
+
         var assets = new utils.ImageLoader();
 
         assets.addEventListener("loaded", function(event){
@@ -95,14 +101,15 @@ class Main
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
+            tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
             tileMap.tileSize = 16;
             tileMap.TileScale(2);
             tileMap.SetCamera(camera);
             renderer.AddRenderer(tileMap);
 
             var spriteRender = new SpriteRenderer();
+            spriteRender.AddStage(stage);
             renderer.AddRenderer(spriteRender);
-            spriteRender.spriteBatch.spriteHead = stage.head;
 
             var startTime = Date.now().getTime();
             var stop = false;
@@ -122,12 +129,11 @@ class Main
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
                 camera.Focus(xp,yp);
-                renderer.Render(null);
+                renderer.Render(camera.viewPortAABB);
                 //trace(spr1.aabb);
                 debug.Clear(camera);
-                debug.DrawAABB(stage.aabb);
-                debug.DrawAABB(spr1.aabb);
-                debug.DrawAABB(spr2.aabb);
+                debug.DrawAABB(spr1.subTreeAABB);
+                debug.DrawAABB(spr2.subTreeAABB);
                 if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
 
@@ -153,7 +159,7 @@ class Main
 
         } );
 
-        assets.SetImagesToLoad( ["1up.png","spelunky-tiles.png","spelunky0.png"] );
+        assets.SetImagesToLoad( ["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png"] );
 
     }	
     

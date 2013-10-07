@@ -1,14 +1,18 @@
 
 package wgr.display;
 
+import wgr.geom.AABB;
+
 class DisplayObjectContainer extends DisplayObject
 {
 
     public var children:Array<DisplayObject>;
+    public var subTreeAABB:AABB;
 
     public function new() {
         super();
         children = new Array<DisplayObject>();
+        subTreeAABB = new AABB();
     }
 
     public function addChild(child:DisplayObject) {
@@ -37,11 +41,13 @@ class DisplayObjectContainer extends DisplayObject
         aabb.reset();
         super.updateTransform();
         calcExtents();
+        subTreeAABB.reset();
+        subTreeAABB.addAABB(aabb);
         //Expand AAABB to this DisplayObject -> New function required
         for (child in children) {
             child.updateTransform();
             //Inflate this AABB to encapsulate child
-            aabb.addAABB(child.aabb);
+            subTreeAABB.addAABB(child.aabb);
         }
     }
 

@@ -22,10 +22,14 @@ class Camera extends DisplayObjectContainer
 
     public function Focus(x:Float,y:Float) {
         //Need to move the camera container the oposite way to the actual coords
-        viewPortAABB.l = position.x = -x+halfViewportSize.x;
-        viewPortAABB.t = position.y = -y+halfViewportSize.y;
-        viewPortAABB.r = viewPortAABB.l + viewportSize.x;
-        viewPortAABB.b = viewPortAABB.t + viewportSize.y;
+        position.x = -x+halfViewportSize.x;
+        position.y = -y+halfViewportSize.y;
+
+
+        // viewPortAABB.l = viewPortAABB.r = x - halfViewportSize.x;
+        // viewPortAABB.t = viewPortAABB.b = y - halfViewportSize.y;
+        // viewPortAABB.r += viewportSize.x;
+        // viewPortAABB.b += viewportSize.y;
     }
 
     public function Resize(width:Int,height:Int) {
@@ -33,6 +37,9 @@ class Camera extends DisplayObjectContainer
         viewportSize.y = height;
         halfViewportSize.x = width/2;
         halfViewportSize.y = height/2;
+        viewPortAABB.l = viewPortAABB.t = 0;
+        viewPortAABB.r = viewportSize.x;
+        viewPortAABB.b = viewportSize.y;
     }
 
 

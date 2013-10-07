@@ -41,6 +41,17 @@ Lambda.indexOf = function(it,v) {
 var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
+	var a1 = new wgr.geom.AABB();
+	var a2 = new wgr.geom.AABB();
+	if(10 < a2.t) a2.t = 10;
+	if(10 > a2.r) a2.r = 10;
+	if(10 > a2.b) a2.b = 10;
+	if(10 < a2.l) a2.l = 10;
+	if(20 < a2.t) a2.t = 20;
+	if(20 > a2.r) a2.r = 20;
+	if(20 > a2.b) a2.b = 20;
+	if(20 < a2.l) a2.l = 20;
+	console.log(a2.l > a1.r?false:a2.r < a1.l?false:a2.t > a1.b?false:a2.b < a1.t?false:true);
 	var assets = new utils.ImageLoader();
 	assets.addEventListener("loaded",function(event) {
 		var stage = new wgr.display.Stage();
@@ -83,13 +94,14 @@ Main.main = function() {
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
+		tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
 		tileMap.SetCamera(camera);
 		renderer.AddRenderer(tileMap);
 		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
+		spriteRender.AddStage(stage);
 		renderer.AddRenderer(spriteRender);
-		spriteRender.spriteBatch.spriteHead = stage.head;
 		var startTime = new Date().getTime();
 		var stop = false;
 		var tick = (function($this) {
@@ -115,11 +127,10 @@ Main.main = function() {
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
 				camera.Focus(xp,yp);
-				renderer.Render(null);
+				renderer.Render(camera.viewPortAABB);
 				debug.Clear(camera);
-				debug.DrawAABB(stage.aabb);
-				debug.DrawAABB(spr1.aabb);
-				debug.DrawAABB(spr2.aabb);
+				debug.DrawAABB(spr1.subTreeAABB);
+				debug.DrawAABB(spr2.subTreeAABB);
 				if(!stop) js.Browser.window.requestAnimationFrame(tick1);
 			};
 			$r = tick1;
@@ -144,7 +155,7 @@ Main.main = function() {
 		});
 		tick();
 	});
-	assets.SetImagesToLoad(["1up.png","spelunky-tiles.png","spelunky0.png"]);
+	assets.SetImagesToLoad(["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png"]);
 }
 var IMap = function() { }
 IMap.__name__ = true;
@@ -430,6 +441,7 @@ wgr.display.DisplayObject.prototype = {
 wgr.display.DisplayObjectContainer = function() {
 	wgr.display.DisplayObject.call(this);
 	this.children = new Array();
+	this.subTreeAABB = new wgr.geom.AABB();
 };
 wgr.display.DisplayObjectContainer.__name__ = true;
 wgr.display.DisplayObjectContainer.__super__ = wgr.display.DisplayObject;
@@ -447,12 +459,14 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		this.aabb.reset();
 		wgr.display.DisplayObject.prototype.updateTransform.call(this);
 		this.calcExtents();
+		this.subTreeAABB.reset();
+		this.subTreeAABB.addAABB(this.aabb);
 		var _g = 0, _g1 = this.children;
 		while(_g < _g1.length) {
 			var child = _g1[_g];
 			++_g;
 			child.updateTransform();
-			this.aabb.addAABB(child.aabb);
+			this.subTreeAABB.addAABB(child.aabb);
 		}
 	}
 	,removeChild: function(child) {
@@ -493,12 +507,13 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 		this.viewportSize.y = height;
 		this.halfViewportSize.x = width / 2;
 		this.halfViewportSize.y = height / 2;
+		this.viewPortAABB.l = this.viewPortAABB.t = 0;
+		this.viewPortAABB.r = this.viewportSize.x;
+		this.viewPortAABB.b = this.viewportSize.y;
 	}
 	,Focus: function(x,y) {
-		this.viewPortAABB.l = this.position.x = -x + this.halfViewportSize.x;
-		this.viewPortAABB.t = this.position.y = -y + this.halfViewportSize.y;
-		this.viewPortAABB.r = this.viewPortAABB.l + this.viewportSize.x;
-		this.viewPortAABB.b = this.viewPortAABB.t + this.viewportSize.y;
+		this.position.x = -x + this.halfViewportSize.x;
+		this.position.y = -y + this.halfViewportSize.y;
 	}
 	,__class__: wgr.display.Camera
 });
@@ -915,7 +930,10 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.spriteBatch.Render(this.spriteShader);
+		this.spriteBatch.Render(this.spriteShader,this.stage.head,clip);
+	}
+	,AddStage: function(stage) {
+		this.stage = stage;
 	}
 	,Resize: function(width,height) {
 		this.projection.x = width / 2;
@@ -943,12 +961,12 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 };
 wgr.renderers.webgl.WebGLBatch.__name__ = true;
 wgr.renderers.webgl.WebGLBatch.prototype = {
-	Render: function(shader) {
-		if(this.spriteHead == null) return;
+	Render: function(shader,spriteHead,clip) {
+		if(spriteHead == null) return;
 		this.gl.useProgram(shader.program);
 		this.gl.bindBuffer(34963,this.indexBuffer);
 		var indexRun = 0;
-		var sprite = this.spriteHead;
+		var sprite = spriteHead;
 		var currentTexture = sprite.texture.baseTexture.texture;
 		while(sprite != null) {
 			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
@@ -956,8 +974,10 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 				indexRun = 0;
 				currentTexture = sprite.texture.baseTexture.texture;
 			}
-			this.AddSpriteToBatch(sprite,indexRun);
-			indexRun++;
+			if(clip == null || sprite.aabb.intersect(clip)) {
+				this.AddSpriteToBatch(sprite,indexRun);
+				indexRun++;
+			}
 			sprite = sprite.next;
 		}
 		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
@@ -999,61 +1019,6 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.bufferSubData(34962,0,this.colors);
 		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,0,0);
 		this.gl.drawElements(4,size * 6,5123,0);
-	}
-	,Update: function() {
-		var indexRun = 0;
-		var sprite = this.spriteHead;
-		while(sprite != null) {
-			var width = sprite.texture.frame.width;
-			var height = sprite.texture.frame.height;
-			var aX = sprite.anchor.x;
-			var aY = sprite.anchor.y;
-			var w0 = width * (1 - aX);
-			var w1 = width * -aX;
-			var h0 = height * (1 - aY);
-			var h1 = height * -aY;
-			var index = indexRun * 8;
-			var worldTransform = sprite.worldTransform;
-			var a = worldTransform[0];
-			var b = worldTransform[3];
-			var c = worldTransform[1];
-			var d = worldTransform[4];
-			var tx = worldTransform[2];
-			var ty = worldTransform[5];
-			this.verticies[index] = a * w1 + c * h1 + tx;
-			this.verticies[index + 1] = d * h1 + b * w1 + ty;
-			this.verticies[index + 2] = a * w0 + c * h1 + tx;
-			this.verticies[index + 3] = d * h1 + b * w0 + ty;
-			this.verticies[index + 4] = a * w0 + c * h0 + tx;
-			this.verticies[index + 5] = d * h0 + b * w0 + ty;
-			this.verticies[index + 6] = a * w1 + c * h0 + tx;
-			this.verticies[index + 7] = d * h0 + b * w1 + ty;
-			indexRun++;
-			sprite = sprite.next;
-		}
-	}
-	,Refresh: function() {
-		var indexRun = 0;
-		var sprite = this.spriteHead;
-		while(sprite != null) {
-			var index = indexRun * 8;
-			var texture = sprite.texture.baseTexture.texture;
-			var frame = sprite.texture.frame;
-			var tw = sprite.texture.baseTexture.width;
-			var th = sprite.texture.baseTexture.height;
-			this.uvs[index] = frame.x / tw;
-			this.uvs[index + 1] = frame.y / th;
-			this.uvs[index + 2] = (frame.x + frame.width) / tw;
-			this.uvs[index + 3] = frame.y / th;
-			this.uvs[index + 4] = (frame.x + frame.width) / tw;
-			this.uvs[index + 5] = (frame.y + frame.height) / th;
-			this.uvs[index + 6] = frame.x / tw;
-			this.uvs[index + 7] = (frame.y + frame.height) / th;
-			var colorIndex = indexRun * 4;
-			this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = sprite.worldAlpha;
-			indexRun++;
-			sprite = sprite.next;
-		}
 	}
 	,GrowBatch: function(size) {
 		this.size = size;

@@ -2,6 +2,7 @@
 package wgr.renderers.webgl;
 
 import js.html.webgl.RenderingContext;
+import wgr.display.Stage;
 import wgr.geom.Point;
 import wgr.geom.AABB;
 import wgr.renderers.webgl.IRenderer;
@@ -17,6 +18,8 @@ class SpriteRenderer implements IRenderer
     public var spriteShader:ShaderWrapper;
     
     public var spriteBatch:WebGLBatch;        
+
+    public var stage:Stage;
 
     public function new() {
     }
@@ -34,13 +37,17 @@ class SpriteRenderer implements IRenderer
         projection.y = height/2;
     }
 
+    public function AddStage(stage:Stage) {
+        this.stage = stage;
+    }
+
     public function Render(clip:AABB) {
         gl.useProgram(spriteShader.program);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aVertexPosition);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aColor);
         gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
-        spriteBatch.Render(spriteShader);
+        spriteBatch.Render(spriteShader,stage.head,clip);
     }
 
     public static var SPRITE_FRAGMENT_SHADER:Array<String> = [
