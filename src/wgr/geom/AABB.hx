@@ -1,6 +1,8 @@
 
 package wgr.geom;
 
+import wgr.geom.Point;
+
 class AABB 
 {
 
@@ -11,8 +13,15 @@ class AABB
     public var width(get,never):Float;
     public var height(get,never):Float;
 
-    public function new() {
-        t = r = b = l = 0;
+    public function new(t=.0,r=.0,b=.0,l=.0) {
+        this.t = t;
+        this.r = r;
+        this.b = b;
+        this.l = l;
+    }
+
+    public function clone():AABB {
+        return new AABB(t,r,b,l);
     }
 
     public inline function reset() {
@@ -52,6 +61,20 @@ class AABB
         if (x>r) r=x;
         if (y>b) b=y;
         if (x<l) l=x;
+    }
+
+    public function fitPoint(point:Point) {
+        if (point.x<l) point.x=l;
+        if (point.x>r) point.x=r;
+        if (point.y<t) point.y=t;
+        if (point.y>b) point.y=b;
+    }
+
+    public function shrinkAroundCenter(deltaWidth:Float,delatHeight:Float) {
+        l += deltaWidth/2;
+        r -= deltaWidth/2;
+        t += delatHeight/2;
+        b -= delatHeight/2;
     }
 
 }

@@ -23,18 +23,13 @@ class Main
 
 	public static function main() {
 
-        var a1 = new wgr.geom.AABB();
-        var a2 = new wgr.geom.AABB();
-        a2.addPoint(10,10);
-        a2.addPoint(20,20);
-        trace(a2.intersect(a1));
-
         var assets = new utils.ImageLoader();
 
         assets.addEventListener("loaded", function(event){
 
             var stage = new Stage();
             var camera = new Camera();
+            camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
             stage.addChild(camera);
 
             var canvasView:CanvasElement = cast(Browser.document.getElementById("view"),CanvasElement);
@@ -113,6 +108,7 @@ class Main
 
             var startTime = Date.now().getTime();
             var stop = false;
+            var debugSwitch = false;
 
             function tick() {
                 spr1.rotation += 0.01;
@@ -126,14 +122,16 @@ class Main
                 // }
 
                 var elapsed = Date.now().getTime() - startTime;
-                var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
-                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
+                var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
+                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
                 //trace(spr1.aabb);
-                debug.Clear(camera);
-                debug.DrawAABB(spr1.subTreeAABB);
-                debug.DrawAABB(spr2.subTreeAABB);
+                if (debugSwitch) {
+                    debug.Clear(camera);
+                    debug.DrawAABB(spr1.subTreeAABB);
+                    debug.DrawAABB(spr2.subTreeAABB);                    
+                }
                 if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
 
@@ -145,6 +143,10 @@ class Main
                     stop=false;
                     tick();                    
                 } 
+            });
+            Browser.document.getElementById("debugbutton").addEventListener("click",function(event){
+                debugSwitch = !debugSwitch;
+                debug.Clear(camera);
             });
             Browser.document.getElementById("action1").addEventListener("click",function(event){
                 camera.removeChild(spr2);

@@ -41,21 +41,11 @@ Lambda.indexOf = function(it,v) {
 var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
-	var a1 = new wgr.geom.AABB();
-	var a2 = new wgr.geom.AABB();
-	if(10 < a2.t) a2.t = 10;
-	if(10 > a2.r) a2.r = 10;
-	if(10 > a2.b) a2.b = 10;
-	if(10 < a2.l) a2.l = 10;
-	if(20 < a2.t) a2.t = 20;
-	if(20 > a2.r) a2.r = 20;
-	if(20 > a2.b) a2.b = 20;
-	if(20 < a2.l) a2.l = 20;
-	console.log(a2.l > a1.r?false:a2.r < a1.l?false:a2.t > a1.b?false:a2.b < a1.t?false:true);
 	var assets = new utils.ImageLoader();
 	assets.addEventListener("loaded",function(event) {
 		var stage = new wgr.display.Stage();
 		var camera = new wgr.display.Camera();
+		camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
 		stage.addChild(camera);
 		var canvasView = js.Boot.__cast(js.Browser.document.getElementById("view") , HTMLCanvasElement);
 		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,canvasView,800,600);
@@ -104,6 +94,7 @@ Main.main = function() {
 		renderer.AddRenderer(spriteRender);
 		var startTime = new Date().getTime();
 		var stop = false;
+		var debugSwitch = false;
 		var tick = (function($this) {
 			var $r;
 			var tick1 = null;
@@ -124,13 +115,15 @@ Main.main = function() {
 				_g._rotationComponents.y = Math.sin(_g._rotation);
 				_g._rotation;
 				var elapsed = new Date().getTime() - startTime;
-				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
-				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
+				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
+				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
 				camera.Focus(xp,yp);
 				renderer.Render(camera.viewPortAABB);
-				debug.Clear(camera);
-				debug.DrawAABB(spr1.subTreeAABB);
-				debug.DrawAABB(spr2.subTreeAABB);
+				if(debugSwitch) {
+					debug.Clear(camera);
+					debug.DrawAABB(spr1.subTreeAABB);
+					debug.DrawAABB(spr2.subTreeAABB);
+				}
 				if(!stop) js.Browser.window.requestAnimationFrame(tick1);
 			};
 			$r = tick1;
@@ -144,6 +137,10 @@ Main.main = function() {
 				stop = false;
 				tick();
 			}
+		});
+		js.Browser.document.getElementById("debugbutton").addEventListener("click",function(event1) {
+			debugSwitch = !debugSwitch;
+			debug.Clear(camera);
 		});
 		js.Browser.document.getElementById("action1").addEventListener("click",function(event1) {
 			camera.removeChild(spr2);
@@ -495,9 +492,11 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 wgr.display.Camera = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.id = "Camera";
+	this.realPosition = new wgr.geom.Point();
 	this.viewportSize = new wgr.geom.Point();
 	this.halfViewportSize = new wgr.geom.Point();
 	this.viewPortAABB = new wgr.geom.AABB();
+	this.worldExtentsAABB = new wgr.geom.AABB();
 };
 wgr.display.Camera.__name__ = true;
 wgr.display.Camera.__super__ = wgr.display.DisplayObjectContainer;
@@ -510,10 +509,15 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 		this.viewPortAABB.l = this.viewPortAABB.t = 0;
 		this.viewPortAABB.r = this.viewportSize.x;
 		this.viewPortAABB.b = this.viewportSize.y;
+		this.cameraExtentsAABB = this.worldExtentsAABB.clone();
+		this.cameraExtentsAABB.shrinkAroundCenter(width,height);
 	}
 	,Focus: function(x,y) {
-		this.position.x = -x + this.halfViewportSize.x;
-		this.position.y = -y + this.halfViewportSize.y;
+		this.realPosition.x = x;
+		this.realPosition.y = y;
+		this.cameraExtentsAABB.fitPoint(this.realPosition);
+		this.position.x = -this.realPosition.x + this.halfViewportSize.x;
+		this.position.y = -this.realPosition.y + this.halfViewportSize.y;
 	}
 	,__class__: wgr.display.Camera
 });
@@ -621,12 +625,31 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 	,__class__: wgr.display.Stage
 });
 wgr.geom = {}
-wgr.geom.AABB = function() {
-	this.t = this.r = this.b = this.l = 0;
+wgr.geom.AABB = function(t,r,b,l) {
+	if(l == null) l = .0;
+	if(b == null) b = .0;
+	if(r == null) r = .0;
+	if(t == null) t = .0;
+	this.t = t;
+	this.r = r;
+	this.b = b;
+	this.l = l;
 };
 wgr.geom.AABB.__name__ = true;
 wgr.geom.AABB.prototype = {
-	addPoint: function(x,y) {
+	shrinkAroundCenter: function(deltaWidth,delatHeight) {
+		this.l += deltaWidth / 2;
+		this.r -= deltaWidth / 2;
+		this.t += delatHeight / 2;
+		this.b -= delatHeight / 2;
+	}
+	,fitPoint: function(point) {
+		if(point.x < this.l) point.x = this.l;
+		if(point.x > this.r) point.x = this.r;
+		if(point.y < this.t) point.y = this.t;
+		if(point.y > this.b) point.y = this.b;
+	}
+	,addPoint: function(x,y) {
 		if(y < this.t) this.t = y;
 		if(x > this.r) this.r = x;
 		if(y > this.b) this.b = y;
@@ -650,6 +673,9 @@ wgr.geom.AABB.prototype = {
 	,reset: function() {
 		this.t = this.l = Math.POSITIVE_INFINITY;
 		this.r = this.b = Math.NEGATIVE_INFINITY;
+	}
+	,clone: function() {
+		return new wgr.geom.AABB(this.t,this.r,this.b,this.l);
 	}
 	,__class__: wgr.geom.AABB
 }
