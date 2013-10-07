@@ -11,6 +11,7 @@ import wgr.display.Stage;
 import wgr.geom.Matrix3;
 import wgr.geom.Point;
 import wgr.geom.Rectangle;
+import wgr.renderers.canvas.CanvasDebugView;
 import wgr.renderers.webgl.SpriteRenderer;
 import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLRenderer;
@@ -32,6 +33,10 @@ class Main
 
             var canvasView:CanvasElement = cast(Browser.document.getElementById("view"),CanvasElement);
             var renderer = new WebGLRenderer(stage,canvasView,800,600);
+
+            var debugView:CanvasElement = cast(Browser.document.getElementById("viewDebug"),CanvasElement);
+            var debug = new CanvasDebugView(debugView,800,600);
+
             var tm  = new wgr.texture.TextureManager(renderer.gl);
             var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
             var texture1up = new Texture(basetexture1up,new Rectangle(0,0,256,256));
@@ -106,18 +111,23 @@ class Main
                 spr1.rotation += 0.01;
                 spr2.rotation -= 0.02;
                 spr21.rotation += 0.04;
-/*
-                for (spr in sprArray) {
-                    spr.rotation+=0.04;
-                    spr.alpha+=0.001;
-                    if(spr.alpha>1)spr.alpha=0;
-                }
-*/
+
+                // for (spr in sprArray) {
+                //     spr.rotation+=0.04;
+                //     spr.alpha+=0.001;
+                //     if(spr.alpha>1)spr.alpha=0;
+                // }
+
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
                 camera.Focus(xp,yp);
-                renderer.Render();
+                renderer.Render(null);
+                //trace(spr1.aabb);
+                debug.Clear(camera);
+                debug.DrawAABB(stage.aabb);
+                debug.DrawAABB(spr1.aabb);
+                debug.DrawAABB(spr2.aabb);
                 if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
 

@@ -33,9 +33,15 @@ class DisplayObjectContainer extends DisplayObject
     }
 
     public override function updateTransform() {
+        //Reset AABB
+        aabb.reset();
         super.updateTransform();
+        calcExtents();
+        //Expand AAABB to this DisplayObject -> New function required
         for (child in children) {
             child.updateTransform();
+            //Inflate this AABB to encapsulate child
+            aabb.addAABB(child.aabb);
         }
     }
 

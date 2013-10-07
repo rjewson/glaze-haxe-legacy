@@ -8,6 +8,7 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import wgr.display.Stage;
 import wgr.geom.Point;
+import wgr.geom.AABB;
 import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.SpriteRenderer;
@@ -72,7 +73,7 @@ class WebGLRenderer
         renderers.push(renderer);
     }
 
-    public function Render() {
+    public function Render(clip:AABB) {
         if (contextLost) 
             return;
         stage.updateTransform();
@@ -83,7 +84,7 @@ class WebGLRenderer
         //gl.clear(RenderingContext.COLOR_BUFFER_BIT);
         // gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
         for (renderer in renderers)
-            renderer.Render(0,0);
+            renderer.Render(clip);
     }
 
     private function onContextLost(event:Event) {

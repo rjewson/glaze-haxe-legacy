@@ -206,7 +206,7 @@ class WebGLBatch
 
         var colorIndex = indexRun * 4;
         colors[colorIndex] = colors[colorIndex + 1] = colors[colorIndex + 2] = colors[colorIndex + 3] = sprite.worldAlpha;
-
+        /*
         var width = sprite.texture.frame.width;
         var height = sprite.texture.frame.height;
 
@@ -238,6 +238,18 @@ class WebGLBatch
 
         verticies[index + 6] =  a * w1 + c * h0 + tx; 
         verticies[index + 7] =  d * h0 + b * w1 + ty;
+        */
+        verticies[index + 0 ] = sprite.transformedVerts[0]; 
+        verticies[index + 1 ] = sprite.transformedVerts[1];
+
+        verticies[index + 2 ] = sprite.transformedVerts[2]; 
+        verticies[index + 3 ] = sprite.transformedVerts[3]; 
+
+        verticies[index + 4 ] = sprite.transformedVerts[4]; 
+        verticies[index + 5 ] = sprite.transformedVerts[5]; 
+
+        verticies[index + 6] =  sprite.transformedVerts[6]; 
+        verticies[index + 7] =  sprite.transformedVerts[7];
 
     }
 

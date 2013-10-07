@@ -3,6 +3,7 @@ package wgr.renderers.webgl;
 
 import js.html.webgl.RenderingContext;
 import wgr.geom.Point;
+import wgr.geom.AABB;
 import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
 
@@ -33,7 +34,7 @@ class SpriteRenderer implements IRenderer
         projection.y = height/2;
     }
 
-    public function Render(x:Float,y:Float) {
+    public function Render(clip:AABB) {
         gl.useProgram(spriteShader.program);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aVertexPosition);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);

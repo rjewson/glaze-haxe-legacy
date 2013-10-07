@@ -5,8 +5,14 @@
     <title>haxeproject</title>
     <meta name="description" content="" />
     <style type="text/css">
-        #view {
-            float:left;            
+        #viewContainer {
+            float:left;
+            position: relative;
+        }
+        #viewDebug {
+            position: absolute;
+            top: 0px;
+            left:0px;
         }
         #controlPanel {
         }
@@ -19,7 +25,10 @@
     </style>
 </head>
 <body>
-    <canvas id="view"></canvas>
+    <div id="viewContainer">
+        <canvas id="view"></canvas>
+        <canvas id="viewDebug"></canvas>    
+    </div>
     <div id="controlPanel">
         <div id="playControls" class="panel">
             <button id="startbutton">Start</button>

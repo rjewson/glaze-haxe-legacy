@@ -8,6 +8,7 @@ import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
 import wgr.display.Camera;
 import wgr.geom.Point;
+import wgr.geom.AABB;
 import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.WebGLShaders;
@@ -169,17 +170,9 @@ class TileMap implements IRenderer
         this.camera = camera;
     }
 
-    public function Render(x:Float,y:Float) {
-        /*
-        x = 0;//-camera.position.x;///tileScale;
-        y = 0;//-camera.position.y;///tileScale;
-        x = -400/(tileScale*2);
-        y = -300/(tileScale*2);
-        x+=8;
-        y+=8;
-        */
-        x = -camera.position.x / (tileScale*2);
-        y = -camera.position.y / (tileScale*2);
+    public function Render(clip:AABB) {
+        var x = -camera.position.x / (tileScale*2);
+        var y = -camera.position.y / (tileScale*2);
         x += tileSize/2;
         y += tileSize/2;
 

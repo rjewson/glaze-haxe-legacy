@@ -7,5 +7,5 @@ interface IRenderer
 {
     function Init(gl:RenderingContext):Void;
     function Resize(width:Int,height:Int):Void;
-    function Render(x:Float,y:Float):Void;
+    function Render(clip:wgr.geom.AABB):Void;
 }

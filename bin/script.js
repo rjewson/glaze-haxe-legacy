@@ -48,6 +48,8 @@ Main.main = function() {
 		stage.addChild(camera);
 		var canvasView = js.Boot.__cast(js.Browser.document.getElementById("view") , HTMLCanvasElement);
 		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,canvasView,800,600);
+		var debugView = js.Boot.__cast(js.Browser.document.getElementById("viewDebug") , HTMLCanvasElement);
+		var debug = new wgr.renderers.canvas.CanvasDebugView(debugView,800,600);
 		var tm = new wgr.texture.TextureManager(renderer.gl);
 		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
@@ -113,7 +115,11 @@ Main.main = function() {
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 328;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 470;
 				camera.Focus(xp,yp);
-				renderer.Render();
+				renderer.Render(null);
+				debug.Clear(camera);
+				debug.DrawAABB(stage.aabb);
+				debug.DrawAABB(spr1.aabb);
+				debug.DrawAABB(spr2.aabb);
 				if(!stop) js.Browser.window.requestAnimationFrame(tick1);
 			};
 			$r = tick1;
@@ -377,6 +383,8 @@ wgr.display.DisplayObject.prototype = {
 	applySlot: function(slot,p) {
 		slot(this,p);
 	}
+	,calcExtents: function() {
+	}
 	,updateTransform: function() {
 		this.position.x = Math.floor(this.position.x);
 		this.position.y = Math.floor(this.position.y);
@@ -436,12 +444,15 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		}
 	}
 	,updateTransform: function() {
+		this.aabb.reset();
 		wgr.display.DisplayObject.prototype.updateTransform.call(this);
+		this.calcExtents();
 		var _g = 0, _g1 = this.children;
 		while(_g < _g1.length) {
 			var child = _g1[_g];
 			++_g;
 			child.updateTransform();
+			this.aabb.addAABB(child.aabb);
 		}
 	}
 	,removeChild: function(child) {
@@ -472,6 +483,7 @@ wgr.display.Camera = function() {
 	this.id = "Camera";
 	this.viewportSize = new wgr.geom.Point();
 	this.halfViewportSize = new wgr.geom.Point();
+	this.viewPortAABB = new wgr.geom.AABB();
 };
 wgr.display.Camera.__name__ = true;
 wgr.display.Camera.__super__ = wgr.display.DisplayObjectContainer;
@@ -483,19 +495,51 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 		this.halfViewportSize.y = height / 2;
 	}
 	,Focus: function(x,y) {
-		this.position.x = -x + this.halfViewportSize.x;
-		this.position.y = -y + this.halfViewportSize.y;
+		this.viewPortAABB.l = this.position.x = -x + this.halfViewportSize.x;
+		this.viewPortAABB.t = this.position.y = -y + this.halfViewportSize.y;
+		this.viewPortAABB.r = this.viewPortAABB.l + this.viewportSize.x;
+		this.viewPortAABB.b = this.viewPortAABB.t + this.viewportSize.y;
 	}
 	,__class__: wgr.display.Camera
 });
 wgr.display.Sprite = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.anchor = new wgr.geom.Point();
+	this.transformedVerts = new Float32Array(8);
 };
 wgr.display.Sprite.__name__ = true;
 wgr.display.Sprite.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Sprite.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
-	__class__: wgr.display.Sprite
+	calcExtents: function() {
+		var width = this.texture.frame.width;
+		var height = this.texture.frame.height;
+		var aX = this.anchor.x;
+		var aY = this.anchor.y;
+		var w0 = width * (1 - aX);
+		var w1 = width * -aX;
+		var h0 = height * (1 - aY);
+		var h1 = height * -aY;
+		var a = this.worldTransform[0];
+		var b = this.worldTransform[3];
+		var c = this.worldTransform[1];
+		var d = this.worldTransform[4];
+		var tx = this.worldTransform[2];
+		var ty = this.worldTransform[5];
+		this.transformedVerts[0] = a * w1 + c * h1 + tx;
+		this.transformedVerts[1] = d * h1 + b * w1 + ty;
+		this.transformedVerts[2] = a * w0 + c * h1 + tx;
+		this.transformedVerts[3] = d * h1 + b * w0 + ty;
+		this.transformedVerts[4] = a * w0 + c * h0 + tx;
+		this.transformedVerts[5] = d * h0 + b * w0 + ty;
+		this.transformedVerts[6] = a * w1 + c * h0 + tx;
+		this.transformedVerts[7] = d * h0 + b * w1 + ty;
+		var _g = 0;
+		while(_g < 4) {
+			var i = _g++;
+			this.aabb.addPoint(this.transformedVerts[i * 2],this.transformedVerts[i * 2 + 1]);
+		}
+	}
+	,__class__: wgr.display.Sprite
 });
 wgr.display.Stage = function() {
 	wgr.display.DisplayObjectContainer.call(this);
@@ -578,6 +622,15 @@ wgr.geom.AABB.prototype = {
 		if(aabb.r > this.r) this.r = aabb.r;
 		if(aabb.b > this.b) this.b = aabb.b;
 		if(aabb.l < this.l) this.l = aabb.l;
+	}
+	,intersect: function(aabb) {
+		if(this.l > aabb.r) return false; else if(this.r < aabb.l) return false; else if(this.t > aabb.b) return false; else if(this.b < aabb.t) return false; else return true;
+	}
+	,get_height: function() {
+		return this.b - this.t;
+	}
+	,get_width: function() {
+		return this.r - this.l;
 	}
 	,reset: function() {
 		this.t = this.l = Math.POSITIVE_INFINITY;
@@ -792,6 +845,35 @@ wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
 }
 wgr.renderers = {}
+wgr.renderers.canvas = {}
+wgr.renderers.canvas.CanvasDebugView = function(view,width,height) {
+	if(height == null) height = 600;
+	if(width == null) width = 800;
+	this.view = view;
+	this.ctx = view.getContext("2d");
+	this.Resize(width,height);
+};
+wgr.renderers.canvas.CanvasDebugView.__name__ = true;
+wgr.renderers.canvas.CanvasDebugView.prototype = {
+	DrawAABB: function(aabb) {
+		this.ctx.strokeRect(aabb.l,aabb.t,aabb.r - aabb.l,aabb.b - aabb.t);
+	}
+	,DrawRect: function(x,y,w,h) {
+		this.ctx.strokeRect(x,y,w,h);
+	}
+	,Clear: function(camera) {
+		this.ctx.setTransform(1,0,0,1,0,0);
+		this.ctx.clearRect(0,0,this.width,this.height);
+		this.ctx.strokeStyle = "rgba(255,255,255,1)";
+	}
+	,Resize: function(width,height) {
+		this.width = width;
+		this.height = height;
+		this.view.width = width;
+		this.view.height = height;
+	}
+	,__class__: wgr.renderers.canvas.CanvasDebugView
+}
 wgr.renderers.webgl = {}
 wgr.renderers.webgl.IRenderer = function() { }
 wgr.renderers.webgl.IRenderer.__name__ = true;
@@ -827,7 +909,7 @@ wgr.renderers.webgl.SpriteRenderer = function() {
 wgr.renderers.webgl.SpriteRenderer.__name__ = true;
 wgr.renderers.webgl.SpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.SpriteRenderer.prototype = {
-	Render: function(x,y) {
+	Render: function(clip) {
 		this.gl.useProgram(this.spriteShader.program);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
@@ -895,29 +977,14 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.uvs[index + 7] = (frame.y + frame.height) / th;
 		var colorIndex = indexRun * 4;
 		this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = sprite.worldAlpha;
-		var width = sprite.texture.frame.width;
-		var height = sprite.texture.frame.height;
-		var aX = sprite.anchor.x;
-		var aY = sprite.anchor.y;
-		var w0 = width * (1 - aX);
-		var w1 = width * -aX;
-		var h0 = height * (1 - aY);
-		var h1 = height * -aY;
-		var worldTransform = sprite.worldTransform;
-		var a = worldTransform[0];
-		var b = worldTransform[3];
-		var c = worldTransform[1];
-		var d = worldTransform[4];
-		var tx = worldTransform[2];
-		var ty = worldTransform[5];
-		this.verticies[index] = a * w1 + c * h1 + tx;
-		this.verticies[index + 1] = d * h1 + b * w1 + ty;
-		this.verticies[index + 2] = a * w0 + c * h1 + tx;
-		this.verticies[index + 3] = d * h1 + b * w0 + ty;
-		this.verticies[index + 4] = a * w0 + c * h0 + tx;
-		this.verticies[index + 5] = d * h0 + b * w0 + ty;
-		this.verticies[index + 6] = a * w1 + c * h0 + tx;
-		this.verticies[index + 7] = d * h0 + b * w1 + ty;
+		this.verticies[index] = sprite.transformedVerts[0];
+		this.verticies[index + 1] = sprite.transformedVerts[1];
+		this.verticies[index + 2] = sprite.transformedVerts[2];
+		this.verticies[index + 3] = sprite.transformedVerts[3];
+		this.verticies[index + 4] = sprite.transformedVerts[4];
+		this.verticies[index + 5] = sprite.transformedVerts[5];
+		this.verticies[index + 6] = sprite.transformedVerts[6];
+		this.verticies[index + 7] = sprite.transformedVerts[7];
 	}
 	,Flush: function(shader,texture,size) {
 		this.gl.bindBuffer(34962,this.vertexBuffer);
@@ -1047,7 +1114,7 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.contextLost = true;
 		console.log("webGL Context Lost");
 	}
-	,Render: function() {
+	,Render: function(clip) {
 		if(this.contextLost) return;
 		this.stage.updateTransform();
 		this.stage.PreRender();
@@ -1055,7 +1122,7 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		while(_g < _g1.length) {
 			var renderer = _g1[_g];
 			++_g;
-			renderer.Render(0,0);
+			renderer.Render(clip);
 		}
 	}
 	,AddRenderer: function(renderer) {
@@ -1214,9 +1281,9 @@ wgr.tilemap.TileMap = function(gl) {
 wgr.tilemap.TileMap.__name__ = true;
 wgr.tilemap.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.tilemap.TileMap.prototype = {
-	Render: function(x,y) {
-		x = -this.camera.position.x / (this.tileScale * 2);
-		y = -this.camera.position.y / (this.tileScale * 2);
+	Render: function(clip) {
+		var x = -this.camera.position.x / (this.tileScale * 2);
+		var y = -this.camera.position.y / (this.tileScale * 2);
 		x += this.tileSize / 2;
 		y += this.tileSize / 2;
 		this.gl.enable(3042);

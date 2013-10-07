@@ -106,6 +106,10 @@ class DisplayObject
 
     }
 
+    public function calcExtents() {
+        
+    }
+
     //TODO Probably get rid of this...
     public function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
         slot(this,p);    
