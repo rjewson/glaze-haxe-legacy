@@ -80,7 +80,7 @@ class Main
             spr3.id = "spr3";
             spr3.texture = texturechar1;
             spr3.position.x = 400;
-            spr3.position.y = 400;
+            spr3.position.y = 380;
             camera.addChild(spr3);
 /*
             var sprArray = new Array<Sprite>();

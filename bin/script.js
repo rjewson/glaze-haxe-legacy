@@ -86,7 +86,7 @@ Main.main = function() {
 		spr3.id = "spr3";
 		spr3.texture = texturechar1;
 		spr3.position.x = 400;
-		spr3.position.y = 400;
+		spr3.position.y = 380;
 		camera.addChild(spr3);
 		stage.Flatten();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
@@ -402,8 +402,8 @@ wgr.display.DisplayObject.prototype = {
 	,calcExtents: function() {
 	}
 	,updateTransform: function() {
-		this.position.x = Math.floor(this.position.x);
-		this.position.y = Math.floor(this.position.y);
+		this.position.x = Math.ceil(this.position.x);
+		this.position.y = Math.ceil(this.position.y);
 		var sinR = this._rotationComponents.y;
 		var cosR = this._rotationComponents.x;
 		this.localTransform[0] = cosR * this.scale.x;
@@ -423,6 +423,9 @@ wgr.display.DisplayObject.prototype = {
 		this.worldTransform[4] = b10 * a01 + b11 * a11;
 		this.worldTransform[5] = b10 * a02 + b11 * a12 + b12;
 		this.worldAlpha = this.alpha * this.parent.worldAlpha;
+	}
+	,RoundFunction: function(v) {
+		return Math.round(v * 10) / 10;
 	}
 	,set_visible: function(v) {
 		this._visible = v;
@@ -1306,13 +1309,16 @@ wgr.tilemap.TileMap.prototype = {
 		while(i > 0) {
 			i--;
 			var layer = this.layers[i];
-			var pX = x * this.tileScale * layer.scrollScale.x;
-			var pY = y * this.tileScale * layer.scrollScale.y;
+			var pX = this.RoundFunction(x * this.tileScale * layer.scrollScale.x);
+			var pY = this.RoundFunction(y * this.tileScale * layer.scrollScale.y);
 			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
 			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
 			this.gl.bindTexture(3553,layer.tileTexture);
 			this.gl.drawArrays(4,0,6);
 		}
+	}
+	,RoundFunction: function(v) {
+		return Math.round(v * 10) / 10;
 	}
 	,SetCamera: function(camera) {
 		this.camera = camera;

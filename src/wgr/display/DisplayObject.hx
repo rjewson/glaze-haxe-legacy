@@ -66,11 +66,16 @@ class DisplayObject
             stage.dirty = true;
         return _visible;
     }
+    public function RoundFunction(v:Float):Float {
+        // return v;
+        // return Math.round(v);
+        return Math.round( v * 10) / 10;
+    }
 
     public function updateTransform() {
         //TODO Rounding at the moment...
-        position.x = Math.floor(position.x);
-        position.y = Math.floor(position.y);
+        position.x = Math.ceil(position.x);
+        position.y = Math.ceil(position.y);
 
         var sinR = _rotationComponents.y;//Math.sin(rotation);
         var cosR = _rotationComponents.x;//Math.cos(rotation);

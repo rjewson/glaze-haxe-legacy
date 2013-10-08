@@ -165,6 +165,12 @@ class TileMap implements IRenderer
         this.camera = camera;
     }
 
+    public function RoundFunction(v:Float):Float {
+        // return v;
+        // return Math.round(v);
+        return Math.round( v * 10) / 10;
+    }
+
     public function Render(clip:AABB) {
         var x = -camera.position.x / (tileScale*2);
         var y = -camera.position.y / (tileScale*2);
@@ -199,8 +205,8 @@ class TileMap implements IRenderer
         while (i>0) {
             i--; 
             var layer = layers[i];
-            var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
-            var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
+            var pX = RoundFunction(x * tileScale * layer.scrollScale.x);
+            var pY = RoundFunction(y * tileScale * layer.scrollScale.y);
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);
