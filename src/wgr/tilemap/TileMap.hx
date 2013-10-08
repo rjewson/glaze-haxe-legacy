@@ -55,11 +55,6 @@ class TileMap implements IRenderer
         "   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;",
         "   vec2 spriteCoord = mod(pixelCoord, tileSize);",
         "   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);",
-        //"   if (distance( vec2(100.0,100.0) , pixelCoord ) > 200.0) { ",
-        //"     gl_FragColor *= 0.0;",
-        //"   }",
-        //"   gl_FragColor = gl_FragColor * 1.0 / max( 1.0 , distance( vec2(0.0,0.0) , pixelCoord ) / 512.0 );",
-        //"   gl_FragColor = tile;",
         "}"
     ];
 
@@ -206,7 +201,6 @@ class TileMap implements IRenderer
             var layer = layers[i];
             var pX = /*Math.floor*/(x * tileScale * layer.scrollScale.x);
             var pY = /*Math.floor*/(y * tileScale * layer.scrollScale.y);
-            
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);

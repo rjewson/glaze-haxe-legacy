@@ -41,6 +41,10 @@ class Main
             var tm  = new wgr.texture.TextureManager(renderer.gl);
             var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
             var texture1up = new Texture(basetexture1up,new Rectangle(0,0,256,256));
+
+            var basetexturechar = tm.AddTexture("char",assets.assets[4]);
+            var texturechar1 = new Texture(basetexturechar,new Rectangle(0,0,50,75));
+
             camera.Resize(renderer.width,renderer.height);
 
             var spr1 = new Sprite();
@@ -71,6 +75,13 @@ class Main
             spr21.pivot.y = 128;
             spr21.alpha = 0.9;
             spr2.addChild(spr21);
+
+            var spr3 = new Sprite();
+            spr3.id = "spr3";
+            spr3.texture = texturechar1;
+            spr3.position.x = 400;
+            spr3.position.y = 400;
+            camera.addChild(spr3);
 /*
             var sprArray = new Array<Sprite>();
             for (i in 0...1000) {
@@ -161,7 +172,7 @@ class Main
 
         } );
 
-        assets.SetImagesToLoad( ["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png"] );
+        assets.SetImagesToLoad( ["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png","characters.png"] );
 
     }	
     
