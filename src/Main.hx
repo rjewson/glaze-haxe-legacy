@@ -47,62 +47,45 @@ class Main
 
             camera.Resize(renderer.width,renderer.height);
 
-            var spr1 = new Sprite();
-            spr1.id = "spr1";
-            spr1.texture = texture1up;
-            spr1.position.x = 128;
-            spr1.position.y = 128;
-            spr1.pivot.x = 128;
-            spr1.pivot.y = 128;
+            function createSprite(id:String,x:Float,y:Float,px:Float,py:Float,t:Texture) {
+                var s = new Sprite();
+                s.id = id;
+                s.texture = t;
+                s.position.x = x;
+                s.position.y = y;
+                s.pivot.x = px;
+                s.pivot.y = py;
+                return s;
+            }
+
+            var spr1 = createSprite("spr1",128,128,128,128,texture1up);
             camera.addChild(spr1);
 
-            var spr2 = new Sprite();
-            spr2.id = "spr2";
-            spr2.texture = texture1up;
-            spr2.position.x = 228;
-            spr2.position.y = 228;
-            spr2.pivot.x = 128;
-            spr2.pivot.y = 128;
-            //spr2.visible = false;
+            var spr2 = createSprite("spr2",228,228,128,128,texture1up);
             camera.addChild(spr2);
 
-            var spr21 = new Sprite();
-            spr21.id = "spr21";
-            spr21.texture = texture1up;
-            spr21.position.x = 328;
-            spr21.position.y = 328;
-            spr21.pivot.x = 128;
-            spr21.pivot.y = 128;
+            var spr21 = createSprite("spr21",328,328,128,128,texture1up);
             spr21.alpha = 0.9;
             spr2.addChild(spr21);
 
-            var spr3 = new Sprite();
-            spr3.id = "spr3";
-            spr3.texture = texturechar1;
-            spr3.position.x = 400;
-            spr3.position.y = 380;
+            var spr3 = createSprite("spr21",400,380,0,0,texturechar1);
+            spr3.scale.x = -1;
             camera.addChild(spr3);
-/*
-            var sprArray = new Array<Sprite>();
-            for (i in 0...1000) {
-                var newSpr = new Sprite();
-                newSpr.id="newSpr"+i;
-                newSpr.texture = texture1up;
-                newSpr.position.x = Std.random(400)+200;
-                newSpr.position.y = Std.random(400)+200;
-                newSpr.alpha = Math.random();
-                newSpr.pivot.x = 128;
-                newSpr.pivot.y = 128;
-                newSpr.rotation = Math.random();
-                camera.addChild(newSpr);
-                sprArray.push(newSpr);
-            }
-*/
-            // var spr211 = new Sprite();
-            // spr211.id = "spr211";
-            // spr21.addChild(spr211);
 
-            stage.Flatten();
+            var sprArray = new Array<Sprite>();
+            // for (i in 0...4000) {
+            //     var newSpr = new Sprite();
+            //     newSpr.id="newSpr"+i;
+            //     newSpr.texture = texturechar1;
+            //     newSpr.position.x = Std.random(400)+200;
+            //     newSpr.position.y = Std.random(400)+200;
+            //     newSpr.alpha = Math.random();
+            //     newSpr.pivot.x = 128;
+            //     newSpr.pivot.y = 128;
+            //     newSpr.rotation = Math.random();
+            //     camera.addChild(newSpr);
+            //     sprArray.push(newSpr);
+            // }
 
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
@@ -125,12 +108,12 @@ class Main
                 spr1.rotation += 0.01;
                 spr2.rotation -= 0.02;
                 spr21.rotation += 0.04;
-
-                // for (spr in sprArray) {
-                //     spr.rotation+=0.04;
-                //     spr.alpha+=0.001;
-                //     if(spr.alpha>1)spr.alpha=0;
-                // }
+                //spr3.scale.x *= -1;
+                for (spr in sprArray) {
+                    spr.rotation+=0.04;
+                    spr.alpha+=0.001;
+                    if(spr.alpha>1)spr.alpha=0;
+                }                    
 
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
@@ -160,12 +143,12 @@ class Main
                 debug.Clear(camera);
             });
             Browser.document.getElementById("action1").addEventListener("click",function(event){
-                camera.removeChild(spr2);
-                trace(spr2);
+                //camera.removeChild(spr2);
+                //trace(spr2);
             });
             Browser.document.getElementById("action2").addEventListener("click",function(event){
-                camera.addChild(spr2);
-                trace(spr2);
+                //camera.addChild(spr2);
+                //trace(spr2);
             });
 
             tick();            

@@ -1,2 +1,4 @@
-Haxe-HTML5-Template
-===================
+WGR - Web Graphics Renderer
+===========================
+
+The best titled 2D WebGL Renderer around!

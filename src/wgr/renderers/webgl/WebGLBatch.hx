@@ -19,31 +19,19 @@ class WebGLBatch
     public var size:Int;
     public var dynamicSize:Int;
 
-    public var vertexBuffer:Buffer;
     public var indexBuffer:Buffer;
-    public var uvBuffer:Buffer;
-    public var colorBuffer:Buffer;
+    public var indices:Uint16Array;
 
     public var dataBuffer:Buffer;
+    public var data:Float32Array;
 
     public var blendMode:Int;
-
-    public var verticies:Float32Array;
-    public var indices:Uint16Array;
-    public var uvs:Float32Array;
-    public var colors:Float32Array;
-
-    public var data:Float32Array;
 
     public function new(gl:RenderingContext) {
         this.gl = gl;
         this.size = 1;
-        this.vertexBuffer = gl.createBuffer();
         this.indexBuffer =  gl.createBuffer();
-        this.uvBuffer =  gl.createBuffer();
-        this.colorBuffer =  gl.createBuffer();
         this.dataBuffer =  gl.createBuffer();
-
         this.blendMode = 0;
         this.dynamicSize = 1;
     }
@@ -55,17 +43,9 @@ class WebGLBatch
         this.size = size;
         this.dynamicSize = size;
         
-        verticies = new Float32Array(dynamicSize*8);
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,vertexBuffer);
-        gl.bufferData(RenderingContext.ARRAY_BUFFER,verticies,RenderingContext.DYNAMIC_DRAW);
-
-        uvs = new Float32Array(dynamicSize*8);
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,uvBuffer);
-        gl.bufferData(RenderingContext.ARRAY_BUFFER,uvs,RenderingContext.DYNAMIC_DRAW);
-
-        colors = new Float32Array(dynamicSize*4);
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,colorBuffer);
-        gl.bufferData(RenderingContext.ARRAY_BUFFER,colors,RenderingContext.DYNAMIC_DRAW);
+        data = new Float32Array(dynamicSize*20);
+        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,dataBuffer);
+        gl.bufferData(RenderingContext.ARRAY_BUFFER,data,RenderingContext.DYNAMIC_DRAW);
 
         indices = new Uint16Array(dynamicSize*6);
 
@@ -85,61 +65,61 @@ class WebGLBatch
     }
 
     public function Flush(shader:ShaderWrapper,texture:Texture,size:Int) {
-        //trace("Flush");
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,vertexBuffer);
-        gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,verticies);
-        gl.vertexAttribPointer(untyped shader.attribute.aVertexPosition,2,RenderingContext.FLOAT,false,0,0);
-
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,uvBuffer);
-        gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,uvs);
-        gl.vertexAttribPointer(untyped shader.attribute.aTextureCoord,2,RenderingContext.FLOAT,false,0,0);
-        
+        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,dataBuffer);
+        gl.bufferData(RenderingContext.ARRAY_BUFFER,data,RenderingContext.STATIC_DRAW);
+        gl.vertexAttribPointer(untyped shader.attribute.aVertexPosition,2,RenderingContext.FLOAT,false,20,0);
+        gl.vertexAttribPointer(untyped shader.attribute.aTextureCoord,2,RenderingContext.FLOAT,false,20,8);
+        gl.vertexAttribPointer(untyped shader.attribute.aColor,1,RenderingContext.FLOAT,false,20,16);        
         gl.activeTexture(RenderingContext.TEXTURE0);
         gl.bindTexture(RenderingContext.TEXTURE_2D,texture);
-        
-        gl.bindBuffer(RenderingContext.ARRAY_BUFFER,colorBuffer);
-        gl.bufferSubData(RenderingContext.ARRAY_BUFFER,0,colors);
-        gl.vertexAttribPointer(untyped shader.attribute.aColor,1,RenderingContext.FLOAT,false, 0, 0);
-        
         gl.drawElements(RenderingContext.TRIANGLES,size*6,RenderingContext.UNSIGNED_SHORT,0);        
     }
 
     public inline function AddSpriteToBatch(sprite:Sprite,indexRun:Int) {
-        //trace("Added "+sprite.id+" at "+indexRun);
-        var index = indexRun * 8;
+        var index = indexRun * 20;
         var frame = sprite.texture.frame;
         var tw = sprite.texture.baseTexture.width;
         var th = sprite.texture.baseTexture.height;
+        
+        //0
+        //Verts
+        data[index + 0 ] = sprite.transformedVerts[0]; 
+        data[index + 1 ] = sprite.transformedVerts[1];
+        //UV
+        data[index + 2 ] = frame.x / tw;
+        data[index + 3 ] = frame.y / th;
+        //Colour
+        data[index + 4 ] = sprite.worldAlpha;
 
-        uvs[index + 0] = frame.x / tw;
-        uvs[index +1] = frame.y / th;
+        //1
+        //Verts
+        data[index + 5 ] = sprite.transformedVerts[2]; 
+        data[index + 6 ] = sprite.transformedVerts[3]; 
+        //UV
+        data[index + 7 ] = (frame.x + frame.width) / tw;
+        data[index + 8 ] = frame.y / th;
+        //Colour
+        data[index + 9 ] = sprite.worldAlpha;
 
-        uvs[index +2] = (frame.x + frame.width) / tw;
-        uvs[index +3] = frame.y / th;
+        //2
+        //Verts
+        data[index + 10 ] = sprite.transformedVerts[4]; 
+        data[index + 11 ] = sprite.transformedVerts[5]; 
+        //UV
+        data[index + 12] = (frame.x + frame.width) / tw;
+        data[index + 13] = (frame.y + frame.height) / th; 
+        //Colour
+        data[index + 14] = sprite.worldAlpha;
 
-        uvs[index +4] = (frame.x + frame.width) / tw;
-        uvs[index +5] = (frame.y + frame.height) / th; 
-
-        uvs[index +6] = frame.x / tw;
-        uvs[index +7] = (frame.y + frame.height) / th;
-
-        //sprite.updateFrame = false;
-
-        var colorIndex = indexRun * 4;
-        colors[colorIndex] = colors[colorIndex + 1] = colors[colorIndex + 2] = colors[colorIndex + 3] = sprite.worldAlpha;
-
-        verticies[index + 0 ] = sprite.transformedVerts[0]; 
-        verticies[index + 1 ] = sprite.transformedVerts[1];
-
-        verticies[index + 2 ] = sprite.transformedVerts[2]; 
-        verticies[index + 3 ] = sprite.transformedVerts[3]; 
-
-        verticies[index + 4 ] = sprite.transformedVerts[4]; 
-        verticies[index + 5 ] = sprite.transformedVerts[5]; 
-
-        verticies[index + 6] =  sprite.transformedVerts[6]; 
-        verticies[index + 7] =  sprite.transformedVerts[7];
-
+        //3
+        //Verts
+        data[index + 15] =  sprite.transformedVerts[6]; 
+        data[index + 16] =  sprite.transformedVerts[7];
+        //UV
+        data[index + 17] = frame.x / tw;
+        data[index + 18] = (frame.y + frame.height) / th;
+        //Colour
+        data[index + 19] = sprite.worldAlpha;
     }
 
     public function Render(shader:ShaderWrapper,spriteHead:Sprite,clip:AABB) {
@@ -148,7 +128,7 @@ class WebGLBatch
             return;
 
         gl.useProgram(shader.program);
-        gl.bindBuffer(RenderingContext.ELEMENT_ARRAY_BUFFER,indexBuffer);
+        //gl.bindBuffer(RenderingContext.ELEMENT_ARRAY_BUFFER,indexBuffer);
 
         var indexRun = 0;
         var sprite = spriteHead;

@@ -57,38 +57,27 @@ Main.main = function() {
 		var basetexturechar = tm.AddTexture("char",assets.assets[4]);
 		var texturechar1 = new wgr.texture.Texture(basetexturechar,new wgr.geom.Rectangle(0,0,50,75));
 		camera.Resize(renderer.width,renderer.height);
-		var spr1 = new wgr.display.Sprite();
-		spr1.id = "spr1";
-		spr1.texture = texture1up;
-		spr1.position.x = 128;
-		spr1.position.y = 128;
-		spr1.pivot.x = 128;
-		spr1.pivot.y = 128;
+		var createSprite = function(id,x,y,px,py,t) {
+			var s = new wgr.display.Sprite();
+			s.id = id;
+			s.texture = t;
+			s.position.x = x;
+			s.position.y = y;
+			s.pivot.x = px;
+			s.pivot.y = py;
+			return s;
+		};
+		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
 		camera.addChild(spr1);
-		var spr2 = new wgr.display.Sprite();
-		spr2.id = "spr2";
-		spr2.texture = texture1up;
-		spr2.position.x = 228;
-		spr2.position.y = 228;
-		spr2.pivot.x = 128;
-		spr2.pivot.y = 128;
+		var spr2 = createSprite("spr2",228,228,128,128,texture1up);
 		camera.addChild(spr2);
-		var spr21 = new wgr.display.Sprite();
-		spr21.id = "spr21";
-		spr21.texture = texture1up;
-		spr21.position.x = 328;
-		spr21.position.y = 328;
-		spr21.pivot.x = 128;
-		spr21.pivot.y = 128;
+		var spr21 = createSprite("spr21",328,328,128,128,texture1up);
 		spr21.alpha = 0.9;
 		spr2.addChild(spr21);
-		var spr3 = new wgr.display.Sprite();
-		spr3.id = "spr3";
-		spr3.texture = texturechar1;
-		spr3.position.x = 400;
-		spr3.position.y = 380;
+		var spr3 = createSprite("spr21",400,380,0,0,texturechar1);
+		spr3.scale.x = -1;
 		camera.addChild(spr3);
-		stage.Flatten();
+		var sprArray = new Array();
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
@@ -122,6 +111,18 @@ Main.main = function() {
 				_g._rotationComponents.x = Math.cos(_g._rotation);
 				_g._rotationComponents.y = Math.sin(_g._rotation);
 				_g._rotation;
+				var _g = 0;
+				while(_g < sprArray.length) {
+					var spr = sprArray[_g];
+					++_g;
+					var _g1 = spr;
+					_g1._rotation = _g1._rotation + 0.04;
+					_g1._rotationComponents.x = Math.cos(_g1._rotation);
+					_g1._rotationComponents.y = Math.sin(_g1._rotation);
+					_g1._rotation;
+					spr.alpha += 0.001;
+					if(spr.alpha > 1) spr.alpha = 0;
+				}
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
@@ -151,12 +152,8 @@ Main.main = function() {
 			debug.Clear(camera);
 		});
 		js.Browser.document.getElementById("action1").addEventListener("click",function(event1) {
-			camera.removeChild(spr2);
-			console.log(spr2);
 		});
 		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
-			camera.addChild(spr2);
-			console.log(spr2);
 		});
 		tick();
 	});
@@ -988,10 +985,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.gl = gl;
 	this.size = 1;
-	this.vertexBuffer = gl.createBuffer();
 	this.indexBuffer = gl.createBuffer();
-	this.uvBuffer = gl.createBuffer();
-	this.colorBuffer = gl.createBuffer();
 	this.dataBuffer = gl.createBuffer();
 	this.blendMode = 0;
 	this.dynamicSize = 1;
@@ -1001,7 +995,6 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 	Render: function(shader,spriteHead,clip) {
 		if(spriteHead == null) return;
 		this.gl.useProgram(shader.program);
-		this.gl.bindBuffer(34963,this.indexBuffer);
 		var indexRun = 0;
 		var sprite = spriteHead;
 		var currentTexture = sprite.texture.baseTexture.texture;
@@ -1020,55 +1013,47 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
 	,AddSpriteToBatch: function(sprite,indexRun) {
-		var index = indexRun * 8;
+		var index = indexRun * 20;
 		var frame = sprite.texture.frame;
 		var tw = sprite.texture.baseTexture.width;
 		var th = sprite.texture.baseTexture.height;
-		this.uvs[index] = frame.x / tw;
-		this.uvs[index + 1] = frame.y / th;
-		this.uvs[index + 2] = (frame.x + frame.width) / tw;
-		this.uvs[index + 3] = frame.y / th;
-		this.uvs[index + 4] = (frame.x + frame.width) / tw;
-		this.uvs[index + 5] = (frame.y + frame.height) / th;
-		this.uvs[index + 6] = frame.x / tw;
-		this.uvs[index + 7] = (frame.y + frame.height) / th;
-		var colorIndex = indexRun * 4;
-		this.colors[colorIndex] = this.colors[colorIndex + 1] = this.colors[colorIndex + 2] = this.colors[colorIndex + 3] = sprite.worldAlpha;
-		this.verticies[index] = sprite.transformedVerts[0];
-		this.verticies[index + 1] = sprite.transformedVerts[1];
-		this.verticies[index + 2] = sprite.transformedVerts[2];
-		this.verticies[index + 3] = sprite.transformedVerts[3];
-		this.verticies[index + 4] = sprite.transformedVerts[4];
-		this.verticies[index + 5] = sprite.transformedVerts[5];
-		this.verticies[index + 6] = sprite.transformedVerts[6];
-		this.verticies[index + 7] = sprite.transformedVerts[7];
+		this.data[index] = sprite.transformedVerts[0];
+		this.data[index + 1] = sprite.transformedVerts[1];
+		this.data[index + 2] = frame.x / tw;
+		this.data[index + 3] = frame.y / th;
+		this.data[index + 4] = sprite.worldAlpha;
+		this.data[index + 5] = sprite.transformedVerts[2];
+		this.data[index + 6] = sprite.transformedVerts[3];
+		this.data[index + 7] = (frame.x + frame.width) / tw;
+		this.data[index + 8] = frame.y / th;
+		this.data[index + 9] = sprite.worldAlpha;
+		this.data[index + 10] = sprite.transformedVerts[4];
+		this.data[index + 11] = sprite.transformedVerts[5];
+		this.data[index + 12] = (frame.x + frame.width) / tw;
+		this.data[index + 13] = (frame.y + frame.height) / th;
+		this.data[index + 14] = sprite.worldAlpha;
+		this.data[index + 15] = sprite.transformedVerts[6];
+		this.data[index + 16] = sprite.transformedVerts[7];
+		this.data[index + 17] = frame.x / tw;
+		this.data[index + 18] = (frame.y + frame.height) / th;
+		this.data[index + 19] = sprite.worldAlpha;
 	}
 	,Flush: function(shader,texture,size) {
-		this.gl.bindBuffer(34962,this.vertexBuffer);
-		this.gl.bufferSubData(34962,0,this.verticies);
-		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,0,0);
-		this.gl.bindBuffer(34962,this.uvBuffer);
-		this.gl.bufferSubData(34962,0,this.uvs);
-		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,0,0);
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35044);
+		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,20,0);
+		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,20,8);
+		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,20,16);
 		this.gl.activeTexture(33984);
 		this.gl.bindTexture(3553,texture);
-		this.gl.bindBuffer(34962,this.colorBuffer);
-		this.gl.bufferSubData(34962,0,this.colors);
-		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,0,0);
 		this.gl.drawElements(4,size * 6,5123,0);
 	}
 	,GrowBatch: function(size) {
 		this.size = size;
 		this.dynamicSize = size;
-		this.verticies = new Float32Array(this.dynamicSize * 8);
-		this.gl.bindBuffer(34962,this.vertexBuffer);
-		this.gl.bufferData(34962,this.verticies,35048);
-		this.uvs = new Float32Array(this.dynamicSize * 8);
-		this.gl.bindBuffer(34962,this.uvBuffer);
-		this.gl.bufferData(34962,this.uvs,35048);
-		this.colors = new Float32Array(this.dynamicSize * 4);
-		this.gl.bindBuffer(34962,this.colorBuffer);
-		this.gl.bufferData(34962,this.colors,35048);
+		this.data = new Float32Array(this.dynamicSize * 20);
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35048);
 		this.indices = new Uint16Array(this.dynamicSize * 6);
 		var _g1 = 0, _g = this.dynamicSize;
 		while(_g1 < _g) {
