@@ -68,6 +68,7 @@ Main.main = function() {
 			return s;
 		};
 		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
+		spr1.alpha = 0;
 		camera.addChild(spr1);
 		var spr2 = createSprite("spr2",228,228,128,128,texture1up);
 		camera.addChild(spr2);
@@ -81,7 +82,6 @@ Main.main = function() {
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayer(assets.assets[2],"base",1,1);
-		tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
 		tileMap.SetCamera(camera);
@@ -126,6 +126,7 @@ Main.main = function() {
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
+				xp = yp = 0;
 				camera.Focus(xp,yp);
 				renderer.Render(camera.viewPortAABB);
 				if(debugSwitch) {
@@ -1299,6 +1300,8 @@ wgr.tilemap.TileMap.prototype = {
 			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
 			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
 			this.gl.bindTexture(3553,layer.tileTexture);
+			var newData = new Uint8Array(36);
+			this.gl.texSubImage2D(3553,0,1,1,3,3,6408,5121,newData);
 			this.gl.drawArrays(4,0,6);
 		}
 	}

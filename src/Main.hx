@@ -59,6 +59,7 @@ class Main
             }
 
             var spr1 = createSprite("spr1",128,128,128,128,texture1up);
+            spr1.alpha=0;
             camera.addChild(spr1);
 
             var spr2 = createSprite("spr2",228,228,128,128,texture1up);
@@ -90,7 +91,7 @@ class Main
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
             tileMap.SetTileLayer(assets.assets[2],"base",1,1);
-            tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
+            //tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
             tileMap.tileSize = 16;
             tileMap.TileScale(2);
             tileMap.SetCamera(camera);
@@ -109,6 +110,7 @@ class Main
                 spr2.rotation -= 0.02;
                 spr21.rotation += 0.04;
                 //spr3.scale.x *= -1;
+
                 for (spr in sprArray) {
                     spr.rotation+=0.04;
                     spr.alpha+=0.001;
@@ -118,9 +120,10 @@ class Main
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
+                xp =yp =0;
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
-                //trace(spr1.aabb);
+
                 if (debugSwitch) {
                     debug.Clear(camera);
                     debug.DrawAABB(spr1.subTreeAABB);
