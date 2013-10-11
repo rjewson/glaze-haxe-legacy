@@ -16,13 +16,13 @@ class DisplayObjectContainer extends DisplayObject
     }
 
     public function addChild(child:DisplayObject) {
-        trace(this);
+        // trace(this);
         if (child.parent!=null) {
             child.parent.removeChild(child);
         }
         children.push(child);
         child.parent = this;
-        applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
+        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
         if (stage!=null) stage.dirty = true;
     }
 

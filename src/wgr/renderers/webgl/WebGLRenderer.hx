@@ -82,7 +82,7 @@ class WebGLRenderer
         // gl.colorMask(true,true,true,contextAttributes.alpha);
         // gl.bindFramebuffer(RenderingContext.FRAMEBUFFER,null);
         //gl.clear(RenderingContext.COLOR_BUFFER_BIT);
-        // gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
+        //gl.blendFunc(RenderingContext.ONE,RenderingContext.ONE_MINUS_SRC_ALPHA);
         for (renderer in renderers)
             renderer.Render(clip);
     }

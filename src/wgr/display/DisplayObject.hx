@@ -90,11 +90,18 @@ class DisplayObject
 
         var parentTransform = parent.worldTransform;
 
-        var a00 = localTransform[0], a01 = localTransform[1], a02 = position.x - localTransform[0] * px - py * localTransform[1],
-        a10 = localTransform[3], a11 = localTransform[4], a12 = position.y - localTransform[4] * py - px * localTransform[3],
-
-        b00 = parentTransform[0], b01 = parentTransform[1], b02 = parentTransform[2],
-        b10 = parentTransform[3], b11 = parentTransform[4], b12 = parentTransform[5];
+        var a00 = localTransform[0], 
+            a01 = localTransform[1], 
+            a02 = position.x - localTransform[0] * px - py * localTransform[1],
+            a10 = localTransform[3], 
+            a11 = localTransform[4], 
+            a12 = position.y - localTransform[4] * py - px * localTransform[3],
+            b00 = parentTransform[0], 
+            b01 = parentTransform[1], 
+            b02 = parentTransform[2],
+            b10 = parentTransform[3], 
+            b11 = parentTransform[4], 
+            b12 = parentTransform[5];
 
         localTransform[2] = a02;
         localTransform[5] = a12;

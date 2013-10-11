@@ -1,5 +1,6 @@
 package wgr.tilemap;
 
+import ds.Array2D;
 import js.html.Float32Array;
 import js.html.Image;
 import js.html.Uint32Array;
@@ -163,6 +164,14 @@ class TileMap implements IRenderer
         layers.push(layer);
     }
 
+    public function SetTileLayerFromData(data:Array2D,layerId:String,scrollScaleX:Float,scrollScaleY:Float) {
+        var layer = new TileLayer();
+        layer.setTextureFromMap(gl,data);
+        layer.scrollScale.x = scrollScaleX;
+        layer.scrollScale.y = scrollScaleY;
+        layers.push(layer);
+    }
+
     public function SetCamera(camera:Camera) {
         this.camera = camera;
     }
@@ -212,7 +221,7 @@ class TileMap implements IRenderer
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);
-            var newData = new Uint8Array(9*4);
+            //var newData = new Uint8Array(9*4);
             //newData[0]=0;
             //newData[1]=0;
             //newData[2]=0;
@@ -222,7 +231,7 @@ class TileMap implements IRenderer
             //newData[5]=1;
             //newData[6]=0;
             //newData[7]=0;
-            gl.texSubImage2D(RenderingContext.TEXTURE_2D,0,1,1,3,3,RenderingContext.RGBA,RenderingContext.UNSIGNED_BYTE,newData);
+            //gl.texSubImage2D(RenderingContext.TEXTURE_2D,0,1,1,3,3,RenderingContext.RGBA,RenderingContext.UNSIGNED_BYTE,newData);
             gl.drawArrays(RenderingContext.TRIANGLES, 0, 6);
         }
     }
