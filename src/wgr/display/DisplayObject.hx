@@ -24,7 +24,6 @@ class DisplayObject
     public var aabb:AABB;
 
     public var parent:DisplayObjectContainer;
-    // public var stage(get,never):Stage;
     public var stage:Stage;
 
     public var worldTransform:Float32Array;
@@ -74,6 +73,7 @@ class DisplayObject
 
     public function updateTransform() {
         //TODO Rounding at the moment...
+        //Or use ~~ hack
         position.x = Math.ceil(position.x);
         position.y = Math.ceil(position.y);
 

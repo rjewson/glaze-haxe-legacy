@@ -185,8 +185,8 @@ class TileMap implements IRenderer
     public function Render(clip:AABB) {
         var x = -camera.position.x / (tileScale*2);
         var y = -camera.position.y / (tileScale*2);
-        x += tileSize/2;
-        y += tileSize/2;
+        //x += tileSize/2;
+        //y += tileSize/2;
 
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
