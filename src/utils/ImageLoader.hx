@@ -22,6 +22,7 @@ class ImageLoader extends EventTarget
             assets.push(image);
             image.onload = onLoad;
             image.src = url;
+            image.crossOrigin = "anonymous";
             if (image.complete==true) {
                 onLoad(null);
             } 

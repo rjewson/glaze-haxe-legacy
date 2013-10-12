@@ -514,6 +514,7 @@ utils.ImageLoader.prototype = $extend(utils.EventTarget.prototype,{
 			this.assets.push(image);
 			image.onload = $bind(this,this.onLoad);
 			image.src = url;
+			image.crossOrigin = "anonymous";
 			if(image.complete == true) this.onLoad(null);
 		}
 	}
