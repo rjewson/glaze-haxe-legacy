@@ -221,17 +221,6 @@ class TileMap implements IRenderer
             gl.uniform2f(untyped tilemapShader.uniform.viewOffset, pX, pY);
             gl.uniform2fv(untyped tilemapShader.uniform.inverseTileTextureSize, layer.inverseTextureSize);
             gl.bindTexture(RenderingContext.TEXTURE_2D, layer.tileTexture);
-            //var newData = new Uint8Array(9*4);
-            //newData[0]=0;
-            //newData[1]=0;
-            //newData[2]=0;
-            //newData[3]=0;
-
-            //newData[4]=0;
-            //newData[5]=1;
-            //newData[6]=0;
-            //newData[7]=0;
-            //gl.texSubImage2D(RenderingContext.TEXTURE_2D,0,1,1,3,3,RenderingContext.RGBA,RenderingContext.UNSIGNED_BYTE,newData);
             gl.drawArrays(RenderingContext.TRIANGLES, 0, 6);
         }
     }

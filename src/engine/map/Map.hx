@@ -28,8 +28,7 @@ class Map
              for (yp in 0...mapData.h) {
                 var source = mapData.get(xp,yp);
                 if (source>0) {
-                    trace(xp,yp,source);
-                    textureData.set(xp,yp,tiles.get(source)); //0xFF000600 = 5,0
+                    textureData.set(xp,yp,tiles.get(source));
                 } else {
                     textureData.set(xp,yp,0xFFFFFFFF);
                 }
