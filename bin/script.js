@@ -18,18 +18,6 @@ EReg.prototype = {
 }
 var HxOverrides = function() { }
 HxOverrides.__name__ = true;
-HxOverrides.remove = function(a,obj) {
-	var i = 0;
-	var l = a.length;
-	while(i < l) {
-		if(a[i] == obj) {
-			a.splice(i,1);
-			return true;
-		}
-		i++;
-	}
-	return false;
-}
 HxOverrides.iter = function(a) {
 	return { cur : 0, arr : a, hasNext : function() {
 		return this.cur < this.arr.length;
@@ -92,7 +80,7 @@ Main.main = function() {
 			return s;
 		};
 		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
-		spr1.alpha = 0;
+		spr1.alpha = 1;
 		camera.addChild(spr1);
 		var spr2 = createSprite("spr2",228,228,128,128,texture1up);
 		camera.addChild(spr2);
@@ -103,6 +91,19 @@ Main.main = function() {
 		spr3.scale.x = -1;
 		camera.addChild(spr3);
 		var sprArray = new Array();
+		var _g = 0;
+		while(_g < 12) {
+			var i = _g++;
+			var newSpr = new wgr.display.Sprite();
+			newSpr.id = "newSpr" + i;
+			newSpr.texture = texturechar1;
+			newSpr.position.x = 200 + i * 20;
+			newSpr.position.y = 300;
+			newSpr.pivot.x = 25.;
+			newSpr.pivot.y = 37.5;
+			camera.addChild(newSpr);
+			sprArray.push(newSpr);
+		}
 		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayerFromData(mapData,"base",1,1);
@@ -145,12 +146,11 @@ Main.main = function() {
 					_g1._rotationComponents.x = Math.cos(_g1._rotation);
 					_g1._rotationComponents.y = Math.sin(_g1._rotation);
 					_g1._rotation;
-					spr.alpha += 0.001;
-					if(spr.alpha > 1) spr.alpha = 0;
 				}
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
+				xp = yp = 0;
 				camera.Focus(xp,yp);
 				renderer.Render(camera.viewPortAABB);
 				if(debugSwitch) {
@@ -177,6 +177,8 @@ Main.main = function() {
 			debug.Clear(camera);
 		});
 		js.Browser.document.getElementById("action1").addEventListener("click",function(event1) {
+			var child = camera.removeChildAt(3);
+			camera.addChildAt(child,4);
 		});
 		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
 		});
@@ -503,6 +505,7 @@ wgr.display.DisplayObject = function() {
 	this._visible = true;
 	if(this.stage != null) this.stage.dirty = true;
 	this._visible;
+	this.renderable = false;
 	this.aabb = new wgr.geom.AABB();
 	this.parent = null;
 	this.worldTransform = wgr.geom.Matrix3.Create();
@@ -562,16 +565,23 @@ wgr.display.DisplayObject.prototype = {
 }
 wgr.display.DisplayObjectContainer = function() {
 	wgr.display.DisplayObject.call(this);
-	this.children = new Array();
 	this.subTreeAABB = new wgr.geom.AABB();
+	this.childCount = 0;
 };
 wgr.display.DisplayObjectContainer.__name__ = true;
 wgr.display.DisplayObjectContainer.__super__ = wgr.display.DisplayObject;
 wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject.prototype,{
-	remove: function(node) {
+	debug: function() {
+		var child = this.firstDO;
+		while(child != null) {
+			console.log(child.id);
+			child = child.next;
+		}
+	}
+	,remove: function(node) {
 		if(node.prev == null) this.firstDO = node.next; else node.prev.next = node.next;
 		if(node.next == null) this.lastDO = node.prev; else node.next.prev = node.prev;
-		this.childCount--;
+		node.prev = node.next = null;
 	}
 	,insertEnd: function(newNode) {
 		if(this.lastDO == null) {
@@ -580,7 +590,6 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 				this.lastDO = newNode;
 				newNode.prev = null;
 				newNode.next = null;
-				this.childCount++;
 			} else this.insertBefore(this.firstDO,newNode);
 		} else this.insertAfter(this.lastDO,newNode);
 	}
@@ -590,7 +599,6 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 			this.lastDO = newNode;
 			newNode.prev = null;
 			newNode.next = null;
-			this.childCount++;
 		} else this.insertBefore(this.firstDO,newNode);
 	}
 	,insertBefore: function(node,newNode) {
@@ -598,22 +606,19 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		newNode.next = node;
 		if(node.prev == null) this.firstDO = newNode; else node.prev.next = newNode;
 		node.prev = newNode;
-		this.childCount++;
 	}
 	,insertAfter: function(node,newNode) {
 		newNode.prev = node;
 		newNode.next = node.next;
 		if(node.next == null) this.lastDO = newNode; else node.next.prev = newNode;
 		node.next = newNode;
-		this.childCount++;
 	}
 	,applySlot: function(slot,p) {
 		wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p);
-		var _g = 0, _g1 = this.children;
-		while(_g < _g1.length) {
-			var child = _g1[_g];
-			++_g;
+		var child = this.firstDO;
+		while(child != null) {
 			child.applySlot(slot,p);
+			child = child.next;
 		}
 	}
 	,updateTransform: function() {
@@ -622,26 +627,70 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		this.calcExtents();
 		this.subTreeAABB.reset();
 		this.subTreeAABB.addAABB(this.aabb);
-		var _g = 0, _g1 = this.children;
-		while(_g < _g1.length) {
-			var child = _g1[_g];
-			++_g;
+		var child = this.firstDO;
+		while(child != null) {
 			child.updateTransform();
 			this.subTreeAABB.addAABB(child.aabb);
+			child = child.next;
 		}
+	}
+	,childRemoved: function(child) {
+		this.childCount--;
+		if(this.stage != null) this.stage.dirty = true;
+		child.parent = null;
+		child.applySlot(function(target,p) {
+			target.stage = null;
+		},null);
+		console.log("Children = " + this.childCount);
+	}
+	,removeChildAt: function(index) {
+		var child = this.findChildByIndex(index);
+		console.log(child);
+		this.removeChild(child);
+		this.debug();
+		return child;
 	}
 	,removeChild: function(child) {
-		var index = Lambda.indexOf(this.children,child);
-		if(index > 0) {
-			HxOverrides.remove(this.children,child);
-			child.parent = null;
-			child.applySlot(function(target,p) {
-				target.stage = null;
-			},null);
-			if(this.stage != null) this.stage.dirty = true;
+		if(child.parent == this) {
+			if(child.prev == null) this.firstDO = child.next; else child.prev.next = child.next;
+			if(child.next == null) this.lastDO = child.prev; else child.next.prev = child.prev;
+			child.prev = child.next = null;
+			this.childRemoved(child);
 		}
 	}
-	,addChildX: function(child) {
+	,findChildByIndex: function(index) {
+		var child = this.firstDO;
+		var count = 0;
+		while(child != null) {
+			if(count++ == index) return child;
+			child = child.next;
+		}
+		return this.lastDO;
+	}
+	,childAdded: function(child) {
+		this.childCount++;
+		child.parent = this;
+		child.applySlot(function(target,p) {
+			target.stage = p;
+		},this.stage);
+		if(this.stage != null) this.stage.dirty = true;
+	}
+	,addChildAt: function(child,index) {
+		if(index >= this.childCount) {
+			this.addChild(child);
+			return;
+		}
+		if(index == 0) {
+			if(this.firstDO == null) {
+				this.firstDO = child;
+				this.lastDO = child;
+				child.prev = null;
+				child.next = null;
+			} else this.insertBefore(this.firstDO,child);
+		} else this.insertBefore(this.findChildByIndex(index),child);
+		this.childAdded(child);
+	}
+	,addChild: function(child) {
 		if(child.parent != null) child.parent.removeChild(child);
 		if(this.lastDO == null) {
 			if(this.firstDO == null) {
@@ -649,23 +698,9 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 				this.lastDO = child;
 				child.prev = null;
 				child.next = null;
-				this.childCount++;
 			} else this.insertBefore(this.firstDO,child);
 		} else this.insertAfter(this.lastDO,child);
-		child.parent = this;
-		child.applySlot(function(target,p) {
-			target.stage = p;
-		},this.stage);
-		if(this.stage != null) this.stage.dirty = true;
-	}
-	,addChild: function(child) {
-		if(child.parent != null) child.parent.removeChild(child);
-		this.children.push(child);
-		child.parent = this;
-		child.applySlot(function(target,p) {
-			target.stage = p;
-		},this.stage);
-		if(this.stage != null) this.stage.dirty = true;
+		this.childAdded(child);
 	}
 	,__class__: wgr.display.DisplayObjectContainer
 });
@@ -703,6 +738,7 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 });
 wgr.display.Sprite = function() {
 	wgr.display.DisplayObjectContainer.call(this);
+	this.renderable = true;
 	this.anchor = new wgr.geom.Point();
 	this.transformedVerts = new Float32Array(8);
 };
@@ -757,6 +793,7 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 				this.head.prevSprite = this.head.nextSprite = null;
 			} else {
 				var sprite = node;
+				sprite.prevSprite = sprite.nextSprite = null;
 				if(this.tail == null) {
 					this.tail = sprite;
 					this.head.nextSprite = this.tail;
@@ -771,22 +808,19 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		}
 		if(js.Boot.__instanceof(node,wgr.display.DisplayObjectContainer)) {
 			var doc = node;
-			var _g = 0, _g1 = doc.children;
-			while(_g < _g1.length) {
-				var child = _g1[_g];
-				++_g;
+			var child = doc.firstDO;
+			while(child != null) {
 				this.Traverse(child);
+				child = child.next;
 			}
 		}
 	}
 	,Flatten: function() {
+		console.log("Flatten");
 		this.head = null;
 		this.tail = null;
 		this.count = 0;
 		this.Traverse(this);
-		var sprite = this.head;
-		while(sprite != null) sprite = sprite.nextSprite;
-		console.log("Total Sprites:" + this.count);
 	}
 	,PreRender: function() {
 		if(this.dirty == true) {
@@ -795,11 +829,10 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		}
 	}
 	,updateTransform: function() {
-		var _g = 0, _g1 = this.children;
-		while(_g < _g1.length) {
-			var child = _g1[_g];
-			++_g;
+		var child = this.firstDO;
+		while(child != null) {
 			child.updateTransform();
+			child = child.next;
 		}
 	}
 	,__class__: wgr.display.Stage
@@ -1545,12 +1578,6 @@ wgr.tilemap.TileMap.prototype = {
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
-if(Array.prototype.indexOf) HxOverrides.remove = function(a,o) {
-	var i = a.indexOf(o);
-	if(i == -1) return false;
-	a.splice(i,1);
-	return true;
-};
 Math.__name__ = ["Math"];
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;

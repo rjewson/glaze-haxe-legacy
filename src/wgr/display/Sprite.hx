@@ -22,6 +22,7 @@ class Sprite extends DisplayObjectContainer
 
     public function new() {
         super();
+        renderable = true;
         anchor = new Point();
         transformedVerts = new Float32Array(8);
     }

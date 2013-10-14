@@ -76,7 +76,7 @@ class Main
             }
 
             var spr1 = createSprite("spr1",128,128,128,128,texture1up);
-            spr1.alpha=0;
+            spr1.alpha=1;
             camera.addChild(spr1);
 
             var spr2 = createSprite("spr2",228,228,128,128,texture1up);
@@ -91,19 +91,31 @@ class Main
             camera.addChild(spr3);
 
             var sprArray = new Array<Sprite>();
-            // for (i in 0...3100) {
+            // for (i in 0...10) {
             //     var newSpr = new Sprite();
             //     newSpr.id="newSpr"+i;
             //     newSpr.texture = texturechar1;
             //     newSpr.position.x = Std.random(400)+200;
             //     newSpr.position.y = Std.random(400)+200;
-            //     newSpr.alpha = Math.random();
+            //     //newSpr.alpha = Math.random();
             //     newSpr.pivot.x = 128;
             //     newSpr.pivot.y = 128;
             //     newSpr.rotation = Math.random();
             //     camera.addChild(newSpr);
             //     sprArray.push(newSpr);
             // }
+
+            for (i in 0...12) {
+                var newSpr = new Sprite();
+                newSpr.id="newSpr"+i;
+                newSpr.texture = texturechar1;
+                newSpr.position.x = 200 + i*20;
+                newSpr.position.y = 300;
+                newSpr.pivot.x = 50/2;
+                newSpr.pivot.y = 75/2;
+                camera.addChild(newSpr);
+                sprArray.push(newSpr);
+            }
 
             var tileMap = new TileMap( renderer.gl );
             tileMap.SetSpriteSheet(assets.assets[1]);
@@ -131,14 +143,18 @@ class Main
 
                 for (spr in sprArray) {
                     spr.rotation+=0.04;
-                    spr.alpha+=0.001;
-                    if(spr.alpha>1)spr.alpha=0;
-                }                    
+                    //spr.alpha+=0.001;
+                    //if(spr.alpha>1)spr.alpha=0;
+                }
+                //if (sprArray.length>0) {
+                //    var i = Std.random(sprArray.length-1);
+                //    camera.addChildAt(camera.removeChildAt(i),0);
+                //}        
 
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-                //xp =yp =0; //Remove camera
+                xp =yp =0; //Remove camera
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
 
@@ -164,8 +180,8 @@ class Main
                 debug.Clear(camera);
             });
             Browser.document.getElementById("action1").addEventListener("click",function(event){
-                //camera.removeChild(spr2);
-                //trace(spr2);
+                var child = camera.removeChildAt(3);
+                camera.addChildAt(child,4);
             });
             Browser.document.getElementById("action2").addEventListener("click",function(event){
                 //camera.addChild(spr2);

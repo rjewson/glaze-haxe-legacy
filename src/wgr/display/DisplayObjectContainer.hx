@@ -6,49 +6,78 @@ import wgr.display.DisplayObject;
 
 class DisplayObjectContainer extends DisplayObject
 {
-
-    public var children:Array<DisplayObject>;
-    public var subTreeAABB:AABB;
-
     public var firstDO:DisplayObject;
     public var lastDO:DisplayObject;
     public var childCount:Int;
 
+    public var subTreeAABB:AABB;
+
     public function new() {
         super();
-        children = new Array<DisplayObject>();
         subTreeAABB = new AABB();
+        childCount = 0;
     }
 
     public function addChild(child:DisplayObject) {
-        // trace(this);
-        if (child.parent!=null) {
+        if (child.parent!=null)
             child.parent.removeChild(child);
-        }
-        children.push(child);
-        child.parent = this;
-        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
-        if (stage!=null) stage.dirty = true;
-    }
-
-    public function addChildX(child:DisplayObject) {
-        if (child.parent!=null) {
-            child.parent.removeChild(child);
-        }
         insertEnd(child);
-        child.parent = this;
-        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
-        if (stage!=null) stage.dirty = true;
+        childAdded(child);
     }   
 
-    public function removeChild(child:DisplayObject) {
-        var index = Lambda.indexOf(children,child);
-        if (index>0) {
-            children.remove(child);
-            child.parent = null;
-            child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=null;},null);
-            if (stage!=null) stage.dirty = true;
+    public function addChildAt(child:DisplayObject,index:Int) {
+        if (index>=childCount) {
+            addChild(child);
+            return;
         }
+        if (index==0) {
+            insertBeginning(child);
+        } else {
+            insertBefore(findChildByIndex(index),child);
+        }
+        childAdded(child);
+    }
+
+    private inline function childAdded(child:DisplayObject) {
+        childCount++;
+        child.parent = this;
+        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
+        if (stage!=null) 
+            stage.dirty = true;
+    }
+
+    private function findChildByIndex(index:Int):DisplayObject {
+        var child = firstDO;
+        var count = 0;
+        while (child!=null) {
+            if (count++==index)
+                return child;
+            child = child.next;
+        }
+        return lastDO;
+    }
+
+    public function removeChild(child:DisplayObject) {
+        if (child.parent==this) {
+            remove(child);
+            childRemoved(child);
+        }
+    }
+
+    public function removeChildAt(index:Int):DisplayObject {
+        var child = findChildByIndex(index);
+        trace(child);
+        removeChild(child);
+        this.debug();
+        return child;
+    }
+
+    private inline function childRemoved(child:DisplayObject) {
+        childCount--;
+        if (stage!=null) 
+            stage.dirty = true;
+        child.parent = null;
+        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=null;},null);
     }
 
     public override function updateTransform() {
@@ -59,21 +88,26 @@ class DisplayObjectContainer extends DisplayObject
         subTreeAABB.reset();
         subTreeAABB.addAABB(aabb);
         //Expand AAABB to this DisplayObject -> New function required
-        for (child in children) {
+        var child = firstDO;
+        while (child!=null) {
             child.updateTransform();
             //Inflate this AABB to encapsulate child
             subTreeAABB.addAABB(child.aabb);
+            child = child.next;
         }
     }
 
     //TODO Probably get rid of this...
     public override function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
-        super.applySlot(slot,p);        
-        for (child in children) {
+        super.applySlot(slot,p); 
+        var child = firstDO;
+        while (child!=null) {
             child.applySlot(slot,p);
-        }        
+            child = child.next;
+        }       
     }
 
+    //Linked List Functions
     public inline function insertAfter(node:DisplayObject,newNode:DisplayObject) {
         newNode.prev = node;
         newNode.next = node.next;
@@ -82,7 +116,6 @@ class DisplayObjectContainer extends DisplayObject
         else
             node.next.prev = newNode;
         node.next = newNode;
-        childCount++;
     }
 
     public inline function insertBefore(node:DisplayObject,newNode:DisplayObject) {
@@ -93,7 +126,6 @@ class DisplayObjectContainer extends DisplayObject
         else
             node.prev.next = newNode;
         node.prev = newNode;
-        childCount++;
     }
 
     public inline function insertBeginning(newNode:DisplayObject) {
@@ -102,12 +134,13 @@ class DisplayObjectContainer extends DisplayObject
             lastDO = newNode;
             newNode.prev = null;
             newNode.next = null;
-            childCount++;
         } else  
             insertBefore(firstDO, newNode);
      }
 
      public inline function insertEnd(newNode:DisplayObject) {
+        if (newNode==null)
+            return;
         if (lastDO == null)
             insertBeginning(newNode);
         else
@@ -115,6 +148,8 @@ class DisplayObjectContainer extends DisplayObject
      }
 
     public inline function remove(node:DisplayObject) {
+        if (node==null)
+            return;
         if (node.prev == null)
             firstDO = node.next;
         else
@@ -123,6 +158,15 @@ class DisplayObjectContainer extends DisplayObject
             lastDO = node.prev;
         else
             node.next.prev = node.prev;
-        childCount--;
+        node.prev = node.next = null;
     }
+
+    public function debug() {
+        var child = firstDO;
+        while (child!=null) {
+            trace(child.id);
+            child = child.next;
+        }
+    }
+
 }

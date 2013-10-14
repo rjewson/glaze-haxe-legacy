@@ -21,8 +21,10 @@ class Stage extends DisplayObjectContainer
     }
 
     public override function updateTransform() { 
-        for (child in children) { 
+        var child = firstDO;
+        while (child!=null) {
             child.updateTransform();
+            child = child.next;
         }
     }
 
@@ -37,15 +39,11 @@ class Stage extends DisplayObjectContainer
      *   Depth-first Pre-order traversal of tree
      */
     public function Flatten() {
+        trace("Flatten");
         head = null;
         tail = null;
         count = 0;
         Traverse(this);
-        var sprite = head;
-        while (sprite!=null) {
-            sprite = sprite.nextSprite;
-        }
-        trace("Total Sprites:"+count);
     }
 
     public function Traverse(node:DisplayObject) {
@@ -59,6 +57,7 @@ class Stage extends DisplayObjectContainer
                 head.prevSprite = head.nextSprite = null;
             } else {
                 var sprite:Sprite = cast node;
+                sprite.prevSprite = sprite.nextSprite = null;
                 if (tail==null) {
                     tail = sprite;
                     head.nextSprite = tail;
@@ -74,8 +73,10 @@ class Stage extends DisplayObjectContainer
         //Parse the other children
         if (Std.is(node, DisplayObjectContainer)) {
             var doc:DisplayObjectContainer = cast node;
-            for (child in doc.children) {
+            var child = doc.firstDO;
+            while (child!=null) {
                 Traverse(child);
+                child = child.next;
             }
         }
     }

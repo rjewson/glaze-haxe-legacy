@@ -6,16 +6,15 @@ import wgr.display.DisplayObjectContainer;
 class DisplayListIter 
 {
 
-    public function new(root:DisplayObjectContainer) {
+    public var root:DisplayObjectContainer;
 
+    public function new(root:DisplayObjectContainer) {
     }
 
     public function hasNext():Bool {
-
     }
 
-    public function next():DisplayObject {
-
+    public function next():Sprite {
     }
 
 }

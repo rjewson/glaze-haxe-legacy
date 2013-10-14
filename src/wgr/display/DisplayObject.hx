@@ -20,6 +20,7 @@ class DisplayObject
     public var alpha:Float;
     public var visible(get,set):Bool;
     private var _visible:Bool;
+    public var renderable:Bool;
 
     public var aabb:AABB;
 
@@ -41,6 +42,7 @@ class DisplayObject
         rotation = 0;
         alpha = 1;
         visible = true;
+        renderable = false;
         aabb = new AABB();
         parent = null;
         worldTransform = Matrix3.Create();
