@@ -143,7 +143,7 @@ class WebGLBatch
                 AddSpriteToBatch(sprite,indexRun);
                 indexRun++;               
             }
-            sprite = sprite.next;
+            sprite = sprite.nextSprite;
         }
         if (indexRun>0)
             Flush(shader,currentTexture,indexRun);

@@ -43,7 +43,7 @@ class Stage extends DisplayObjectContainer
         Traverse(this);
         var sprite = head;
         while (sprite!=null) {
-            sprite = sprite.next;
+            sprite = sprite.nextSprite;
         }
         trace("Total Sprites:"+count);
     }
@@ -56,16 +56,16 @@ class Stage extends DisplayObjectContainer
         if (Std.is(node, Sprite)) {
             if (head==null) {
                 head = cast node;
-                head.prev = head.next = null;
+                head.prevSprite = head.nextSprite = null;
             } else {
                 var sprite:Sprite = cast node;
                 if (tail==null) {
                     tail = sprite;
-                    head.next = tail;
-                    tail.prev = head;
+                    head.nextSprite = tail;
+                    tail.prevSprite = head;
                 } else {
-                    tail.next = sprite;
-                    sprite.prev = tail;
+                    tail.nextSprite = sprite;
+                    sprite.prevSprite = tail;
                     tail = sprite;                    
                 }
             }

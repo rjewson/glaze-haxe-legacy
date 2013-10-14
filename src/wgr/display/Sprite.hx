@@ -15,8 +15,8 @@ class Sprite extends DisplayObjectContainer
     // private var width:Float;
     // private var height:Float;
 
-    public var prev:Sprite;
-    public var next:Sprite;
+    public var prevSprite:Sprite;
+    public var nextSprite:Sprite;
 
     public var transformedVerts:Float32Array;
 

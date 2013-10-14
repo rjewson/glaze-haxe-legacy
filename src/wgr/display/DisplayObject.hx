@@ -30,6 +30,9 @@ class DisplayObject
     public var worldAlpha:Float;
     public var localTransform:Float32Array;
 
+    public var prev:DisplayObject;
+    public var next:DisplayObject;
+
     public function new() {
         position = new Point();
         scale = new Point(1,1);
