@@ -8,9 +8,9 @@ import wgr.display.Sprite;
 class Stage extends DisplayObjectContainer
 {
 
-    public var head:Sprite;
-    public var tail:Sprite;
-    public var count:Int;
+    public var renderHead:Sprite;
+    public var renderTail:Sprite;
+    public var renderCount:Int;
     public var dirty:Bool;
 
     public function new() {
@@ -21,7 +21,7 @@ class Stage extends DisplayObjectContainer
     }
 
     public override function updateTransform() { 
-        var child = firstDO;
+        var child = head;
         while (child!=null) {
             child.updateTransform();
             child = child.next;
@@ -40,9 +40,9 @@ class Stage extends DisplayObjectContainer
      */
     public function Flatten() {
         trace("Flatten");
-        head = null;
-        tail = null;
-        count = 0;
+        renderHead = null;
+        renderTail = null;
+        renderCount = 0;
         Traverse(this);
     }
 
@@ -52,28 +52,28 @@ class Stage extends DisplayObjectContainer
             return;
         //Is this a Sprite? If so put it in the list
         if (Std.is(node, Sprite)) {
-            if (head==null) {
-                head = cast node;
-                head.prevSprite = head.nextSprite = null;
+            if (renderHead==null) {
+                renderHead = cast node;
+                renderHead.prevSprite = renderHead.nextSprite = null;
             } else {
                 var sprite:Sprite = cast node;
                 sprite.prevSprite = sprite.nextSprite = null;
-                if (tail==null) {
-                    tail = sprite;
-                    head.nextSprite = tail;
-                    tail.prevSprite = head;
+                if (renderTail==null) {
+                    renderTail = sprite;
+                    renderHead.nextSprite = renderTail;
+                    renderTail.prevSprite = renderHead;
                 } else {
-                    tail.nextSprite = sprite;
-                    sprite.prevSprite = tail;
-                    tail = sprite;                    
+                    renderTail.nextSprite = sprite;
+                    sprite.prevSprite = renderTail;
+                    renderTail = sprite;                    
                 }
             }
-            count++;
+            renderCount++;
         }
         //Parse the other children
         if (Std.is(node, DisplayObjectContainer)) {
             var doc:DisplayObjectContainer = cast node;
-            var child = doc.firstDO;
+            var child = doc.head;
             while (child!=null) {
                 Traverse(child);
                 child = child.next;

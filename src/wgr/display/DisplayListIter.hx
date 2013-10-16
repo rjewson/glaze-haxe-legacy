@@ -6,15 +6,36 @@ import wgr.display.DisplayObjectContainer;
 class DisplayListIter 
 {
 
-    public var root:DisplayObjectContainer;
+    var node:DisplayObjectContainer;
+    var stack:Array<DisplayObjectContainer>;
+    var top:Int;
 
     public function new(root:DisplayObjectContainer) {
+        node = root;
+        stack = new Array<DisplayObjectContainer>();
+        reset();
     }
 
-    public function hasNext():Bool {
+    public function reset() {
+        stack[0] = node;
+        top = 1;
     }
 
-    public function next():Sprite {
+    public inline function hasNext():Bool {
+        return top>0;
+    }
+
+    public inline function next():DisplayObjectContainer {
+        //This is the current node we want to return
+        var thisNode = stack[--top];
+        //If there is an adjacent node, push it to the stack
+        if (thisNode.next!=null)
+            stack[top++] = cast thisNode.next;
+        //If there is a child list, push the head (this will get processed first)
+        if (thisNode.head!=null)
+            stack[top++] = cast thisNode.head;
+        //return the result
+        return thisNode;
     }
 
 }

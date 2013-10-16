@@ -6,8 +6,8 @@ import wgr.display.DisplayObject;
 
 class DisplayObjectContainer extends DisplayObject
 {
-    public var firstDO:DisplayObject;
-    public var lastDO:DisplayObject;
+    public var head:DisplayObject;
+    public var tail:DisplayObject;
     public var childCount:Int;
 
     public var subTreeAABB:AABB;
@@ -47,14 +47,14 @@ class DisplayObjectContainer extends DisplayObject
     }
 
     private function findChildByIndex(index:Int):DisplayObject {
-        var child = firstDO;
+        var child = head;
         var count = 0;
         while (child!=null) {
             if (count++==index)
                 return child;
             child = child.next;
         }
-        return lastDO;
+        return tail;
     }
 
     public function removeChild(child:DisplayObject) {
@@ -88,7 +88,7 @@ class DisplayObjectContainer extends DisplayObject
         subTreeAABB.reset();
         subTreeAABB.addAABB(aabb);
         //Expand AAABB to this DisplayObject -> New function required
-        var child = firstDO;
+        var child = head;
         while (child!=null) {
             child.updateTransform();
             //Inflate this AABB to encapsulate child
@@ -100,7 +100,7 @@ class DisplayObjectContainer extends DisplayObject
     //TODO Probably get rid of this...
     public override function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
         super.applySlot(slot,p); 
-        var child = firstDO;
+        var child = head;
         while (child!=null) {
             child.applySlot(slot,p);
             child = child.next;
@@ -112,7 +112,7 @@ class DisplayObjectContainer extends DisplayObject
         newNode.prev = node;
         newNode.next = node.next;
         if (node.next==null)
-            lastDO = newNode;
+            tail = newNode;
         else
             node.next.prev = newNode;
         node.next = newNode;
@@ -122,47 +122,43 @@ class DisplayObjectContainer extends DisplayObject
         newNode.prev = node.prev;
         newNode.next = node;
         if (node.prev == null)
-            firstDO = newNode;
+            head = newNode;
         else
             node.prev.next = newNode;
         node.prev = newNode;
     }
 
     public inline function insertBeginning(newNode:DisplayObject) {
-        if (firstDO == null) {
-            firstDO = newNode;
-            lastDO = newNode;
+        if (head == null) {
+            head = newNode;
+            tail = newNode;
             newNode.prev = null;
             newNode.next = null;
         } else  
-            insertBefore(firstDO, newNode);
+            insertBefore(head, newNode);
      }
 
      public inline function insertEnd(newNode:DisplayObject) {
-        if (newNode==null)
-            return;
-        if (lastDO == null)
+        if (tail == null)
             insertBeginning(newNode);
         else
-            insertAfter(lastDO, newNode);
+            insertAfter(tail, newNode);
      }
 
     public inline function remove(node:DisplayObject) {
-        if (node==null)
-            return;
         if (node.prev == null)
-            firstDO = node.next;
+            head = node.next;
         else
             node.prev.next = node.next;
         if (node.next == null)
-            lastDO = node.prev;
+            tail = node.prev;
         else
             node.next.prev = node.prev;
         node.prev = node.next = null;
     }
 
     public function debug() {
-        var child = firstDO;
+        var child = head;
         while (child!=null) {
             trace(child.id);
             child = child.next;
