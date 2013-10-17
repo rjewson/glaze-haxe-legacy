@@ -173,7 +173,7 @@ class Main
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-                xp =yp =0; //Remove camera
+                //xp =yp =0; //Remove camera
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
 

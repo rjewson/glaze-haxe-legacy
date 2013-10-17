@@ -136,11 +136,11 @@ class WebGLBatch
                 //trace(target.id+" not visible");
                 return false;
             }
-            var sprite:Sprite = cast target;
-            if (sprite.texture==null) {
-                //trace(target.id+" no texture");
+            if (!target.renderable) {
                 return true;
             }
+            //TODO fix, this assumes were only sprites now...
+            var sprite:Sprite = cast target;
             if (sprite.texture.baseTexture.texture!=currentTexture || indexRun==size) {
                 Flush(shader,currentTexture,indexRun);
                 indexRun=0;

@@ -104,8 +104,11 @@ class DisplayObject
     public function updateTransform() {
         //TODO Rounding at the moment...
         //Or use ~~ hack
-        position.x = Math.ceil(position.x);
-        position.y = Math.ceil(position.y);
+        //position.x = Math.round(position.x);
+        //position.y = Math.round(position.y);
+
+        var positionx:Int = untyped{(0.5 + position.x) >> 0;};
+        var positiony:Int = untyped{(0.5 + position.y) >> 0;};
 
         var sinR = _rotationComponents.y;//Math.sin(rotation);
         var cosR = _rotationComponents.x;//Math.cos(rotation);
@@ -122,10 +125,10 @@ class DisplayObject
 
         var a00 = localTransform[0];
         var a01 = localTransform[1];
-        var a02 = position.x - localTransform[0] * px - py * localTransform[1];
+        var a02 = positionx - localTransform[0] * px - py * localTransform[1];
         var a10 = localTransform[3];
         var a11 = localTransform[4];
-        var a12 = position.y - localTransform[4] * py - px * localTransform[3];
+        var a12 = positiony - localTransform[4] * py - px * localTransform[3];
         var b00 = parentTransform[0];
         var b01 = parentTransform[1];
         var b02 = parentTransform[2];

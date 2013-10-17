@@ -167,7 +167,6 @@ Main.main = function() {
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-				xp = yp = 0;
 				camera.Focus(xp,yp);
 				renderer.Render(camera.viewPortAABB);
 				if(debugSwitch) {
@@ -539,8 +538,8 @@ wgr.display.DisplayObject.prototype = {
 	,calcExtents: function() {
 	}
 	,updateTransform: function() {
-		this.position.x = Math.ceil(this.position.x);
-		this.position.y = Math.ceil(this.position.y);
+		var positionx = 0.5 + this.position.x;
+		var positiony = 0.5 + this.position.y;
 		var sinR = this._rotationComponents.y;
 		var cosR = this._rotationComponents.x;
 		this.localTransform[0] = cosR * this.scale.x;
@@ -552,10 +551,10 @@ wgr.display.DisplayObject.prototype = {
 		var parentTransform = this.parent.worldTransform;
 		var a00 = this.localTransform[0];
 		var a01 = this.localTransform[1];
-		var a02 = this.position.x - this.localTransform[0] * px - py * this.localTransform[1];
+		var a02 = positionx - this.localTransform[0] * px - py * this.localTransform[1];
 		var a10 = this.localTransform[3];
 		var a11 = this.localTransform[4];
-		var a12 = this.position.y - this.localTransform[4] * py - px * this.localTransform[3];
+		var a12 = positiony - this.localTransform[4] * py - px * this.localTransform[3];
 		var b00 = parentTransform[0];
 		var b01 = parentTransform[1];
 		var b02 = parentTransform[2];
@@ -1361,8 +1360,8 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		var currentTexture = null;
 		var renderDisplayObject = function(target,p) {
 			if(!target._visible) return false;
+			if(!target.renderable) return true;
 			var sprite = target;
-			if(sprite.texture == null) return true;
 			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == _g.size) {
 				_g.Flush(shader,currentTexture,indexRun);
 				indexRun = 0;
