@@ -34,6 +34,19 @@ class DisplayObject
     public var prev:DisplayObject;
     public var next:DisplayObject;
 
+    // private var a00:Float; 
+    // private var a01:Float; 
+    // private var a02:Float; 
+    // private var a10:Float; 
+    // private var a11:Float; 
+    // private var a12:Float; 
+    // private var b00:Float; 
+    // private var b01:Float;
+    // private var b02:Float; 
+    // private var b10:Float; 
+    // private var b11:Float; 
+    // private var b12:Float;
+
     public function new() {
         position = new Point();
         scale = new Point(1,1);
@@ -47,6 +60,18 @@ class DisplayObject
         parent = null;
         worldTransform = Matrix3.Create();
         localTransform = Matrix3.Create();
+        // a00 = .0;
+        // a01 = .0;
+        // a02 = .0;
+        // a10 = .0;
+        // a11 = .0;
+        // a12 = .0;
+        // b00 = .0;
+        // b01 = .0;
+        // b02 = .0;
+        // b10 = .0;
+        // b11 = .0;
+        // b12 = .0;
     }
 
     public inline function get_rotation():Float {  
@@ -95,18 +120,18 @@ class DisplayObject
 
         var parentTransform = parent.worldTransform;
 
-        var a00 = localTransform[0], 
-            a01 = localTransform[1], 
-            a02 = position.x - localTransform[0] * px - py * localTransform[1],
-            a10 = localTransform[3], 
-            a11 = localTransform[4], 
-            a12 = position.y - localTransform[4] * py - px * localTransform[3],
-            b00 = parentTransform[0], 
-            b01 = parentTransform[1], 
-            b02 = parentTransform[2],
-            b10 = parentTransform[3], 
-            b11 = parentTransform[4], 
-            b12 = parentTransform[5];
+        var a00 = localTransform[0];
+        var a01 = localTransform[1];
+        var a02 = position.x - localTransform[0] * px - py * localTransform[1];
+        var a10 = localTransform[3];
+        var a11 = localTransform[4];
+        var a12 = position.y - localTransform[4] * py - px * localTransform[3];
+        var b00 = parentTransform[0];
+        var b01 = parentTransform[1];
+        var b02 = parentTransform[2];
+        var b10 = parentTransform[3];
+        var b11 = parentTransform[4];
+        var b12 = parentTransform[5];
 
         localTransform[2] = a02;
         localTransform[5] = a12;
@@ -128,8 +153,8 @@ class DisplayObject
     }
 
     //TODO Probably get rid of this...
-    public function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
-        slot(this,p);    
+    public function applySlot(slot:DisplayObject->Dynamic->Bool,p:Dynamic=null):Bool {
+        return slot(this,p);    
     }
 
 

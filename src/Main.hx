@@ -111,13 +111,18 @@ class Main
             //     camera.addChild(newSpr);
             //     sprArray.push(newSpr);
             // }
-
-            for (i in 0...12) {
+            var xpos = 0, ypos = 0;
+            for (i in 0...10000) {
                 var newSpr = new Sprite();
                 newSpr.id="newSpr"+i;
                 newSpr.texture = texturechar1;
-                newSpr.position.x = 200 + i*20;
-                newSpr.position.y = 300;
+                xpos++;
+                if (xpos>99) {
+                    xpos=0;
+                    ypos++;
+                }
+                newSpr.position.x = 100 + xpos*20;
+                newSpr.position.y = 100 + ypos*20;
                 newSpr.pivot.x = 50/2;
                 newSpr.pivot.y = 75/2;
                 itemContainer.addChild(newSpr);
@@ -198,15 +203,14 @@ class Main
                 itemContainer.addChildAt(child,4);
             });
             Browser.document.getElementById("action2").addEventListener("click",function(event){
-                //camera.addChild(spr2);
-                //trace(spr2);
+                spr2.visible = !spr2.visible;
             });
 
             tick();            
 
         } );
 
-        assets.SetImagesToLoad( ["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png","characters.png"] );
+        assets.SetImagesToLoad( ["1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","characters.png"] );
 
     }	
     

@@ -96,14 +96,20 @@ Main.main = function() {
 		spr3.scale.x = -1;
 		itemContainer.addChild(spr3);
 		var sprArray = new Array();
+		var xpos = 0, ypos = 0;
 		var _g = 0;
-		while(_g < 12) {
+		while(_g < 10000) {
 			var i = _g++;
 			var newSpr = new wgr.display.Sprite();
 			newSpr.id = "newSpr" + i;
 			newSpr.texture = texturechar1;
-			newSpr.position.x = 200 + i * 20;
-			newSpr.position.y = 300;
+			xpos++;
+			if(xpos > 99) {
+				xpos = 0;
+				ypos++;
+			}
+			newSpr.position.x = 100 + xpos * 20;
+			newSpr.position.y = 100 + ypos * 20;
 			newSpr.pivot.x = 25.;
 			newSpr.pivot.y = 37.5;
 			itemContainer.addChild(newSpr);
@@ -192,10 +198,13 @@ Main.main = function() {
 			itemContainer.addChildAt(child,4);
 		});
 		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
+			spr2._visible = !spr2._visible;
+			if(spr2.stage != null) spr2.stage.dirty = true;
+			spr2._visible;
 		});
 		tick();
 	});
-	assets.SetImagesToLoad(["1up.png","spelunky-tiles.png","spelunky0.png","spelunky1.png","characters.png"]);
+	assets.SetImagesToLoad(["1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","characters.png"]);
 }
 var IMap = function() { }
 IMap.__name__ = true;
@@ -525,7 +534,7 @@ wgr.display.DisplayObject = function() {
 wgr.display.DisplayObject.__name__ = true;
 wgr.display.DisplayObject.prototype = {
 	applySlot: function(slot,p) {
-		slot(this,p);
+		return slot(this,p);
 	}
 	,calcExtents: function() {
 	}
@@ -541,7 +550,18 @@ wgr.display.DisplayObject.prototype = {
 		var px = this.pivot.x;
 		var py = this.pivot.y;
 		var parentTransform = this.parent.worldTransform;
-		var a00 = this.localTransform[0], a01 = this.localTransform[1], a02 = this.position.x - this.localTransform[0] * px - py * this.localTransform[1], a10 = this.localTransform[3], a11 = this.localTransform[4], a12 = this.position.y - this.localTransform[4] * py - px * this.localTransform[3], b00 = parentTransform[0], b01 = parentTransform[1], b02 = parentTransform[2], b10 = parentTransform[3], b11 = parentTransform[4], b12 = parentTransform[5];
+		var a00 = this.localTransform[0];
+		var a01 = this.localTransform[1];
+		var a02 = this.position.x - this.localTransform[0] * px - py * this.localTransform[1];
+		var a10 = this.localTransform[3];
+		var a11 = this.localTransform[4];
+		var a12 = this.position.y - this.localTransform[4] * py - px * this.localTransform[3];
+		var b00 = parentTransform[0];
+		var b01 = parentTransform[1];
+		var b02 = parentTransform[2];
+		var b10 = parentTransform[3];
+		var b11 = parentTransform[4];
+		var b12 = parentTransform[5];
 		this.localTransform[2] = a02;
 		this.localTransform[5] = a12;
 		this.worldTransform[0] = b00 * a00 + b01 * a10;
@@ -625,12 +645,15 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		node.next = newNode;
 	}
 	,applySlot: function(slot,p) {
-		wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p);
+		if(!wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p)) return false;
 		var child = this.head;
 		while(child != null) {
 			child.applySlot(slot,p);
 			child = child.next;
 		}
+		return true;
+	}
+	,apply: function(slot,p) {
 	}
 	,updateTransform: function() {
 		this.aabb.reset();
@@ -651,6 +674,7 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		child.parent = null;
 		child.applySlot(function(target,p) {
 			target.stage = null;
+			return true;
 		},null);
 	}
 	,removeChildAt: function(index) {
@@ -682,6 +706,7 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 		child.parent = this;
 		child.applySlot(function(target,p) {
 			target.stage = p;
+			return true;
 		},this.stage);
 		if(this.stage != null) this.stage.dirty = true;
 	}
@@ -852,7 +877,6 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		this.renderHead = null;
 		this.renderTail = null;
 		this.renderCount = 0;
-		this.Traverse(this);
 	}
 	,PreRender: function() {
 		if(this.dirty == true) {
@@ -1282,7 +1306,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.spriteBatch.Render(this.spriteShader,this.stage.renderHead,clip);
+		this.spriteBatch.Render(this.spriteShader,this.stage,clip);
 	}
 	,AddStage: function(stage) {
 		this.stage = stage;
@@ -1310,7 +1334,7 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 };
 wgr.renderers.webgl.WebGLBatch.__name__ = true;
 wgr.renderers.webgl.WebGLBatch.prototype = {
-	Render: function(shader,spriteHead,clip) {
+	Render1: function(shader,spriteHead,clip) {
 		if(spriteHead == null) return;
 		this.gl.useProgram(shader.program);
 		var indexRun = 0;
@@ -1328,6 +1352,29 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 			}
 			sprite = sprite.nextSprite;
 		}
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+	}
+	,Render: function(shader,stage,clip) {
+		var _g = this;
+		this.gl.useProgram(shader.program);
+		var indexRun = 0;
+		var currentTexture = null;
+		var renderDisplayObject = function(target,p) {
+			if(!target._visible) return false;
+			var sprite = target;
+			if(sprite.texture == null) return true;
+			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == _g.size) {
+				_g.Flush(shader,currentTexture,indexRun);
+				indexRun = 0;
+				currentTexture = sprite.texture.baseTexture.texture;
+			}
+			if(clip == null || sprite.aabb.intersect(clip)) {
+				_g.AddSpriteToBatch(sprite,indexRun);
+				indexRun++;
+			}
+			return true;
+		};
+		stage.applySlot(renderDisplayObject);
 		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
 	,AddSpriteToBatch: function(sprite,indexRun) {

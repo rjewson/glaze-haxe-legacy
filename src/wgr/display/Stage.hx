@@ -43,7 +43,7 @@ class Stage extends DisplayObjectContainer
         renderHead = null;
         renderTail = null;
         renderCount = 0;
-        Traverse(this);
+        //Traverse(this);
     }
 
     public function Traverse(node:DisplayObject) {

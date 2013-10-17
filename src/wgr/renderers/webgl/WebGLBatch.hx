@@ -9,6 +9,7 @@ import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
 import wgr.display.DisplayObject;
 import wgr.display.Sprite;
+import wgr.display.Stage;
 import wgr.geom.AABB;
 import wgr.renderers.webgl.ShaderWrapper;
 
@@ -122,7 +123,44 @@ class WebGLBatch
         data[index + 19] = sprite.worldAlpha;
     }
 
-    public function Render(shader:ShaderWrapper,spriteHead:Sprite,clip:AABB) {
+    //TODO Render type Change
+    public function Render(shader:ShaderWrapper,stage:Stage,clip:AABB) {
+
+        gl.useProgram(shader.program);
+        
+        var indexRun = 0;
+        var currentTexture = null;
+        
+        var renderDisplayObject = function(target:DisplayObject,p:Dynamic){
+            if (!target.visible) {
+                //trace(target.id+" not visible");
+                return false;
+            }
+            var sprite:Sprite = cast target;
+            if (sprite.texture==null) {
+                //trace(target.id+" no texture");
+                return true;
+            }
+            if (sprite.texture.baseTexture.texture!=currentTexture || indexRun==size) {
+                Flush(shader,currentTexture,indexRun);
+                indexRun=0;
+                currentTexture = sprite.texture.baseTexture.texture;
+            }
+            if (clip==null || sprite.aabb.intersect(clip)) {
+                AddSpriteToBatch(sprite,indexRun);
+                indexRun++;               
+            }
+            return true;
+        }
+
+        stage.applySlot(renderDisplayObject);
+
+        if (indexRun>0)
+            Flush(shader,currentTexture,indexRun);
+
+    }
+
+    public function Render1(shader:ShaderWrapper,spriteHead:Sprite,clip:AABB) {
         
         if (spriteHead==null)
             return;

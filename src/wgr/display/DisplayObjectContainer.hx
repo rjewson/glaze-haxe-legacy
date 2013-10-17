@@ -41,7 +41,7 @@ class DisplayObjectContainer extends DisplayObject
     private inline function childAdded(child:DisplayObject) {
         childCount++;
         child.parent = this;
-        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;},stage);
+        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=cast p;return true;},stage);
         if (stage!=null) 
             stage.dirty = true;
     }
@@ -77,7 +77,7 @@ class DisplayObjectContainer extends DisplayObject
         if (stage!=null) 
             stage.dirty = true;
         child.parent = null;
-        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=null;},null);
+        child.applySlot(function(target:DisplayObject,p:Dynamic){target.stage=null;return true;},null);
     }
 
     public override function updateTransform() {
@@ -97,14 +97,20 @@ class DisplayObjectContainer extends DisplayObject
         }
     }
 
+    public function apply(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
+
+    }
+
     //TODO Probably get rid of this...
-    public override function applySlot(slot:DisplayObject->Dynamic->Void,p:Dynamic=null) {
-        super.applySlot(slot,p); 
+    public override function applySlot(slot:DisplayObject->Dynamic->Bool,p:Dynamic=null):Bool {
+        if (!super.applySlot(slot,p))
+            return false; 
         var child = head;
         while (child!=null) {
             child.applySlot(slot,p);
             child = child.next;
-        }       
+        }
+        return true;
     }
 
     //Linked List Functions
