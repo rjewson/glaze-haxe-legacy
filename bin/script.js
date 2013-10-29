@@ -1317,9 +1317,11 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.position);
 		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.size);
 		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.tileType);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,16,0);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.size,1,5126,false,16,8);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.tileType,1,5126,false,16,12);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.colour);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,20,0);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.size,1,5126,false,20,8);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.tileType,1,5126,false,20,12);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.colour,4,5121,true,20,16);
 		this.gl.uniform1f(this.pointSpriteShader.uniform.texTilesWide,this.texTilesWide);
 		this.gl.uniform1f(this.pointSpriteShader.uniform.texTilesHigh,this.texTilesHigh);
 		this.gl.uniform1f(this.pointSpriteShader.uniform.invTexTilesWide,this.invTexTilesWide);
@@ -1329,12 +1331,18 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.gl.bindTexture(3553,this.texture);
 		this.gl.drawArrays(0,0,this.indexRun);
 	}
-	,AddSpriteToBatch: function(spriteID,x,y,size) {
-		var index = this.indexRun * 4;
+	,AddSpriteToBatch: function(spriteID,x,y,size,colour) {
+		if(colour == null) colour = 255;
+		var index = this.indexRun * 5;
 		this.data[index] = x;
 		this.data[index + 1] = y;
 		this.data[index + 2] = size;
 		this.data[index + 3] = spriteID;
+		index *= 4;
+		this.data8[index + 16] = 255;
+		this.data8[index + 17] = 255;
+		this.data8[index + 18] = 255;
+		this.data8[index + 19] = 255;
 		this.indexRun++;
 	}
 	,ResetBatch: function() {
@@ -1356,7 +1364,9 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.invTexTilesHigh = 1 / this.texTilesHigh;
 	}
 	,ResizeBatch: function(size) {
-		this.data = new Float32Array(16 * size);
+		this.arrayBuffer = new ArrayBuffer(80 * size);
+		this.data = new Float32Array(this.arrayBuffer);
+		this.data8 = new Uint8ClampedArray(this.arrayBuffer);
 		this.ResetBatch();
 	}
 	,Init: function(gl) {
@@ -1862,8 +1872,8 @@ js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 wgr.particle.PointSpriteParticle.ZERO_FORCE = new wgr.geom.Point();
-wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute float tileType;","varying vec2 vTilePos;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
-wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","varying vec2 vTilePos;","void main() {","vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv );","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
 wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];

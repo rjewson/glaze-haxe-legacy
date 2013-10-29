@@ -1,7 +1,9 @@
 
 package wgr.renderers.webgl;
 
+import js.html.ArrayBuffer;
 import js.html.Float32Array;
+import js.html.Uint8ClampedArray;
 import js.html.webgl.Buffer;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
@@ -20,7 +22,9 @@ class PointSpriteRenderer implements IRenderer
     public var pointSpriteShader:ShaderWrapper;
     
     public var dataBuffer:Buffer;
+    private var arrayBuffer:ArrayBuffer;
     public var data:Float32Array;
+    public var data8:Uint8ClampedArray;
 
     public var stage:Stage;
     public var texture:Texture;
@@ -41,14 +45,12 @@ class PointSpriteRenderer implements IRenderer
         projection = new Point();
         pointSpriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,SPRITE_VERTEX_SHADER,SPRITE_FRAGMENT_SHADER));
         dataBuffer =  gl.createBuffer();
-        // ResizeBatch(2);
-        // AddSpriteToBatch(0,32,32,32);
-        // AddSpriteToBatch(2,64,32,32);
-        // trace(data);
     }
 
     public function ResizeBatch(size:Int) {
-        data = new Float32Array(16*size);
+        arrayBuffer = new ArrayBuffer(20*4*size);
+        data = new Float32Array(arrayBuffer);
+        data8 = new Uint8ClampedArray(arrayBuffer);
         ResetBatch();
     }
 
@@ -74,12 +76,19 @@ class PointSpriteRenderer implements IRenderer
         indexRun=0;
     }
 
-    public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float) {
-        var index = indexRun * 4;
+    public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float,colour:Float=255) {
+        var index = indexRun * 5;
         data[index+0] = x;
         data[index+1] = y;
         data[index+2] = size;
-        data[index+3] = spriteID;        
+        data[index+3] = spriteID;
+        //data[index+4] = 0x10;
+        index *=4;
+        data8[index+16] = 0xFF;
+        data8[index+17] = 0xFF;
+        data8[index+18] = 0xFF;
+        data8[index+19] = 0xFF;
+
         indexRun++;
     }
 
@@ -94,10 +103,12 @@ class PointSpriteRenderer implements IRenderer
         gl.enableVertexAttribArray(untyped pointSpriteShader.attribute.position);
         gl.enableVertexAttribArray(untyped pointSpriteShader.attribute.size);
         gl.enableVertexAttribArray(untyped pointSpriteShader.attribute.tileType);
+        gl.enableVertexAttribArray(untyped pointSpriteShader.attribute.colour);
 
-        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.position, 2, RenderingContext.FLOAT, false, 16, 0);
-        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.size, 1, RenderingContext.FLOAT, false, 16, 8);
-        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.tileType, 1, RenderingContext.FLOAT, false, 16, 12);
+        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.position, 2, RenderingContext.FLOAT, false, 20, 0);
+        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.size, 1, RenderingContext.FLOAT, false, 20, 8);
+        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.tileType, 1, RenderingContext.FLOAT, false, 20, 12);
+        gl.vertexAttribPointer(untyped pointSpriteShader.attribute.colour, 4, RenderingContext.UNSIGNED_BYTE, true, 20, 16);
 
         gl.uniform1f(untyped pointSpriteShader.uniform.texTilesWide, texTilesWide);
         gl.uniform1f(untyped pointSpriteShader.uniform.texTilesHigh, texTilesHigh);
@@ -119,11 +130,14 @@ class PointSpriteRenderer implements IRenderer
         "attribute vec2 position;",
         "attribute float size;",
         "attribute float tileType;",
+        "attribute vec4 colour;",
         "varying vec2 vTilePos;",
+        "varying vec4 vColor;",
         "void main() {",
             "float t = floor(tileType/texTilesWide);",
             "vTilePos = vec2(tileType-(t*texTilesWide), t);",
             "gl_PointSize = size;",
+            "vColor = colour;",
             "gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);",            
         "}",
     ];
@@ -134,9 +148,11 @@ class PointSpriteRenderer implements IRenderer
         "uniform float invTexTilesWide;",
         "uniform float invTexTilesHigh;",
         "varying vec2 vTilePos;",
+        "varying vec4 vColor;",
         "void main() {",
             "vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
-            "gl_FragColor = texture2D( texture, uv );",
+            //"gl_FragColor = texture2D( texture, uv ) * vec4(1,1,1,0.5);",//vColor;",
+            "gl_FragColor = texture2D( texture, uv ) * vColor;",//vColor;",
         "}"
     ];
 
