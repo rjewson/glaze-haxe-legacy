@@ -29,6 +29,7 @@ class Camera extends DisplayObjectContainer
         //Need to move the camera container the oposite way to the actual coords
         realPosition.x = x;
         realPosition.y = y;
+        //Clamp position inside shrunk camera extents
         cameraExtentsAABB.fitPoint(realPosition);
         position.x = -realPosition.x+halfViewportSize.x;
         position.y = -realPosition.y+halfViewportSize.y;
@@ -42,6 +43,7 @@ class Camera extends DisplayObjectContainer
         viewPortAABB.l = viewPortAABB.t = 0;
         viewPortAABB.r = viewportSize.x;
         viewPortAABB.b = viewportSize.y;
+        //Clone the world size, then shrink it around the center by viewport size
         cameraExtentsAABB = worldExtentsAABB.clone();
         cameraExtentsAABB.shrinkAroundCenter(width,height);
     }

@@ -40,7 +40,7 @@ class WebGLBatch
     public function Clean() {
     }
 
-    public function GrowBatch(size:Int) {
+    public function ResizeBatch(size:Int) {
         this.size = size;
         this.dynamicSize = size;
         

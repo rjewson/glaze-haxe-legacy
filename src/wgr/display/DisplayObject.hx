@@ -103,10 +103,10 @@ class DisplayObject
 
     public function updateTransform() {
         //TODO Rounding at the moment...
-        //Or use ~~ hack
         //position.x = Math.round(position.x);
         //position.y = Math.round(position.y);
 
+        //JS hack, much faster...
         var positionx:Int = untyped{(0.5 + position.x) >> 0;};
         var positiony:Int = untyped{(0.5 + position.y) >> 0;};
 

@@ -29,7 +29,7 @@ class SpriteRenderer implements IRenderer
         projection = new Point();
         spriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,SPRITE_VERTEX_SHADER,SPRITE_FRAGMENT_SHADER));
         spriteBatch = new WebGLBatch(gl);
-        spriteBatch.GrowBatch(1000);
+        spriteBatch.ResizeBatch(1000);
     }
 
     public function Resize(width:Int,height:Int) {
@@ -47,21 +47,8 @@ class SpriteRenderer implements IRenderer
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aTextureCoord);
         gl.enableVertexAttribArray(untyped spriteShader.attribute.aColor);
         gl.uniform2f(untyped spriteShader.uniform.projectionVector,projection.x,projection.y);            
-//        spriteBatch.Render(spriteShader,stage.renderHead,clip);
-                spriteBatch.Render(spriteShader,stage,clip);
-
+        spriteBatch.Render(spriteShader,stage,clip);
     }
-
-    public static var SPRITE_FRAGMENT_SHADER:Array<String> = [
-        "precision mediump float;",
-        "varying vec2 vTextureCoord;",
-        "varying float vColor;",
-        "uniform sampler2D uSampler;",
-        "void main(void) {",
-            "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
-            "gl_FragColor = gl_FragColor * vColor;",
-        "}"
-    ];
 
     public static var SPRITE_VERTEX_SHADER:Array<String> = [
         "attribute vec2 aVertexPosition;",
@@ -76,5 +63,17 @@ class SpriteRenderer implements IRenderer
             "vColor = aColor;",
         "}"
     ];
+
+    public static var SPRITE_FRAGMENT_SHADER:Array<String> = [
+        "precision mediump float;",
+        "varying vec2 vTextureCoord;",
+        "varying float vColor;",
+        "uniform sampler2D uSampler;",
+        "void main(void) {",
+            "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
+            "gl_FragColor = gl_FragColor * vColor;",
+        "}"
+    ];
+
 
 }

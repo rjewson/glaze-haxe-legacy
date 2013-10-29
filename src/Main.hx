@@ -16,8 +16,9 @@ import wgr.display.Stage;
 import wgr.geom.Matrix3;
 import wgr.geom.Point;
 import wgr.geom.Rectangle;
-import wgr.particle.ParticleEngine;
+import wgr.particle.PointSpriteParticleEngine;
 import wgr.renderers.canvas.CanvasDebugView;
+import wgr.renderers.webgl.PointSpriteRenderer;
 import wgr.renderers.webgl.SpriteRenderer;
 import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLRenderer;
@@ -79,8 +80,8 @@ class Main
             itemContainer.id = "itemContainer";
             camera.addChild(itemContainer);
 
-            var pengine = new ParticleEngine(2000,60);
-            camera.addChild(pengine.canvas);
+            //var pengine = new SpriteParticleEngine(2000,60);
+            //camera.addChild(pengine.canvas);
 
             var spr1 = createSprite("spr1",128,128,128,128,texture1up);
             spr1.alpha=1;
@@ -112,7 +113,7 @@ class Main
             //     sprArray.push(newSpr);
             // }
             var xpos = 0, ypos = 0;
-            for (i in 0...10000) {
+            for (i in 0...500) {
                 var newSpr = new Sprite();
                 newSpr.id="newSpr"+i;
                 newSpr.texture = texturechar1;
@@ -150,6 +151,14 @@ class Main
             spriteRender.AddStage(stage);
             renderer.AddRenderer(spriteRender);
 
+            //var pointSpriteRenderer = new PointSpriteRenderer();
+            //pointSpriteRenderer.SetSpriteSheet(tileMap.spriteSheet,64,8,8);
+            //renderer.AddRenderer(pointSpriteRenderer);
+
+            var pointParticleEngine = new PointSpriteParticleEngine(3000,1000/60);
+            pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,64,8,8);
+            renderer.AddRenderer(pointParticleEngine.renderer);
+
             var startTime = Date.now().getTime();
             var stop = false;
             var debugSwitch = false;
@@ -169,11 +178,19 @@ class Main
                 //    var i = Std.random(sprArray.length-1);
                 //    camera.addChildAt(camera.removeChildAt(i),0);
                 //}        
+                for (pCount in 0...10) {
+                    var vX = Std.random(600)-300;
+                    var vY = Std.random(600)-300;
+                    var ttl = Std.random(3000)+500;
+                    var type = Std.random(4);
+                    pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0);                    
+                }
+                pointParticleEngine.Update();
 
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-                //xp =yp =0; //Remove camera
+                xp =yp =0; //Remove camera
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
 

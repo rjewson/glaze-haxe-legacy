@@ -1,0 +1,82 @@
+
+package wgr.particle;
+
+import wgr.geom.Point;
+import wgr.particle.PointSpriteParticle;
+import wgr.renderers.webgl.PointSpriteRenderer;
+
+class PointSpriteParticleEngine
+{
+    public var particleCount:Int;
+    public var deltaTime:Float;
+    public var invDeltaTime:Float;
+    public var activeParticles:PointSpriteParticle;
+    public var cachedParticles:PointSpriteParticle;
+        
+    public var renderer:PointSpriteRenderer;
+
+    public function new(particleCount:Int, deltaTime:Float) 
+    {
+        this.particleCount = particleCount;
+        this.deltaTime = deltaTime;
+        this.invDeltaTime = deltaTime / 1000;
+        for (i in 0...particleCount) {
+            var p = new PointSpriteParticle();
+            p.next = cachedParticles;
+            cachedParticles = p;
+        }
+        this.renderer = new PointSpriteRenderer();
+        this.renderer.ResizeBatch(particleCount);
+    }
+    
+    public function EmitParticle(x:Float, y:Float, vX:Float, vY:Float, fX:Float, fY:Float, ttl:Int, damping:Float, decayable:Bool, top:Bool, externalForce:Point, type:Int, data1:Float, data2:Float):Bool {
+        if (cachedParticles == null)
+            return false;
+            
+        var particle = cachedParticles;
+        cachedParticles = cachedParticles.next;
+        
+        if (activeParticles == null) {
+            activeParticles = particle;
+            particle.next = particle.prev = null;
+        } else {
+            particle.next = activeParticles;
+            particle.prev = null;
+            activeParticles.prev = particle;
+            activeParticles = particle;
+        }
+        
+        particle.Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce, type, data1, data2);
+                
+        return true;
+    }
+        
+    public function Update():Void {
+        var c = 0;
+        renderer.ResetBatch();
+        var particle = activeParticles;
+        while (particle != null) {
+            c++;
+            if (!particle.Update(deltaTime,invDeltaTime)) {
+                var next = particle.next;
+                if (particle.prev == null) {
+                    activeParticles =  particle.next;
+                } else {
+                    particle.prev.next = particle.next;
+                }
+                if (particle.next != null) {
+                    particle.next.prev = particle.prev;
+                }
+                particle.next = cachedParticles;
+                cachedParticles = particle;
+                                
+                particle = next;
+            } else {
+                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size);
+                particle = particle.next;
+            }
+        }
+        //trace(c);
+    }
+    
+}

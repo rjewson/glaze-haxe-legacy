@@ -19,48 +19,6 @@ import wgr.tilemap.TileLayer;
 
 class TileMap implements IRenderer
 {
-
-    public static var TILEMAP_VERTEX_SHADER:Array<String> = [
-        "attribute vec2 position;",
-        "attribute vec2 texture;",
-        
-        "varying vec2 pixelCoord;",
-        "varying vec2 texCoord;",
-
-        "uniform vec2 viewOffset;",
-        "uniform vec2 viewportSize;",
-        "uniform vec2 inverseTileTextureSize;",
-        "uniform float inverseTileSize;",
-
-        "void main(void) {",
-        "   pixelCoord = (texture * viewportSize) + viewOffset;",
-        "   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;",
-        "   gl_Position = vec4(position, 0.0, 1.0);",//" + vec4(0.00125,0.001666667,0,0);",
-        "}"
-    ];
-
-    public static var TILEMAP_FRAGMENT_SHADER:Array<String> = [
-       "precision mediump float;",
-
-        "varying vec2 pixelCoord;",
-        "varying vec2 texCoord;",
-
-        "uniform sampler2D tiles;",
-        "uniform sampler2D sprites;",
-
-        "uniform vec2 inverseTileTextureSize;",
-        "uniform vec2 inverseSpriteTextureSize;",
-        "uniform float tileSize;",
-
-        "void main(void) {",
-        "   vec4 tile = texture2D(tiles, texCoord);",
-        "   if(tile.x == 1.0 && tile.y == 1.0) { discard; }",
-        "   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;",
-        "   vec2 spriteCoord = mod(pixelCoord, tileSize);",
-        "   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);",
-        "}"
-    ];
-
     public var gl:RenderingContext;
     public var viewportSize:Point;
     public var scaledViewportSize:Float32Array;
@@ -224,5 +182,46 @@ class TileMap implements IRenderer
             gl.drawArrays(RenderingContext.TRIANGLES, 0, 6);
         }
     }
+    
+    public static var TILEMAP_VERTEX_SHADER:Array<String> = [
+        "attribute vec2 position;",
+        "attribute vec2 texture;",
+        
+        "varying vec2 pixelCoord;",
+        "varying vec2 texCoord;",
+
+        "uniform vec2 viewOffset;",
+        "uniform vec2 viewportSize;",
+        "uniform vec2 inverseTileTextureSize;",
+        "uniform float inverseTileSize;",
+
+        "void main(void) {",
+        "   pixelCoord = (texture * viewportSize) + viewOffset;",
+        "   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;",
+        "   gl_Position = vec4(position, 0.0, 1.0);",//" + vec4(0.00125,0.001666667,0,0);",
+        "}"
+    ];
+
+    public static var TILEMAP_FRAGMENT_SHADER:Array<String> = [
+       "precision mediump float;",
+
+        "varying vec2 pixelCoord;",
+        "varying vec2 texCoord;",
+
+        "uniform sampler2D tiles;",
+        "uniform sampler2D sprites;",
+
+        "uniform vec2 inverseTileTextureSize;",
+        "uniform vec2 inverseSpriteTextureSize;",
+        "uniform float tileSize;",
+
+        "void main(void) {",
+        "   vec4 tile = texture2D(tiles, texCoord);",
+        "   if(tile.x == 1.0 && tile.y == 1.0) { discard; }",
+        "   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;",
+        "   vec2 spriteCoord = mod(pixelCoord, tileSize);",
+        "   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);",
+        "}"
+    ];
 
 }

@@ -82,8 +82,6 @@ Main.main = function() {
 		var itemContainer = new wgr.display.DisplayObjectContainer();
 		itemContainer.id = "itemContainer";
 		camera.addChild(itemContainer);
-		var pengine = new wgr.particle.ParticleEngine(2000,60);
-		camera.addChild(pengine.canvas);
 		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
 		spr1.alpha = 1;
 		itemContainer.addChild(spr1);
@@ -98,7 +96,7 @@ Main.main = function() {
 		var sprArray = new Array();
 		var xpos = 0, ypos = 0;
 		var _g = 0;
-		while(_g < 10000) {
+		while(_g < 500) {
 			var i = _g++;
 			var newSpr = new wgr.display.Sprite();
 			newSpr.id = "newSpr" + i;
@@ -132,6 +130,9 @@ Main.main = function() {
 		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		spriteRender.AddStage(stage);
 		renderer.AddRenderer(spriteRender);
+		var pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(3000,1000 / 60);
+		pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,64,8,8);
+		renderer.AddRenderer(pointParticleEngine.renderer);
 		var startTime = new Date().getTime();
 		var stop = false;
 		var debugSwitch = false;
@@ -164,9 +165,20 @@ Main.main = function() {
 					_g1._rotationComponents.y = Math.sin(_g1._rotation);
 					_g1._rotation;
 				}
+				var _g = 0;
+				while(_g < 10) {
+					var pCount = _g++;
+					var vX = Std.random(600) - 300;
+					var vY = Std.random(600) - 300;
+					var ttl = Std.random(3000) + 500;
+					var type = Std.random(4);
+					pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0);
+				}
+				pointParticleEngine.Update();
 				var elapsed = new Date().getTime() - startTime;
 				var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
 				var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
+				xp = yp = 0;
 				camera.Focus(xp,yp);
 				renderer.Render(camera.viewPortAABB);
 				if(debugSwitch) {
@@ -211,6 +223,9 @@ var Std = function() { }
 Std.__name__ = true;
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
+}
+Std.random = function(x) {
+	return x <= 0?0:Math.floor(Math.random() * x);
 }
 var ds = {}
 ds.Array2D = function(width,height,buffer) {
@@ -1154,26 +1169,23 @@ wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
 }
 wgr.particle = {}
-wgr.particle.Particle = function() {
-	wgr.display.Sprite.call(this);
+wgr.particle.PointSpriteParticle = function() {
 };
-wgr.particle.Particle.__name__ = true;
-wgr.particle.Particle.__super__ = wgr.display.Sprite;
-wgr.particle.Particle.prototype = $extend(wgr.display.Sprite.prototype,{
+wgr.particle.PointSpriteParticle.__name__ = true;
+wgr.particle.PointSpriteParticle.prototype = {
 	Update: function(deltaTime,invDeltaTime) {
 		this.vX += this.fX + this.externalForce.x;
 		this.vY += this.fY + this.externalForce.y;
 		this.vX *= this.damping;
 		this.vY *= this.damping;
-		this.position.x += this.vX * invDeltaTime;
-		this.position.y += this.vY * invDeltaTime;
+		this.pX += this.vX * invDeltaTime;
+		this.pY += this.vY * invDeltaTime;
 		this.age -= deltaTime;
-		this.alpha -= this.decay;
 		return this.age > 0;
 	}
 	,Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,type,data1,data2) {
-		this.position.x = x;
-		this.position.y = y;
+		this.pX = x;
+		this.pY = y;
 		this.vX = vX;
 		this.vY = vY;
 		this.fX = fX;
@@ -1182,57 +1194,78 @@ wgr.particle.Particle.prototype = $extend(wgr.display.Sprite.prototype,{
 		this.age = ttl;
 		this.damping = damping;
 		this.decay = decay;
-		this.externalForce = externalForce != null?externalForce:wgr.particle.Particle.ZERO_FORCE;
-		this.alpha = 1;
+		this.externalForce = externalForce != null?externalForce:wgr.particle.PointSpriteParticle.ZERO_FORCE;
+		this.type = type;
+		this.size = data1;
+		this.colour = 1;
 	}
-	,__class__: wgr.particle.Particle
-});
-wgr.particle.ParticleEngine = function(particleCount,deltaTime) {
+	,__class__: wgr.particle.PointSpriteParticle
+}
+wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.particleCount = particleCount;
 	this.deltaTime = deltaTime;
 	this.invDeltaTime = deltaTime / 1000;
-	this.canvas = new wgr.display.DisplayObjectContainer();
-	this.canvas.id = "ParticleEngine";
 	var _g = 0;
 	while(_g < particleCount) {
 		var i = _g++;
-		var p = new wgr.particle.Particle();
+		var p = new wgr.particle.PointSpriteParticle();
 		p.next = this.cachedParticles;
 		this.cachedParticles = p;
 	}
+	this.renderer = new wgr.renderers.webgl.PointSpriteRenderer();
+	this.renderer.ResizeBatch(particleCount);
 };
-wgr.particle.ParticleEngine.__name__ = true;
-wgr.particle.ParticleEngine.prototype = {
+wgr.particle.PointSpriteParticleEngine.__name__ = true;
+wgr.particle.PointSpriteParticleEngine.prototype = {
 	Update: function() {
+		var c = 0;
+		this.renderer.ResetBatch();
 		var particle = this.activeParticles;
-		while(particle != null) if(!(js.Boot.__cast(particle , wgr.particle.Particle)).Update(this.deltaTime,this.invDeltaTime)) {
-			var next = particle.nextSprite;
-			if(particle.prevSprite == null) this.activeParticles = particle.nextSprite; else particle.prevSprite.nextSprite = particle.nextSprite;
-			if(particle.nextSprite != null) particle.nextSprite.prevSprite = particle.prevSprite;
-			particle.nextSprite = this.cachedParticles;
-			this.cachedParticles = particle;
-			this.canvas.removeChild(particle);
-			particle = next;
-		} else particle = particle.nextSprite;
+		while(particle != null) {
+			c++;
+			if(!particle.Update(this.deltaTime,this.invDeltaTime)) {
+				var next = particle.next;
+				if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
+				if(particle.next != null) particle.next.prev = particle.prev;
+				particle.next = this.cachedParticles;
+				this.cachedParticles = particle;
+				particle = next;
+			} else {
+				this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size);
+				particle = particle.next;
+			}
+		}
 	}
 	,EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,type,data1,data2) {
 		if(this.cachedParticles == null) return false;
 		var particle = this.cachedParticles;
-		this.cachedParticles = this.cachedParticles.nextSprite;
+		this.cachedParticles = this.cachedParticles.next;
 		if(this.activeParticles == null) {
 			this.activeParticles = particle;
-			particle.nextSprite = particle.prevSprite = null;
+			particle.next = particle.prev = null;
 		} else {
-			particle.nextSprite = this.activeParticles;
-			particle.prevSprite = null;
-			this.activeParticles.prevSprite = particle;
+			particle.next = this.activeParticles;
+			particle.prev = null;
+			this.activeParticles.prev = particle;
 			this.activeParticles = particle;
 		}
-		(js.Boot.__cast(particle , wgr.particle.Particle)).Initalize(x,y,vX,vY,fX,fY,ttl,damping,decayable?this.deltaTime / ttl:0,top,externalForce,type,data1,data2);
-		this.canvas.addChild(particle);
+		particle.pX = x;
+		particle.pY = y;
+		particle.vX = vX;
+		particle.vY = vY;
+		particle.fX = fX;
+		particle.fY = fY;
+		particle.ttl = ttl;
+		particle.age = ttl;
+		particle.damping = damping;
+		particle.decay = decayable?this.deltaTime / ttl:0;
+		particle.externalForce = externalForce != null?externalForce:wgr.particle.PointSpriteParticle.ZERO_FORCE;
+		particle.type = type;
+		particle.size = data1;
+		particle.colour = 1;
 		return true;
 	}
-	,__class__: wgr.particle.ParticleEngine
+	,__class__: wgr.particle.PointSpriteParticleEngine
 }
 wgr.renderers = {}
 wgr.renderers.canvas = {}
@@ -1269,6 +1302,70 @@ wgr.renderers.webgl.IRenderer = function() { }
 wgr.renderers.webgl.IRenderer.__name__ = true;
 wgr.renderers.webgl.IRenderer.prototype = {
 	__class__: wgr.renderers.webgl.IRenderer
+}
+wgr.renderers.webgl.PointSpriteRenderer = function() {
+};
+wgr.renderers.webgl.PointSpriteRenderer.__name__ = true;
+wgr.renderers.webgl.PointSpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
+wgr.renderers.webgl.PointSpriteRenderer.prototype = {
+	Render: function(clip) {
+		this.gl.enable(3042);
+		this.gl.blendFunc(770,771);
+		this.gl.useProgram(this.pointSpriteShader.program);
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35048);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.position);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.size);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.tileType);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,16,0);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.size,1,5126,false,16,8);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.tileType,1,5126,false,16,12);
+		this.gl.uniform1f(this.pointSpriteShader.uniform.texTilesWide,this.texTilesWide);
+		this.gl.uniform1f(this.pointSpriteShader.uniform.texTilesHigh,this.texTilesHigh);
+		this.gl.uniform1f(this.pointSpriteShader.uniform.invTexTilesWide,this.invTexTilesWide);
+		this.gl.uniform1f(this.pointSpriteShader.uniform.invTexTilesHigh,this.invTexTilesHigh);
+		this.gl.uniform2f(this.pointSpriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
+		this.gl.activeTexture(33984);
+		this.gl.bindTexture(3553,this.texture);
+		this.gl.drawArrays(0,0,this.indexRun);
+	}
+	,AddSpriteToBatch: function(spriteID,x,y,size) {
+		var index = this.indexRun * 4;
+		this.data[index] = x;
+		this.data[index + 1] = y;
+		this.data[index + 2] = size;
+		this.data[index + 3] = spriteID;
+		this.indexRun++;
+	}
+	,ResetBatch: function() {
+		this.indexRun = 0;
+	}
+	,AddStage: function(stage) {
+		this.stage = stage;
+	}
+	,Resize: function(width,height) {
+		this.projection.x = width / 2;
+		this.projection.y = height / 2;
+	}
+	,SetSpriteSheet: function(texture,spriteSize,spritesWide,spritesHigh) {
+		this.texture = texture;
+		this.tileSize = spriteSize;
+		this.texTilesWide = spritesWide;
+		this.texTilesHigh = spritesHigh;
+		this.invTexTilesWide = 1 / this.texTilesWide;
+		this.invTexTilesHigh = 1 / this.texTilesHigh;
+	}
+	,ResizeBatch: function(size) {
+		this.data = new Float32Array(16 * size);
+		this.ResetBatch();
+	}
+	,Init: function(gl) {
+		this.gl = gl;
+		this.projection = new wgr.geom.Point();
+		this.pointSpriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER));
+		this.dataBuffer = gl.createBuffer();
+	}
+	,__class__: wgr.renderers.webgl.PointSpriteRenderer
 }
 wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 	this.program = program;
@@ -1319,7 +1416,7 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.projection = new wgr.geom.Point();
 		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER));
 		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
-		this.spriteBatch.GrowBatch(1000);
+		this.spriteBatch.ResizeBatch(1000);
 	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
@@ -1412,7 +1509,7 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.gl.bindTexture(3553,texture);
 		this.gl.drawElements(4,size * 6,5123,0);
 	}
-	,GrowBatch: function(size) {
+	,ResizeBatch: function(size) {
 		this.size = size;
 		this.dynamicSize = size;
 		this.data = new Float32Array(this.dynamicSize * 20);
@@ -1764,9 +1861,11 @@ var Enum = { };
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-wgr.particle.Particle.ZERO_FORCE = new wgr.geom.Point();
-wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
+wgr.particle.PointSpriteParticle.ZERO_FORCE = new wgr.geom.Point();
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute float tileType;","varying vec2 vTilePos;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","varying vec2 vTilePos;","void main() {","vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv );","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
+wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
 wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
 wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();

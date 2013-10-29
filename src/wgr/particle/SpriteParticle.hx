@@ -4,7 +4,7 @@ package wgr.particle;
 import wgr.display.Sprite;
 import wgr.geom.Point;
 
-class Particle extends Sprite
+class SpriteParticle extends Sprite
 {
 
     public static var ZERO_FORCE:Point = new Point();

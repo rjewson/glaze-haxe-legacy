@@ -63,14 +63,14 @@ class AABB
         if (x<l) l=x;
     }
 
-    public function fitPoint(point:Point) {
+    public inline function fitPoint(point:Point) {
         if (point.x<l) point.x=l;
         if (point.x>r) point.x=r;
         if (point.y<t) point.y=t;
         if (point.y>b) point.y=b;
     }
 
-    public function shrinkAroundCenter(deltaWidth:Float,delatHeight:Float) {
+    public inline function shrinkAroundCenter(deltaWidth:Float,delatHeight:Float) {
         l += deltaWidth/2;
         r -= deltaWidth/2;
         t += delatHeight/2;

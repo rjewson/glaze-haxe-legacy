@@ -4,9 +4,9 @@ package wgr.particle;
 import wgr.display.DisplayObjectContainer;
 import wgr.display.Sprite;
 import wgr.geom.Point;
-import wgr.particle.Particle;
+import wgr.particle.SpriteParticle;
 
-class ParticleEngine
+class SpriteParticleEngine
 {
     public var particleCount:Int;
     public var deltaTime:Float;
@@ -24,7 +24,7 @@ class ParticleEngine
         canvas = new DisplayObjectContainer();
         canvas.id = "ParticleEngine";
         for (i in 0...particleCount) {
-            var p = new Particle();
+            var p = new SpriteParticle();
             p.next = cachedParticles;
             cachedParticles = cast p;
         }       
@@ -47,7 +47,7 @@ class ParticleEngine
             activeParticles = particle;
         }
         
-        cast(particle,Particle).Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce, type, data1, data2);
+        cast(particle,SpriteParticle).Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce, type, data1, data2);
         
         canvas.addChild(particle);
         
@@ -58,7 +58,7 @@ class ParticleEngine
 
         var particle = activeParticles;
         while (particle != null) {
-            if (!cast(particle,Particle).Update(deltaTime,invDeltaTime)) {
+            if (!cast(particle,SpriteParticle).Update(deltaTime,invDeltaTime)) {
                 var next:Sprite = particle.nextSprite;
                 if (particle.prevSprite == null) {
                     activeParticles =  particle.nextSprite;
