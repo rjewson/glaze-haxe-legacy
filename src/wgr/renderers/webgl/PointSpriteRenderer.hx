@@ -76,19 +76,17 @@ class PointSpriteRenderer implements IRenderer
         indexRun=0;
     }
 
-    public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float,colour:Float=255) {
+    public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float,alpha:Int,red:Int,green:Int,blue:Int) {
         var index = indexRun * 5;
         data[index+0] = x;
         data[index+1] = y;
         data[index+2] = size;
         data[index+3] = spriteID;
-        //data[index+4] = 0x10;
-        index *=4;
-        data8[index+16] = 0xFF;
-        data8[index+17] = 0xFF;
-        data8[index+18] = 0xFF;
-        data8[index+19] = 0xFF;
-
+        index *= 4;
+        data8[index+16] = red;
+        data8[index+17] = blue;
+        data8[index+18] = green;
+        data8[index+19] = alpha;
         indexRun++;
     }
 
@@ -151,8 +149,7 @@ class PointSpriteRenderer implements IRenderer
         "varying vec4 vColor;",
         "void main() {",
             "vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
-            //"gl_FragColor = texture2D( texture, uv ) * vec4(1,1,1,0.5);",//vColor;",
-            "gl_FragColor = texture2D( texture, uv ) * vColor;",//vColor;",
+            "gl_FragColor = texture2D( texture, uv ) * vColor;",
         "}"
     ];
 

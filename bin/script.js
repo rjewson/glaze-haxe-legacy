@@ -1218,22 +1218,18 @@ wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 wgr.particle.PointSpriteParticleEngine.__name__ = true;
 wgr.particle.PointSpriteParticleEngine.prototype = {
 	Update: function() {
-		var c = 0;
 		this.renderer.ResetBatch();
 		var particle = this.activeParticles;
-		while(particle != null) {
-			c++;
-			if(!particle.Update(this.deltaTime,this.invDeltaTime)) {
-				var next = particle.next;
-				if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
-				if(particle.next != null) particle.next.prev = particle.prev;
-				particle.next = this.cachedParticles;
-				this.cachedParticles = particle;
-				particle = next;
-			} else {
-				this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size);
-				particle = particle.next;
-			}
+		while(particle != null) if(!particle.Update(this.deltaTime,this.invDeltaTime)) {
+			var next = particle.next;
+			if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
+			if(particle.next != null) particle.next.prev = particle.prev;
+			particle.next = this.cachedParticles;
+			this.cachedParticles = particle;
+			particle = next;
+		} else {
+			this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size,255,255,255,255);
+			particle = particle.next;
 		}
 	}
 	,EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,type,data1,data2) {
@@ -1331,18 +1327,17 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.gl.bindTexture(3553,this.texture);
 		this.gl.drawArrays(0,0,this.indexRun);
 	}
-	,AddSpriteToBatch: function(spriteID,x,y,size,colour) {
-		if(colour == null) colour = 255;
+	,AddSpriteToBatch: function(spriteID,x,y,size,alpha,red,green,blue) {
 		var index = this.indexRun * 5;
 		this.data[index] = x;
 		this.data[index + 1] = y;
 		this.data[index + 2] = size;
 		this.data[index + 3] = spriteID;
 		index *= 4;
-		this.data8[index + 16] = 255;
-		this.data8[index + 17] = 255;
-		this.data8[index + 18] = 255;
-		this.data8[index + 19] = 255;
+		this.data8[index + 16] = red;
+		this.data8[index + 17] = blue;
+		this.data8[index + 18] = green;
+		this.data8[index + 19] = alpha;
 		this.indexRun++;
 	}
 	,ResetBatch: function() {
@@ -1411,6 +1406,9 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aColor);
+		this.gl.vertexAttribPointer(this.spriteShader.attribute.aVertexPosition,2,5126,false,20,0);
+		this.gl.vertexAttribPointer(this.spriteShader.attribute.aTextureCoord,2,5126,false,20,8);
+		this.gl.vertexAttribPointer(this.spriteShader.attribute.aColor,1,5126,false,20,16);
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
 		this.spriteBatch.Render(this.spriteShader,this.stage,clip);
 	}
@@ -1460,7 +1458,7 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		}
 		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
-	,Render: function(shader,stage,clip) {
+	,Render2: function(shader,stage,clip) {
 		var _g = this;
 		this.gl.useProgram(shader.program);
 		var indexRun = 0;
@@ -1481,6 +1479,36 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 			return true;
 		};
 		stage.applySlot(renderDisplayObject);
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+	}
+	,Render: function(shader,stage,clip) {
+		this.gl.useProgram(shader.program);
+		var node;
+		var stack;
+		var top;
+		node = stage;
+		stack = new Array();
+		stack[0] = node;
+		top = 1;
+		var indexRun = 0;
+		var currentTexture = null;
+		while(top > 0) {
+			var thisNode = stack[--top];
+			if(thisNode.next != null) stack[top++] = thisNode.next;
+			if(thisNode.head != null) stack[top++] = thisNode.head;
+			if(thisNode._visible && thisNode.renderable) {
+				var sprite = thisNode;
+				if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
+					this.Flush(shader,currentTexture,indexRun);
+					indexRun = 0;
+					currentTexture = sprite.texture.baseTexture.texture;
+				}
+				if(clip == null || sprite.aabb.intersect(clip)) {
+					this.AddSpriteToBatch(sprite,indexRun);
+					indexRun++;
+				}
+			}
+		}
 		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
 	,AddSpriteToBatch: function(sprite,indexRun) {

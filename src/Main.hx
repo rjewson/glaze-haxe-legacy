@@ -99,19 +99,6 @@ class Main
             itemContainer.addChild(spr3);
 
             var sprArray = new Array<Sprite>();
-            // for (i in 0...10) {
-            //     var newSpr = new Sprite();
-            //     newSpr.id="newSpr"+i;
-            //     newSpr.texture = texturechar1;
-            //     newSpr.position.x = Std.random(400)+200;
-            //     newSpr.position.y = Std.random(400)+200;
-            //     //newSpr.alpha = Math.random();
-            //     newSpr.pivot.x = 128;
-            //     newSpr.pivot.y = 128;
-            //     newSpr.rotation = Math.random();
-            //     camera.addChild(newSpr);
-            //     sprArray.push(newSpr);
-            // }
             var xpos = 0, ypos = 0;
             for (i in 0...500) {
                 var newSpr = new Sprite();
@@ -151,10 +138,6 @@ class Main
             spriteRender.AddStage(stage);
             renderer.AddRenderer(spriteRender);
 
-            //var pointSpriteRenderer = new PointSpriteRenderer();
-            //pointSpriteRenderer.SetSpriteSheet(tileMap.spriteSheet,64,8,8);
-            //renderer.AddRenderer(pointSpriteRenderer);
-
             var pointParticleEngine = new PointSpriteParticleEngine(3000,1000/60);
             pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,64,8,8);
             renderer.AddRenderer(pointParticleEngine.renderer);
@@ -167,17 +150,13 @@ class Main
                 spr1.rotation += 0.01;
                 spr2.rotation -= 0.02;
                 spr21.rotation += 0.04;
-                //spr3.scale.x *= -1;
 
                 for (spr in sprArray) {
                     spr.rotation+=0.04;
                     //spr.alpha+=0.001;
                     //if(spr.alpha>1)spr.alpha=0;
                 }
-                //if (sprArray.length>0) {
-                //    var i = Std.random(sprArray.length-1);
-                //    camera.addChildAt(camera.removeChildAt(i),0);
-                //}        
+
                 for (pCount in 0...10) {
                     var vX = Std.random(600)-300;
                     var vY = Std.random(600)-300;

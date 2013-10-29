@@ -52,11 +52,9 @@ class PointSpriteParticleEngine
     }
         
     public function Update():Void {
-        var c = 0;
         renderer.ResetBatch();
         var particle = activeParticles;
         while (particle != null) {
-            c++;
             if (!particle.Update(deltaTime,invDeltaTime)) {
                 var next = particle.next;
                 if (particle.prev == null) {
@@ -72,11 +70,10 @@ class PointSpriteParticleEngine
                                 
                 particle = next;
             } else {
-                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size);
+                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size,0xFF,0xFF,0xFF,0xFF);
                 particle = particle.next;
             }
         }
-        //trace(c);
     }
     
 }

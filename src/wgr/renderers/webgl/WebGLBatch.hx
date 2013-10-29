@@ -8,6 +8,7 @@ import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
 import wgr.display.DisplayObject;
+import wgr.display.DisplayObjectContainer;
 import wgr.display.Sprite;
 import wgr.display.Stage;
 import wgr.geom.AABB;
@@ -123,8 +124,56 @@ class WebGLBatch
         data[index + 19] = sprite.worldAlpha;
     }
 
-    //TODO Render type Change
+
     public function Render(shader:ShaderWrapper,stage:Stage,clip:AABB) {
+
+        gl.useProgram(shader.program);
+
+        var node:DisplayObjectContainer;
+        var stack:Array<DisplayObjectContainer>;
+        var top:Int;
+
+        node = stage;
+        stack = new Array<DisplayObjectContainer>();
+
+        stack[0] = node;
+        top = 1;
+
+        var indexRun = 0;
+        var currentTexture = null;
+
+        while (top>0) {
+            var thisNode = stack[--top];
+            //If there is an adjacent node, push it to the stack
+            if (thisNode.next!=null)
+                stack[top++] = cast thisNode.next; //Big assumption is only DisplayListContainers, which it is for now.
+            //If there is a child list, push the head (this will get processed first)
+            if (thisNode.head!=null)
+                stack[top++] = cast thisNode.head; //Same assumption.  
+            //return the result
+
+            if (thisNode.visible&&thisNode.renderable) {
+
+                var sprite:Sprite = cast thisNode;
+
+                if (sprite.texture.baseTexture.texture!=currentTexture || indexRun==size) {
+                    Flush(shader,currentTexture,indexRun);
+                    indexRun=0;
+                    currentTexture = sprite.texture.baseTexture.texture;
+                }
+                if (clip==null || sprite.aabb.intersect(clip)) {
+                    AddSpriteToBatch(sprite,indexRun);
+                    indexRun++;               
+                }
+            }
+        }
+        
+        if (indexRun>0)
+            Flush(shader,currentTexture,indexRun);
+    }
+
+    //TODO Render type Change
+    public function Render2(shader:ShaderWrapper,stage:Stage,clip:AABB) {
 
         gl.useProgram(shader.program);
         

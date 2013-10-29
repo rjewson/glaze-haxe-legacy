@@ -34,19 +34,6 @@ class DisplayObject
     public var prev:DisplayObject;
     public var next:DisplayObject;
 
-    // private var a00:Float; 
-    // private var a01:Float; 
-    // private var a02:Float; 
-    // private var a10:Float; 
-    // private var a11:Float; 
-    // private var a12:Float; 
-    // private var b00:Float; 
-    // private var b01:Float;
-    // private var b02:Float; 
-    // private var b10:Float; 
-    // private var b11:Float; 
-    // private var b12:Float;
-
     public function new() {
         position = new Point();
         scale = new Point(1,1);
@@ -60,18 +47,6 @@ class DisplayObject
         parent = null;
         worldTransform = Matrix3.Create();
         localTransform = Matrix3.Create();
-        // a00 = .0;
-        // a01 = .0;
-        // a02 = .0;
-        // a10 = .0;
-        // a11 = .0;
-        // a12 = .0;
-        // b00 = .0;
-        // b01 = .0;
-        // b02 = .0;
-        // b10 = .0;
-        // b11 = .0;
-        // b12 = .0;
     }
 
     public inline function get_rotation():Float {  
