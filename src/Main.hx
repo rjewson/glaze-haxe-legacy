@@ -23,7 +23,7 @@ import wgr.renderers.webgl.SpriteRenderer;
 import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLRenderer;
 import wgr.texture.Texture;
-import wgr.tilemap.TileMap;
+import wgr.renderers.webgl.TileMap;
 
 class Main 
 {

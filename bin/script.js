@@ -120,7 +120,7 @@ Main.main = function() {
 			var item = _g.next();
 			console.log(item.id);
 		}
-		var tileMap = new wgr.tilemap.TileMap(renderer.gl);
+		var tileMap = new wgr.renderers.webgl.TileMap(renderer.gl);
 		tileMap.SetSpriteSheet(assets.assets[1]);
 		tileMap.SetTileLayerFromData(mapData,"base",1,1);
 		tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
@@ -1437,6 +1437,152 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
 }
+wgr.renderers.webgl.TileLayer = function() {
+	this.scrollScale = new wgr.geom.Point(1,1);
+	this.inverseTextureSize = new Float32Array(2);
+};
+wgr.renderers.webgl.TileLayer.__name__ = true;
+wgr.renderers.webgl.TileLayer.prototype = {
+	setTexture: function(gl,image,repeat) {
+		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
+		gl.bindTexture(3553,this.tileTexture);
+		gl.texImage2D(3553,0,6408,6408,5121,image);
+		gl.texParameteri(3553,10240,9728);
+		gl.texParameteri(3553,10241,9728);
+		if(repeat) {
+			gl.texParameteri(3553,10242,10497);
+			gl.texParameteri(3553,10243,10497);
+		} else {
+			gl.texParameteri(3553,10242,33071);
+			gl.texParameteri(3553,10243,33071);
+		}
+		this.inverseTextureSize[0] = 1 / image.width;
+		this.inverseTextureSize[1] = 1 / image.height;
+	}
+	,setTextureFromMap: function(gl,data) {
+		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
+		gl.bindTexture(3553,this.tileTexture);
+		gl.texImage2D(3553,0,6408,data.w,data.h,0,6408,5121,data.data8);
+		gl.texParameteri(3553,10240,9728);
+		gl.texParameteri(3553,10241,9728);
+		gl.texParameteri(3553,10242,33071);
+		gl.texParameteri(3553,10243,33071);
+		this.inverseTextureSize[0] = 1 / data.w;
+		this.inverseTextureSize[1] = 1 / data.h;
+	}
+	,__class__: wgr.renderers.webgl.TileLayer
+}
+wgr.renderers.webgl.TileMap = function(gl) {
+	this.gl = gl;
+	this.tileScale = 1.0;
+	this.tileSize = 16;
+	this.filtered = false;
+	this.spriteSheet = gl.createTexture();
+	this.layers = new Array();
+	this.viewportSize = new wgr.geom.Point();
+	this.scaledViewportSize = new Float32Array(2);
+	this.inverseTileTextureSize = new Float32Array(2);
+	this.inverseSpriteTextureSize = new Float32Array(2);
+	this.quadVertBuffer = gl.createBuffer();
+	gl.bindBuffer(34962,this.quadVertBuffer);
+	var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
+	gl.bufferData(34962,quadVerts,35044);
+	this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER,wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER));
+};
+wgr.renderers.webgl.TileMap.__name__ = true;
+wgr.renderers.webgl.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
+wgr.renderers.webgl.TileMap.prototype = {
+	Render: function(clip) {
+		var x = -this.camera.position.x / (this.tileScale * 2);
+		var y = -this.camera.position.y / (this.tileScale * 2);
+		this.gl.enable(3042);
+		this.gl.blendFunc(770,771);
+		this.gl.useProgram(this.tilemapShader.program);
+		this.gl.bindBuffer(34962,this.quadVertBuffer);
+		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.position);
+		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.texture);
+		this.gl.vertexAttribPointer(this.tilemapShader.attribute.position,2,5126,false,16,0);
+		this.gl.vertexAttribPointer(this.tilemapShader.attribute.texture,2,5126,false,16,8);
+		this.gl.uniform2fv(this.tilemapShader.uniform.viewportSize,this.scaledViewportSize);
+		this.gl.uniform2fv(this.tilemapShader.uniform.inverseSpriteTextureSize,this.inverseSpriteTextureSize);
+		this.gl.uniform1f(this.tilemapShader.uniform.tileSize,this.tileSize);
+		this.gl.uniform1f(this.tilemapShader.uniform.inverseTileSize,1 / this.tileSize);
+		this.gl.activeTexture(33984);
+		this.gl.uniform1i(this.tilemapShader.uniform.sprites,0);
+		this.gl.bindTexture(3553,this.spriteSheet);
+		this.gl.activeTexture(33985);
+		this.gl.uniform1i(this.tilemapShader.uniform.tiles,1);
+		var i = this.layers.length;
+		while(i > 0) {
+			i--;
+			var layer = this.layers[i];
+			var pX = this.RoundFunction(x * this.tileScale * layer.scrollScale.x);
+			var pY = this.RoundFunction(y * this.tileScale * layer.scrollScale.y);
+			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
+			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
+			this.gl.bindTexture(3553,layer.tileTexture);
+			this.gl.drawArrays(4,0,6);
+		}
+	}
+	,RoundFunction: function(v) {
+		return Math.round(v * 10) / 10;
+	}
+	,SetCamera: function(camera) {
+		this.camera = camera;
+	}
+	,SetTileLayerFromData: function(data,layerId,scrollScaleX,scrollScaleY) {
+		var layer = new wgr.renderers.webgl.TileLayer();
+		layer.setTextureFromMap(this.gl,data);
+		layer.scrollScale.x = scrollScaleX;
+		layer.scrollScale.y = scrollScaleY;
+		this.layers.push(layer);
+	}
+	,SetTileLayer: function(image,layerId,scrollScaleX,scrollScaleY) {
+		var layer = new wgr.renderers.webgl.TileLayer();
+		layer.setTexture(this.gl,image,false);
+		layer.scrollScale.x = scrollScaleX;
+		layer.scrollScale.y = scrollScaleY;
+		this.layers.push(layer);
+	}
+	,SetSpriteSheet: function(image) {
+		this.gl.bindTexture(3553,this.spriteSheet);
+		this.gl.texImage2D(3553,0,6408,6408,5121,image);
+		if(!this.filtered) {
+			this.gl.texParameteri(3553,10240,9728);
+			this.gl.texParameteri(3553,10241,9728);
+		} else {
+			this.gl.texParameteri(3553,10240,9729);
+			this.gl.texParameteri(3553,10241,9729);
+		}
+		this.inverseSpriteTextureSize[0] = 1 / image.width;
+		this.inverseSpriteTextureSize[1] = 1 / image.height;
+	}
+	,Filtered: function(filtered) {
+		this.filtered = filtered;
+		this.gl.bindTexture(3553,this.spriteSheet);
+		if(filtered) {
+			this.gl.texParameteri(3553,10240,9728);
+			this.gl.texParameteri(3553,10241,9728);
+		} else {
+			this.gl.texParameteri(3553,10240,9729);
+			this.gl.texParameteri(3553,10241,9729);
+		}
+	}
+	,TileScale: function(scale) {
+		this.tileScale = scale;
+		this.scaledViewportSize[0] = this.viewportSize.x / scale;
+		this.scaledViewportSize[1] = this.viewportSize.y / scale;
+	}
+	,Resize: function(width,height) {
+		this.viewportSize.x = width;
+		this.viewportSize.y = height;
+		this.scaledViewportSize[0] = width / this.tileScale;
+		this.scaledViewportSize[1] = height / this.tileScale;
+	}
+	,Init: function(gl) {
+	}
+	,__class__: wgr.renderers.webgl.TileMap
+}
 wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.gl = gl;
 	this.size = 1;
@@ -1731,153 +1877,6 @@ wgr.texture.TextureManager.prototype = {
 	}
 	,__class__: wgr.texture.TextureManager
 }
-wgr.tilemap = {}
-wgr.tilemap.TileLayer = function() {
-	this.scrollScale = new wgr.geom.Point(1,1);
-	this.inverseTextureSize = new Float32Array(2);
-};
-wgr.tilemap.TileLayer.__name__ = true;
-wgr.tilemap.TileLayer.prototype = {
-	setTexture: function(gl,image,repeat) {
-		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
-		gl.bindTexture(3553,this.tileTexture);
-		gl.texImage2D(3553,0,6408,6408,5121,image);
-		gl.texParameteri(3553,10240,9728);
-		gl.texParameteri(3553,10241,9728);
-		if(repeat) {
-			gl.texParameteri(3553,10242,10497);
-			gl.texParameteri(3553,10243,10497);
-		} else {
-			gl.texParameteri(3553,10242,33071);
-			gl.texParameteri(3553,10243,33071);
-		}
-		this.inverseTextureSize[0] = 1 / image.width;
-		this.inverseTextureSize[1] = 1 / image.height;
-	}
-	,setTextureFromMap: function(gl,data) {
-		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
-		gl.bindTexture(3553,this.tileTexture);
-		gl.texImage2D(3553,0,6408,data.w,data.h,0,6408,5121,data.data8);
-		gl.texParameteri(3553,10240,9728);
-		gl.texParameteri(3553,10241,9728);
-		gl.texParameteri(3553,10242,33071);
-		gl.texParameteri(3553,10243,33071);
-		this.inverseTextureSize[0] = 1 / data.w;
-		this.inverseTextureSize[1] = 1 / data.h;
-	}
-	,__class__: wgr.tilemap.TileLayer
-}
-wgr.tilemap.TileMap = function(gl) {
-	this.gl = gl;
-	this.tileScale = 1.0;
-	this.tileSize = 16;
-	this.filtered = false;
-	this.spriteSheet = gl.createTexture();
-	this.layers = new Array();
-	this.viewportSize = new wgr.geom.Point();
-	this.scaledViewportSize = new Float32Array(2);
-	this.inverseTileTextureSize = new Float32Array(2);
-	this.inverseSpriteTextureSize = new Float32Array(2);
-	this.quadVertBuffer = gl.createBuffer();
-	gl.bindBuffer(34962,this.quadVertBuffer);
-	var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
-	gl.bufferData(34962,quadVerts,35044);
-	this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER,wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER));
-};
-wgr.tilemap.TileMap.__name__ = true;
-wgr.tilemap.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
-wgr.tilemap.TileMap.prototype = {
-	Render: function(clip) {
-		var x = -this.camera.position.x / (this.tileScale * 2);
-		var y = -this.camera.position.y / (this.tileScale * 2);
-		this.gl.enable(3042);
-		this.gl.blendFunc(770,771);
-		this.gl.useProgram(this.tilemapShader.program);
-		this.gl.bindBuffer(34962,this.quadVertBuffer);
-		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.position);
-		this.gl.enableVertexAttribArray(this.tilemapShader.attribute.texture);
-		this.gl.vertexAttribPointer(this.tilemapShader.attribute.position,2,5126,false,16,0);
-		this.gl.vertexAttribPointer(this.tilemapShader.attribute.texture,2,5126,false,16,8);
-		this.gl.uniform2fv(this.tilemapShader.uniform.viewportSize,this.scaledViewportSize);
-		this.gl.uniform2fv(this.tilemapShader.uniform.inverseSpriteTextureSize,this.inverseSpriteTextureSize);
-		this.gl.uniform1f(this.tilemapShader.uniform.tileSize,this.tileSize);
-		this.gl.uniform1f(this.tilemapShader.uniform.inverseTileSize,1 / this.tileSize);
-		this.gl.activeTexture(33984);
-		this.gl.uniform1i(this.tilemapShader.uniform.sprites,0);
-		this.gl.bindTexture(3553,this.spriteSheet);
-		this.gl.activeTexture(33985);
-		this.gl.uniform1i(this.tilemapShader.uniform.tiles,1);
-		var i = this.layers.length;
-		while(i > 0) {
-			i--;
-			var layer = this.layers[i];
-			var pX = this.RoundFunction(x * this.tileScale * layer.scrollScale.x);
-			var pY = this.RoundFunction(y * this.tileScale * layer.scrollScale.y);
-			this.gl.uniform2f(this.tilemapShader.uniform.viewOffset,pX,pY);
-			this.gl.uniform2fv(this.tilemapShader.uniform.inverseTileTextureSize,layer.inverseTextureSize);
-			this.gl.bindTexture(3553,layer.tileTexture);
-			this.gl.drawArrays(4,0,6);
-		}
-	}
-	,RoundFunction: function(v) {
-		return Math.round(v * 10) / 10;
-	}
-	,SetCamera: function(camera) {
-		this.camera = camera;
-	}
-	,SetTileLayerFromData: function(data,layerId,scrollScaleX,scrollScaleY) {
-		var layer = new wgr.tilemap.TileLayer();
-		layer.setTextureFromMap(this.gl,data);
-		layer.scrollScale.x = scrollScaleX;
-		layer.scrollScale.y = scrollScaleY;
-		this.layers.push(layer);
-	}
-	,SetTileLayer: function(image,layerId,scrollScaleX,scrollScaleY) {
-		var layer = new wgr.tilemap.TileLayer();
-		layer.setTexture(this.gl,image,false);
-		layer.scrollScale.x = scrollScaleX;
-		layer.scrollScale.y = scrollScaleY;
-		this.layers.push(layer);
-	}
-	,SetSpriteSheet: function(image) {
-		this.gl.bindTexture(3553,this.spriteSheet);
-		this.gl.texImage2D(3553,0,6408,6408,5121,image);
-		if(!this.filtered) {
-			this.gl.texParameteri(3553,10240,9728);
-			this.gl.texParameteri(3553,10241,9728);
-		} else {
-			this.gl.texParameteri(3553,10240,9729);
-			this.gl.texParameteri(3553,10241,9729);
-		}
-		this.inverseSpriteTextureSize[0] = 1 / image.width;
-		this.inverseSpriteTextureSize[1] = 1 / image.height;
-	}
-	,Filtered: function(filtered) {
-		this.filtered = filtered;
-		this.gl.bindTexture(3553,this.spriteSheet);
-		if(filtered) {
-			this.gl.texParameteri(3553,10240,9728);
-			this.gl.texParameteri(3553,10241,9728);
-		} else {
-			this.gl.texParameteri(3553,10240,9729);
-			this.gl.texParameteri(3553,10241,9729);
-		}
-	}
-	,TileScale: function(scale) {
-		this.tileScale = scale;
-		this.scaledViewportSize[0] = this.viewportSize.x / scale;
-		this.scaledViewportSize[1] = this.viewportSize.y / scale;
-	}
-	,Resize: function(width,height) {
-		this.viewportSize.x = width;
-		this.viewportSize.y = height;
-		this.scaledViewportSize[0] = width / this.tileScale;
-		this.scaledViewportSize[1] = height / this.tileScale;
-	}
-	,Init: function(gl) {
-	}
-	,__class__: wgr.tilemap.TileMap
-}
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
@@ -1913,8 +1912,8 @@ wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float t
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
-wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
-wgr.tilemap.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
+wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
+wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();
 })();
 
