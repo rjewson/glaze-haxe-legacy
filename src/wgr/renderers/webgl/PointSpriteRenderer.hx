@@ -148,7 +148,7 @@ class PointSpriteRenderer implements IRenderer
         "varying vec2 vTilePos;",
         "varying vec4 vColor;",
         "void main() {",
-            "vec2 uv = vec2( gl_PointCoord.x*invTexTilesWide + invTexTilesWide*vTilePos.x, gl_PointCoord.y*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
+            "vec2 uv = vec2( (gl_PointCoord.x)*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
             "gl_FragColor = texture2D( texture, uv ) * vColor;",
         "}"
     ];

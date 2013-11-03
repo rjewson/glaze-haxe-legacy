@@ -70,7 +70,7 @@ class PointSpriteParticleEngine
                                 
                 particle = next;
             } else {
-                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size,0xFF,0xFF,0xFF,0xFF);
+                renderer.AddSpriteToBatch(Std.int(particle.type),Std.int(particle.pX),Std.int(particle.pY),particle.size,Std.int(particle.alpha*255),0xFF,0xFF,0xFF);
                 particle = particle.next;
             }
         }

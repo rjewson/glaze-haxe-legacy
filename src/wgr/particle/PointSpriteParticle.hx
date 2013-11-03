@@ -7,6 +7,7 @@ class PointSpriteParticle
 {
 
     public static var ZERO_FORCE:Point = new Point();
+    public static var INV_ALPHA:Float = 1/255;
     
     public var pX:Float;
     public var pY:Float;
@@ -28,6 +29,7 @@ class PointSpriteParticle
     
     public var decay:Float;
     public var colour:Float;
+    public var alpha:Float;
 
     public var next:PointSpriteParticle;
     public var prev:PointSpriteParticle;
@@ -50,7 +52,8 @@ class PointSpriteParticle
         this.externalForce = externalForce != null ? externalForce : ZERO_FORCE;
         this.type = type;
         this.size = data1;
-        this.colour = 1;
+        this.colour = data2;
+        this.alpha = untyped{ (this.colour & 0xFF) * INV_ALPHA; }
     }
     
     inline public function Update(deltaTime:Float,invDeltaTime:Float):Bool {
@@ -61,7 +64,7 @@ class PointSpriteParticle
         pX += vX * invDeltaTime;
         pY += vY * invDeltaTime;
         age -= deltaTime;
-        //alpha -= decay;
+        alpha -= decay;
         return age > 0;
     }
     
