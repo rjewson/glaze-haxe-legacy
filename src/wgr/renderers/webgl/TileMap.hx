@@ -1,4 +1,4 @@
-package wgr.tilemap;
+package wgr.renderers.webgl;
 
 import ds.Array2D;
 import js.html.Float32Array;
@@ -15,7 +15,7 @@ import wgr.geom.AABB;
 import wgr.renderers.webgl.IRenderer;
 import wgr.renderers.webgl.ShaderWrapper;
 import wgr.renderers.webgl.WebGLShaders;
-import wgr.tilemap.TileLayer;
+import wgr.renderers.webgl.TileLayer;
 
 class TileMap implements IRenderer
 {

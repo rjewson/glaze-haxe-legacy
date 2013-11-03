@@ -1,4 +1,4 @@
-package wgr.tilemap;
+package wgr.renderers.webgl;
 
 import ds.Array2D;
 import js.html.Float32Array;
