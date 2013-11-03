@@ -100,7 +100,7 @@ class Main
 
             var sprArray = new Array<Sprite>();
             var xpos = 0, ypos = 0;
-            for (i in 0...10) {
+            for (i in 0...100) {
                 var newSpr = new Sprite();
                 newSpr.id="newSpr"+i;
                 newSpr.texture = texturechar1;
@@ -140,6 +140,7 @@ class Main
 
             var pointParticleEngine = new PointSpriteParticleEngine(3000,1000/60);
             pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
+            pointParticleEngine.renderer.SetCamera(camera);
             renderer.AddRenderer(pointParticleEngine.renderer);
 
             var startTime = Date.now().getTime();
@@ -157,19 +158,21 @@ class Main
                     //if(spr.alpha>1)spr.alpha=0;
                 }
 
-                for (pCount in 0...1) {
+                for (pCount in 0...1000) {
                     var vX = Std.random(600)-300;
                     var vY = Std.random(600)-300;
                     var ttl = Std.random(3000)+500;
-                    var type = validTiles[Std.random(validTiles.length)];
-                    pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0xFFFFFFFF);                    
+                    var type = 3;//validTiles[Std.random(validTiles.length)];
+                    //pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0xFFFFFFFF);                    
+                    pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,true,true,null,type,8,0xFFFFFFFF);                    
+
                 }
                 pointParticleEngine.Update();
 
                 var elapsed = Date.now().getTime() - startTime;
                 var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
                 var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-                xp =yp =0; //Remove camera
+                //xp =yp =0; //Remove camera
                 camera.Focus(xp,yp);
                 renderer.Render(camera.viewPortAABB);
 

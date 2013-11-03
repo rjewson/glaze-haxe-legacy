@@ -7,6 +7,7 @@ import js.html.Uint8ClampedArray;
 import js.html.webgl.Buffer;
 import js.html.webgl.RenderingContext;
 import js.html.webgl.Texture;
+import wgr.display.Camera;
 import wgr.display.Stage;
 import wgr.geom.Point;
 import wgr.geom.AABB;
@@ -27,6 +28,7 @@ class PointSpriteRenderer implements IRenderer
     public var data8:Uint8ClampedArray;
 
     public var stage:Stage;
+    public var camera:Camera;
     public var texture:Texture;
 
     public var tileSize:Float;
@@ -72,14 +74,18 @@ class PointSpriteRenderer implements IRenderer
         this.stage = stage;
     }
 
+    public function SetCamera(camera:Camera) {
+        this.camera = camera;
+    }
+
     public function ResetBatch() {
         indexRun=0;
     }
 
     public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float,alpha:Int,red:Int,green:Int,blue:Int) {
         var index = indexRun * 5;
-        data[index+0] = x;
-        data[index+1] = y;
+        data[index+0] = x + camera.position.x;
+        data[index+1] = y + camera.position.y;
         data[index+2] = size;
         data[index+3] = spriteID;
         index *= 4;
@@ -140,6 +146,25 @@ class PointSpriteRenderer implements IRenderer
         "}",
     ];
 
+/*
+normal:  -1 * 0-pc.y
+flip:     1 * 1-pc.y
+
+-1 + 2*0
+
+fx = 0
+    (-1+(2*fx)) * (fx-pc.x)
+    (-1+(2*0)) *  (0-pc.x)
+    -1 * (0-pc.x)
+
+fy = 1
+    (-1+(2*fx)) * (fx-pc.x)
+    (-1+(2*1)) * (1-pc.y)
+    1 * (1-pc.y)
+
+
+*/
+
     public static var SPRITE_FRAGMENT_SHADER:Array<String> = [
         "precision mediump float;",
         "uniform sampler2D texture;",
@@ -148,7 +173,7 @@ class PointSpriteRenderer implements IRenderer
         "varying vec2 vTilePos;",
         "varying vec4 vColor;",
         "void main() {",
-            "vec2 uv = vec2( (gl_PointCoord.x)*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
+            "vec2 uv = vec2( (-1.0*(0.0-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
             "gl_FragColor = texture2D( texture, uv ) * vColor;",
         "}"
     ];
