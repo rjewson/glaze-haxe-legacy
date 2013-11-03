@@ -84,8 +84,8 @@ class PointSpriteRenderer implements IRenderer
 
     public function AddSpriteToBatch(spriteID:Int,x:Float,y:Float,size:Float,alpha:Int,red:Int,green:Int,blue:Int) {
         var index = indexRun * 5;
-        data[index+0] = x + camera.position.x;
-        data[index+1] = y + camera.position.y;
+        data[index+0] = Std.int(x + camera.position.x);
+        data[index+1] = Std.int(y + camera.position.y);
         data[index+2] = size;
         data[index+3] = spriteID;
         index *= 4;
@@ -119,6 +119,7 @@ class PointSpriteRenderer implements IRenderer
         gl.uniform1f(untyped pointSpriteShader.uniform.invTexTilesWide, invTexTilesWide);
         gl.uniform1f(untyped pointSpriteShader.uniform.invTexTilesHigh, invTexTilesHigh);
         gl.uniform2f(untyped pointSpriteShader.uniform.projectionVector,projection.x,projection.y);            
+        gl.uniform2f(untyped pointSpriteShader.uniform.flip,0,0);            
 
         gl.activeTexture(RenderingContext.TEXTURE0);
         gl.bindTexture(RenderingContext.TEXTURE_2D,texture);
@@ -131,6 +132,8 @@ class PointSpriteRenderer implements IRenderer
         "uniform float invTexTilesWide;",
         "uniform float invTexTilesHigh;",
         "uniform vec2 projectionVector;",
+        "uniform vec2 flip;",
+
         "attribute vec2 position;",
         "attribute float size;",
         "attribute float tileType;",
@@ -170,10 +173,13 @@ fy = 1
         "uniform sampler2D texture;",
         "uniform float invTexTilesWide;",
         "uniform float invTexTilesHigh;",
+        "uniform vec2 flip;",
+
         "varying vec2 vTilePos;",
         "varying vec4 vColor;",
         "void main() {",
-            "vec2 uv = vec2( (-1.0*(0.0-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
+            //"vec2 uv = vec2( (-1.0*(0.0-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
+            "vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);",
             "gl_FragColor = texture2D( texture, uv ) * vColor;",
         "}"
     ];

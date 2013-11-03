@@ -173,8 +173,8 @@ Main.main = function() {
 					var vX = Std.random(600) - 300;
 					var vY = Std.random(600) - 300;
 					var ttl = Std.random(3000) + 500;
-					var type = 3;
-					pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,true,true,null,type,8,-1);
+					var type = 2;
+					pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,-1);
 				}
 				pointParticleEngine.Update();
 				var elapsed = new Date().getTime() - startTime;
@@ -216,7 +216,7 @@ Main.main = function() {
 		});
 		tick();
 	});
-	assets.SetImagesToLoad(["1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","characters.png"]);
+	assets.SetImagesToLoad(["data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
 }
 var IMap = function() { }
 IMap.__name__ = true;
@@ -1196,11 +1196,11 @@ wgr.particle.PointSpriteParticle.prototype = {
 		this.age = ttl;
 		this.damping = damping;
 		this.decay = decay;
-		this.externalForce = externalForce != null?externalForce:wgr.particle.PointSpriteParticle.ZERO_FORCE;
+		this.externalForce = externalForce;
 		this.type = type;
 		this.size = data1;
 		this.colour = data2;
-		this.alpha = (this.colour & 255) * wgr.particle.PointSpriteParticle.INV_ALPHA;
+		this.alpha = (this.colour & 255) * (1 / 255);
 	}
 	,__class__: wgr.particle.PointSpriteParticle
 }
@@ -1208,6 +1208,7 @@ wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.particleCount = particleCount;
 	this.deltaTime = deltaTime;
 	this.invDeltaTime = deltaTime / 1000;
+	this.ZERO_FORCE = new wgr.geom.Point();
 	var _g = 0;
 	while(_g < particleCount) {
 		var i = _g++;
@@ -1231,7 +1232,7 @@ wgr.particle.PointSpriteParticleEngine.prototype = {
 			this.cachedParticles = particle;
 			particle = next;
 		} else {
-			this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX | 0,particle.pY | 0,particle.size,particle.alpha * 255 | 0,255,255,255);
+			this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size,particle.alpha * 255 | 0,255,255,255);
 			particle = particle.next;
 		}
 	}
@@ -1258,11 +1259,11 @@ wgr.particle.PointSpriteParticleEngine.prototype = {
 		particle.age = ttl;
 		particle.damping = damping;
 		particle.decay = decayable?this.deltaTime / ttl:0;
-		particle.externalForce = externalForce != null?externalForce:wgr.particle.PointSpriteParticle.ZERO_FORCE;
+		particle.externalForce = externalForce != null?externalForce:this.ZERO_FORCE;
 		particle.type = type;
 		particle.size = data1;
 		particle.colour = data2;
-		particle.alpha = (particle.colour & 255) * wgr.particle.PointSpriteParticle.INV_ALPHA;
+		particle.alpha = (particle.colour & 255) * (1 / 255);
 		return true;
 	}
 	,__class__: wgr.particle.PointSpriteParticleEngine
@@ -1327,14 +1328,15 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.gl.uniform1f(this.pointSpriteShader.uniform.invTexTilesWide,this.invTexTilesWide);
 		this.gl.uniform1f(this.pointSpriteShader.uniform.invTexTilesHigh,this.invTexTilesHigh);
 		this.gl.uniform2f(this.pointSpriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
+		this.gl.uniform2f(this.pointSpriteShader.uniform.flip,0,0);
 		this.gl.activeTexture(33984);
 		this.gl.bindTexture(3553,this.texture);
 		this.gl.drawArrays(0,0,this.indexRun);
 	}
 	,AddSpriteToBatch: function(spriteID,x,y,size,alpha,red,green,blue) {
 		var index = this.indexRun * 5;
-		this.data[index] = x + this.camera.position.x;
-		this.data[index + 1] = y + this.camera.position.y;
+		this.data[index] = x + this.camera.position.x | 0;
+		this.data[index + 1] = y + this.camera.position.y | 0;
 		this.data[index + 2] = size;
 		this.data[index + 3] = spriteID;
 		index *= 4;
@@ -1906,10 +1908,9 @@ var Enum = { };
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-wgr.particle.PointSpriteParticle.ZERO_FORCE = new wgr.geom.Point();
 wgr.particle.PointSpriteParticle.INV_ALPHA = 1 / 255;
-wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
-wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( (-1.0*(0.0-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, (gl_PointCoord.y)*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
 wgr.tilemap.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];

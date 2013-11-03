@@ -162,9 +162,9 @@ class Main
                     var vX = Std.random(600)-300;
                     var vY = Std.random(600)-300;
                     var ttl = Std.random(3000)+500;
-                    var type = 3;//validTiles[Std.random(validTiles.length)];
-                    //pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0xFFFFFFFF);                    
-                    pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,true,true,null,type,8,0xFFFFFFFF);                    
+                    var type = 2;//validTiles[Std.random(validTiles.length)];
+                    pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,0xFFFFFFFF);                    
+                    //pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,true,true,null,type,8,0xFFFFFFFF);                    
 
                 }
                 pointParticleEngine.Update();
@@ -209,7 +209,7 @@ class Main
 
         } );
 
-        assets.SetImagesToLoad( ["1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","characters.png"] );
+        assets.SetImagesToLoad( ["data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"] );
 
     }	
     

@@ -6,8 +6,7 @@ import wgr.geom.Point;
 class PointSpriteParticle
 {
 
-    public static var ZERO_FORCE:Point = new Point();
-    public static var INV_ALPHA:Float = 1/255;
+    public static inline var INV_ALPHA:Float = 1/255;
     
     public var pX:Float;
     public var pY:Float;
@@ -49,7 +48,7 @@ class PointSpriteParticle
         this.age = ttl;
         this.damping = damping;
         this.decay = decay;
-        this.externalForce = externalForce != null ? externalForce : ZERO_FORCE;
+        this.externalForce = externalForce;
         this.type = type;
         this.size = data1;
         this.colour = data2;

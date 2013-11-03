@@ -14,12 +14,14 @@ class PointSpriteParticleEngine
     public var cachedParticles:PointSpriteParticle;
         
     public var renderer:PointSpriteRenderer;
+    public var ZERO_FORCE:Point;
 
     public function new(particleCount:Int, deltaTime:Float) 
     {
         this.particleCount = particleCount;
         this.deltaTime = deltaTime;
         this.invDeltaTime = deltaTime / 1000;
+        ZERO_FORCE = new Point();
         for (i in 0...particleCount) {
             var p = new PointSpriteParticle();
             p.next = cachedParticles;
@@ -46,7 +48,7 @@ class PointSpriteParticleEngine
             activeParticles = particle;
         }
         
-        particle.Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce, type, data1, data2);
+        particle.Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce!=null?externalForce:ZERO_FORCE, type, data1, data2);
                 
         return true;
     }
@@ -70,7 +72,7 @@ class PointSpriteParticleEngine
                                 
                 particle = next;
             } else {
-                renderer.AddSpriteToBatch(Std.int(particle.type),Std.int(particle.pX),Std.int(particle.pY),particle.size,Std.int(particle.alpha*255),0xFF,0xFF,0xFF);
+                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size,Std.int(particle.alpha*255),0xFF,0xFF,0xFF);
                 particle = particle.next;
             }
         }
