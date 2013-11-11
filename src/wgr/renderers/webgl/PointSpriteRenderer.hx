@@ -42,8 +42,9 @@ class PointSpriteRenderer implements IRenderer
     public function new() {
     }
 
-    public function Init(gl:RenderingContext) {
+    public function Init(gl:RenderingContext,camera:Camera) {
         this.gl = gl;
+        this.camera = camera;
         projection = new Point();
         pointSpriteShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,SPRITE_VERTEX_SHADER,SPRITE_FRAGMENT_SHADER));
         dataBuffer =  gl.createBuffer();
@@ -72,10 +73,6 @@ class PointSpriteRenderer implements IRenderer
 
     public function AddStage(stage:Stage) {
         this.stage = stage;
-    }
-
-    public function SetCamera(camera:Camera) {
-        this.camera = camera;
     }
 
     public function ResetBatch() {

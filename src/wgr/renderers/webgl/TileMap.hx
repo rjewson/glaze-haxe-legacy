@@ -39,9 +39,13 @@ class TileMap implements IRenderer
 
     public var camera:Camera;
 
-    public function new(gl:RenderingContext)
+    public function new()
     {
+    }
+
+    public function Init(gl:RenderingContext,camera:Camera) {
         this.gl = gl;
+        this.camera = camera;
         tileScale = 1.0;
         tileSize = 16;
         filtered = false;
@@ -70,9 +74,6 @@ class TileMap implements IRenderer
 
         gl.bufferData(RenderingContext.ARRAY_BUFFER, quadVerts, RenderingContext.STATIC_DRAW);
         tilemapShader = new ShaderWrapper(gl, WebGLShaders.CompileProgram(gl,TILEMAP_VERTEX_SHADER,TILEMAP_FRAGMENT_SHADER));
-    }
-
-    public function Init(gl:RenderingContext) {
     }
 
     public function Resize(width:Int,height:Int) {
@@ -130,13 +131,12 @@ class TileMap implements IRenderer
         layers.push(layer);
     }
 
-    public function SetCamera(camera:Camera) {
-        this.camera = camera;
-    }
-
     public function RoundFunction(v:Float):Float {
-        // return v;
+        return v;
         // return Math.round(v);
+        //return Std.int(v);
+        //return cast (0.5 + v) >> 0;
+        //v-=0.5;
         return Math.round( v * 10) / 10;
     }
 
@@ -198,7 +198,7 @@ class TileMap implements IRenderer
         "void main(void) {",
         "   pixelCoord = (texture * viewportSize) + viewOffset;",
         "   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;",
-        "   gl_Position = vec4(position, 0.0, 1.0);",//" + vec4(0.00125,0.001666667,0,0);",
+        "   gl_Position = vec4(position, 0.0, 1.0);",
         "}"
     ];
 

@@ -51,7 +51,7 @@ class Main
             stage.addChild(camera);
 
             var canvasView:CanvasElement = cast(Browser.document.getElementById("view"),CanvasElement);
-            var renderer = new WebGLRenderer(stage,canvasView,800,600);
+            var renderer = new WebGLRenderer(stage,camera,canvasView,800,600);
 
             var debugView:CanvasElement = cast(Browser.document.getElementById("viewDebug"),CanvasElement);
             var debug = new CanvasDebugView(debugView,800,600);
@@ -82,17 +82,17 @@ class Main
 
             //var pengine = new SpriteParticleEngine(2000,60);
             //camera.addChild(pengine.canvas);
-
+            var shrooms = false;
             var spr1 = createSprite("spr1",128,128,128,128,texture1up);
             spr1.alpha=1;
-            itemContainer.addChild(spr1);
+            if (shrooms) itemContainer.addChild(spr1);
 
             var spr2 = createSprite("spr2",228,228,128,128,texture1up);
-            itemContainer.addChild(spr2);
+            if (shrooms) itemContainer.addChild(spr2);
 
             var spr21 = createSprite("spr21",328,328,128,128,texture1up);
             spr21.alpha = 0.9;
-            spr2.addChild(spr21);
+            if (shrooms) spr2.addChild(spr21);
 
             var spr3 = createSprite("character",400,380,0,0,texturechar1);
             spr3.scale.x = -1;
@@ -124,15 +124,14 @@ class Main
                 trace(item.id);
             }
 
-            var tileMap = new TileMap( renderer.gl );
+            var tileMap = new TileMap();
+            renderer.AddRenderer(tileMap);
             tileMap.SetSpriteSheet(assets.assets[1]);
             //tileMap.SetTileLayer(assets.assets[2],"base",1,1);
             tileMap.SetTileLayerFromData(mapData,"base",1,1);
             tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
             tileMap.tileSize = 16;
             tileMap.TileScale(2);
-            tileMap.SetCamera(camera);
-            renderer.AddRenderer(tileMap);
 
             var spriteRender = new SpriteRenderer();
             spriteRender.AddStage(stage);
@@ -140,7 +139,6 @@ class Main
 
             var pointParticleEngine = new PointSpriteParticleEngine(3000,1000/60);
             pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
-            pointParticleEngine.renderer.SetCamera(camera);
             renderer.AddRenderer(pointParticleEngine.renderer);
 
             var startTime = Date.now().getTime();
@@ -181,17 +179,20 @@ class Main
                     debug.DrawAABB(spr1.subTreeAABB);
                     debug.DrawAABB(spr2.subTreeAABB);                    
                 }
-                if (!stop) Browser.window.requestAnimationFrame(cast tick);
+                //if (!stop) Browser.window.requestAnimationFrame(cast tick);
             }
 
+            var engine = new engine.Engine();
+            engine.updateFunc = tick;
+            engine.start();
+            // tick();            
+
+
             Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
-                stop=true;
+                engine.stop();
             });
             Browser.document.getElementById("startbutton").addEventListener("click",function(event){
-                if (stop==true) {
-                    stop=false;
-                    tick();                    
-                } 
+                engine.start();
             });
             Browser.document.getElementById("debugbutton").addEventListener("click",function(event){
                 debugSwitch = !debugSwitch;
@@ -205,12 +206,15 @@ class Main
                 spr2.visible = !spr2.visible;
             });
 
-            tick();            
 
         } );
 
         assets.SetImagesToLoad( ["data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"] );
 
+        // var pengine = new physics.PhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT());
+        var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
+
+        // var m = physics.dynamics.Material.DEFAULTMATERIAL();
     }	
     
 }

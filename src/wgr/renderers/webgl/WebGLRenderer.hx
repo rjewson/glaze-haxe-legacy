@@ -6,6 +6,7 @@ import js.html.Event;
 import js.html.webgl.ContextAttributes;
 import js.html.webgl.Program;
 import js.html.webgl.RenderingContext;
+import wgr.display.Camera;
 import wgr.display.Stage;
 import wgr.geom.Point;
 import wgr.geom.AABB;
@@ -19,6 +20,7 @@ class WebGLRenderer
 {
 
     public var stage:Stage;
+    public var camera:Camera;
     public var view:CanvasElement;
     public var width:Int;
     public var height:Int;
@@ -30,8 +32,9 @@ class WebGLRenderer
 
     public var renderers:Array<IRenderer>;
 
-    public function new(stage:Stage,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=true) {
+    public function new(stage:Stage,camera:Camera,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=true) {
         this.stage = stage;
+        this.camera = camera;
         this.view = view;
         this.contextLost = false;
 
@@ -68,7 +71,7 @@ class WebGLRenderer
     }
 
     public function AddRenderer(renderer:IRenderer) {
-        renderer.Init(gl);
+        renderer.Init(gl,camera);
         renderer.Resize(width,height);
         renderers.push(renderer);
     }

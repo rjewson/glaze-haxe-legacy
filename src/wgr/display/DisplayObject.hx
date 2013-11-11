@@ -82,8 +82,16 @@ class DisplayObject
         //position.y = Math.round(position.y);
 
         //JS hack, much faster...
-        var positionx:Int = untyped{(0.5 + position.x) >> 0;};
-        var positiony:Int = untyped{(0.5 + position.y) >> 0;};
+         // var positionx:Int = untyped{(0.5 + position.x) >> 0;};
+         // var positiony:Int = untyped{(0.5 + position.y) >> 0;};
+        //positionx = cast Math.round( position.x * 10) / 10;
+        //positiony = cast Math.round( position.y * 10) / 10;
+
+        //var positionx:Int = Math.round(position.x);
+        //var positiony:Int = Math.round(position.y);
+
+        var positionx:Int = Math.floor(position.x + 0.5);
+        var positiony:Int = Math.floor(position.y + 0.5);
 
         var sinR = _rotationComponents.y;//Math.sin(rotation);
         var cosR = _rotationComponents.x;//Math.cos(rotation);
