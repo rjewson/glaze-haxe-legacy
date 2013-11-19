@@ -38,7 +38,10 @@ class WebGLShaders
         gl.linkProgram(shaderProgram);
 
         if (!gl.getProgramParameter(shaderProgram,RenderingContext.LINK_STATUS)) {
-            js.Lib.alert("Could not initialize shaders");
+            js.Lib.alert("Could not initialize program");
+            trace(vertexSrc);
+            trace(fragmentSrc);
+            trace(gl.getProgramInfoLog(shaderProgram));
         }
         return shaderProgram;
     }

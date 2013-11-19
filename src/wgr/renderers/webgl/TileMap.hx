@@ -184,6 +184,7 @@ class TileMap implements IRenderer
     }
     
     public static var TILEMAP_VERTEX_SHADER:Array<String> = [
+        "precision mediump float;",
         "attribute vec2 position;",
         "attribute vec2 texture;",
         

@@ -1,4 +1,5 @@
 (function () { "use strict";
+var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function inherit() {}; inherit.prototype = from; var proto = new inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -18,6 +19,32 @@ EReg.prototype = {
 }
 var HxOverrides = function() { }
 HxOverrides.__name__ = true;
+HxOverrides.cca = function(s,index) {
+	var x = s.charCodeAt(index);
+	if(x != x) return undefined;
+	return x;
+}
+HxOverrides.substr = function(s,pos,len) {
+	if(pos != null && pos != 0 && len != null && len < 0) return "";
+	if(len == null) len = s.length;
+	if(pos < 0) {
+		pos = s.length + pos;
+		if(pos < 0) pos = 0;
+	} else if(len < 0) len = s.length + len - pos;
+	return s.substr(pos,len);
+}
+HxOverrides.remove = function(a,obj) {
+	var i = 0;
+	var l = a.length;
+	while(i < l) {
+		if(a[i] == obj) {
+			a.splice(i,1);
+			return true;
+		}
+		i++;
+	}
+	return false;
+}
 HxOverrides.iter = function(a) {
 	return { cur : 0, arr : a, hasNext : function() {
 		return this.cur < this.arr.length;
@@ -27,6 +54,15 @@ HxOverrides.iter = function(a) {
 }
 var Lambda = function() { }
 Lambda.__name__ = true;
+Lambda.map = function(it,f) {
+	var l = new List();
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(x));
+	}
+	return l;
+}
 Lambda.indexOf = function(it,v) {
 	var i = 0;
 	var $it0 = $iterator(it)();
@@ -37,25 +73,48 @@ Lambda.indexOf = function(it,v) {
 	}
 	return -1;
 }
+var List = function() {
+	this.length = 0;
+};
+List.__name__ = true;
+List.prototype = {
+	join: function(sep) {
+		var s = new StringBuf();
+		var first = true;
+		var l = this.h;
+		while(l != null) {
+			if(first) first = false; else s.b += Std.string(sep);
+			s.b += Std.string(l[0]);
+			l = l[1];
+		}
+		return s.b;
+	}
+	,iterator: function() {
+		return { h : this.h, hasNext : function() {
+			return this.h != null;
+		}, next : function() {
+			if(this.h == null) return null;
+			var x = this.h[0];
+			this.h = this.h[1];
+			return x;
+		}};
+	}
+	,add: function(item) {
+		var x = [item];
+		if(this.h == null) this.h = x; else this.q[1] = x;
+		this.q = x;
+		this.length++;
+	}
+	,__class__: List
+}
 var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
-	var dd = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhAAAAAQAAAAEAAAAxAAAAAQAAAAEAAAAhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAQAAAAEAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAADEAAAACAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAkAAAAJAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAEAAAAJAAAACQAAAAkAAAAJAAAAEwAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAABMAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAEAAAABAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAAAkAAAAJAAAACQAAAAkAAAASAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAAAkAAAATAAAACQAAAAkAAAAJAAAACQAAAAkAAAATAAAACQAAAAkAAAAJAAAACQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAATAAAACQAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAABMAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAABIAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAJAAAACQAAAAkAAAASAAAACQAAAAkAAAAJAAAACQAAAAkAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAkAAAAJAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAQAAAAkAAAAJAAAACQAAAAEAAAABAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	var validTiles = [0,1,5,6,7,8,9,16,17,18];
-	var assets = new utils.ImageLoader();
+	var assets = new utils.AssetLoader();
 	assets.addEventListener("loaded",function(event) {
-		var map = new engine.map.TileMapMap(42,34,utils.Base64.Decode(dd));
-		var tileIndex = 1;
-		var _g = 0;
-		while(_g < 8) {
-			var tileY = _g++;
-			var _g1 = 0;
-			while(_g1 < 8) {
-				var tileX = _g1++;
-				map.addTileType(tileIndex++,tileX,tileY);
-			}
-		}
-		var mapData = map.toTexture();
+		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
+		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
+		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
 		var stage = new wgr.display.Stage();
 		var camera = new wgr.display.Camera();
 		camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
@@ -65,9 +124,9 @@ Main.main = function() {
 		var debugView = js.Boot.__cast(js.Browser.document.getElementById("viewDebug") , HTMLCanvasElement);
 		var debug = new wgr.renderers.canvas.CanvasDebugView(debugView,800,600);
 		var tm = new wgr.texture.TextureManager(renderer.gl);
-		var basetexture1up = tm.AddTexture("mushroom",assets.assets[0]);
+		var basetexture1up = tm.AddTexture("mushroom",assets.assets.get("data/1up.png"));
 		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
-		var basetexturechar = tm.AddTexture("char",assets.assets[4]);
+		var basetexturechar = tm.AddTexture("char",assets.assets.get("data/characters.png"));
 		var texturechar1 = new wgr.texture.Texture(basetexturechar,new wgr.geom.Rectangle(0,0,50,75));
 		camera.Resize(renderer.width,renderer.height);
 		var createSprite = function(id,x,y,px,py,t) {
@@ -115,17 +174,11 @@ Main.main = function() {
 			itemContainer.addChild(newSpr);
 			sprArray.push(newSpr);
 		}
-		var itr = new wgr.display.DisplayListIter(stage);
-		var _g = itr;
-		while(_g.top > 0) {
-			var item = _g.next();
-			console.log(item.id);
-		}
 		var tileMap = new wgr.renderers.webgl.TileMap();
 		renderer.AddRenderer(tileMap);
-		tileMap.SetSpriteSheet(assets.assets[1]);
+		tileMap.SetSpriteSheet(assets.assets.get("data/spelunky-tiles.png"));
 		tileMap.SetTileLayerFromData(mapData,"base",1,1);
-		tileMap.SetTileLayer(assets.assets[3],"bg",0.6,0.6);
+		tileMap.SetTileLayer(assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
 		tileMap.tileSize = 16;
 		tileMap.TileScale(2);
 		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
@@ -163,15 +216,6 @@ Main.main = function() {
 				_g1._rotationComponents.y = Math.sin(_g1._rotation);
 				_g1._rotation;
 			}
-			var _g = 0;
-			while(_g < 1000) {
-				var pCount = _g++;
-				var vX = Std.random(600) - 300;
-				var vY = Std.random(600) - 300;
-				var ttl = Std.random(3000) + 500;
-				var type = 2;
-				pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,false,true,null,type,32,-1);
-			}
 			pointParticleEngine.Update();
 			var elapsed = new Date().getTime() - startTime;
 			var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
@@ -207,8 +251,8 @@ Main.main = function() {
 			spr2._visible;
 		});
 	});
-	assets.SetImagesToLoad(["data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
-	var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
+	assets.SetImagesToLoad(["data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
+	assets.Load();
 }
 var IMap = function() { }
 IMap.__name__ = true;
@@ -217,11 +261,167 @@ Std.__name__ = true;
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
 }
+Std.parseInt = function(x) {
+	var v = parseInt(x,10);
+	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
+	if(isNaN(v)) return null;
+	return v;
+}
 Std.parseFloat = function(x) {
 	return parseFloat(x);
 }
-Std.random = function(x) {
-	return x <= 0?0:Math.floor(Math.random() * x);
+var StringBuf = function() {
+	this.b = "";
+};
+StringBuf.__name__ = true;
+StringBuf.prototype = {
+	addSub: function(s,pos,len) {
+		this.b += len == null?HxOverrides.substr(s,pos,null):HxOverrides.substr(s,pos,len);
+	}
+	,__class__: StringBuf
+}
+var StringTools = function() { }
+StringTools.__name__ = true;
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+}
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+}
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+}
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+}
+var XmlType = { __ename__ : true, __constructs__ : [] }
+var Xml = function() {
+};
+Xml.__name__ = true;
+Xml.parse = function(str) {
+	return haxe.xml.Parser.parse(str);
+}
+Xml.createElement = function(name) {
+	var r = new Xml();
+	r.nodeType = Xml.Element;
+	r._children = new Array();
+	r._attributes = new haxe.ds.StringMap();
+	r.set_nodeName(name);
+	return r;
+}
+Xml.createPCData = function(data) {
+	var r = new Xml();
+	r.nodeType = Xml.PCData;
+	r.set_nodeValue(data);
+	return r;
+}
+Xml.createCData = function(data) {
+	var r = new Xml();
+	r.nodeType = Xml.CData;
+	r.set_nodeValue(data);
+	return r;
+}
+Xml.createComment = function(data) {
+	var r = new Xml();
+	r.nodeType = Xml.Comment;
+	r.set_nodeValue(data);
+	return r;
+}
+Xml.createDocType = function(data) {
+	var r = new Xml();
+	r.nodeType = Xml.DocType;
+	r.set_nodeValue(data);
+	return r;
+}
+Xml.createProcessingInstruction = function(data) {
+	var r = new Xml();
+	r.nodeType = Xml.ProcessingInstruction;
+	r.set_nodeValue(data);
+	return r;
+}
+Xml.createDocument = function() {
+	var r = new Xml();
+	r.nodeType = Xml.Document;
+	r._children = new Array();
+	return r;
+}
+Xml.prototype = {
+	addChild: function(x) {
+		if(this._children == null) throw "bad nodetype";
+		if(x._parent != null) HxOverrides.remove(x._parent._children,x);
+		x._parent = this;
+		this._children.push(x);
+	}
+	,elementsNamed: function(name) {
+		if(this._children == null) throw "bad nodetype";
+		return { cur : 0, x : this._children, hasNext : function() {
+			var k = this.cur;
+			var l = this.x.length;
+			while(k < l) {
+				var n = this.x[k];
+				if(n.nodeType == Xml.Element && n._nodeName == name) break;
+				k++;
+			}
+			this.cur = k;
+			return k < l;
+		}, next : function() {
+			var k = this.cur;
+			var l = this.x.length;
+			while(k < l) {
+				var n = this.x[k];
+				k++;
+				if(n.nodeType == Xml.Element && n._nodeName == name) {
+					this.cur = k;
+					return n;
+				}
+			}
+			return null;
+		}};
+	}
+	,iterator: function() {
+		if(this._children == null) throw "bad nodetype";
+		return { cur : 0, x : this._children, hasNext : function() {
+			return this.cur < this.x.length;
+		}, next : function() {
+			return this.x[this.cur++];
+		}};
+	}
+	,exists: function(att) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._attributes.exists(att);
+	}
+	,set: function(att,value) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		this._attributes.set(att,value);
+	}
+	,get: function(att) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._attributes.get(att);
+	}
+	,set_nodeValue: function(v) {
+		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
+		return this._nodeValue = v;
+	}
+	,get_nodeValue: function() {
+		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
+		return this._nodeValue;
+	}
+	,set_nodeName: function(n) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._nodeName = n;
+	}
+	,get_nodeName: function() {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._nodeName;
+	}
+	,__class__: Xml
 }
 var ds = {}
 ds.Array2D = function(width,height,buffer) {
@@ -243,59 +443,6 @@ ds.Array2D.prototype = {
 		return this.data32[y * this.w + x];
 	}
 	,__class__: ds.Array2D
-}
-ds.Grid2D = function(gridWidth,gridHeight,cellSize) {
-	this.initalize(gridWidth,gridHeight,cellSize);
-};
-ds.Grid2D.__name__ = true;
-ds.Grid2D.prototype = {
-	Height: function() {
-		return this.gridHeight * this.cellSize;
-	}
-	,Width: function() {
-		return this.gridWidth * this.cellSize;
-	}
-	,Index: function(value) {
-		return value * this.invCellSize | 0;
-	}
-	,SetGrid: function(x,y,value) {
-		this.data[y * this.gridWidth + x] = value;
-	}
-	,GetGridSafe: function(x,y) {
-		return x >= this.gridWidth || y >= this.gridHeight || x < 0 || y < 0?null:this.data[y * this.gridWidth + x];
-	}
-	,GetGrid: function(x,y) {
-		return this.data[y * this.gridWidth + x];
-	}
-	,initalize: function(gridWidth,gridHeight,cellSize) {
-		this.gridWidth = gridWidth;
-		this.gridHeight = gridHeight;
-		this.cellSize = cellSize;
-		this.invCellSize = 1 / cellSize;
-		this.data = new Array();
-	}
-	,__class__: ds.Grid2D
-}
-ds.Grid2DIterator = function() {
-};
-ds.Grid2DIterator.__name__ = true;
-ds.Grid2DIterator.prototype = {
-	__class__: ds.Grid2DIterator
-}
-ds.IDManager = function() { }
-ds.IDManager.__name__ = true;
-ds.IDManager.GetPersistentID = function() {
-	return ds.IDManager.NEXT_PERSISTENT_ID++;
-}
-ds.IDManager.GetTransientID = function() {
-	var id = ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER];
-	ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER] = 0;
-	ds.IDManager.TRANSIENT_POINTER++;
-	return id;
-}
-ds.IDManager.ReleaseTransientID = function(id) {
-	ds.IDManager.TRANSIENT_POINTER--;
-	ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER] = id;
 }
 var engine = {}
 engine.Engine = function() {
@@ -350,78 +497,348 @@ engine.map.TileMapMap.prototype = {
 	}
 	,__class__: engine.map.TileMapMap
 }
+engine.map.tmx = {}
+engine.map.tmx.TmxLayer = function(source,parent) {
+	this.properties = new engine.map.tmx.TmxPropertySet();
+	this.map = parent;
+	this.name = source.att.resolve("name");
+	this.x = source.has.resolve("x")?Std.parseInt(source.att.resolve("x")):0;
+	this.y = source.has.resolve("y")?Std.parseInt(source.att.resolve("y")):0;
+	this.width = Std.parseInt(source.att.resolve("width"));
+	this.height = Std.parseInt(source.att.resolve("height"));
+	this.visible = source.has.resolve("visible") && source.att.resolve("visible") == "1"?true:false;
+	this.opacity = source.has.resolve("opacity")?Std.parseFloat(source.att.resolve("opacity")):0;
+	var node;
+	var $it0 = source.nodes.resolve("properties").iterator();
+	while( $it0.hasNext() ) {
+		var node1 = $it0.next();
+		this.properties.extend(node1);
+	}
+	var data = source.node.resolve("data");
+	if(data != null) {
+		var chunk = "";
+		var _g = data.att.resolve("encoding");
+		switch(_g) {
+		case "base64":
+			chunk = StringTools.trim(data.get_innerData());
+			var compressed = false;
+			if(data.has.resolve("compression")) {
+				var _g1 = data.att.resolve("compression");
+				switch(_g1) {
+				case "zlib":
+					compressed = true;
+					break;
+				default:
+					throw "TmxLayer - data compression type not supported!";
+				}
+			}
+			this.tileGIDs = new ds.Array2D(this.width,this.height,utils.Base64.Decode(chunk));
+			break;
+		case "csv":
+			break;
+		default:
+		}
+	}
+};
+engine.map.tmx.TmxLayer.__name__ = true;
+engine.map.tmx.TmxLayer.csvToArray = function(input) {
+	var result = new Array();
+	var rows = input.split("\n");
+	var row;
+	var _g = 0;
+	while(_g < rows.length) {
+		var row1 = rows[_g];
+		++_g;
+		if(row1 == "") continue;
+		var resultRow = new Array();
+		var entries = row1.split(",");
+		var entry;
+		var _g1 = 0;
+		while(_g1 < entries.length) {
+			var entry1 = entries[_g1];
+			++_g1;
+			resultRow.push(Std.parseInt(entry1));
+		}
+		result.push(resultRow);
+	}
+	return result;
+}
+engine.map.tmx.TmxLayer.layerToCoordTexture = function(layer) {
+	var tileSet = null;
+	var textureData = new ds.Array2D(layer.width,layer.height);
+	var _g1 = 0, _g = layer.width;
+	while(_g1 < _g) {
+		var xp = _g1++;
+		var _g3 = 0, _g2 = layer.height;
+		while(_g3 < _g2) {
+			var yp = _g3++;
+			var source = layer.tileGIDs.get(xp,yp);
+			if(source > 0) {
+				if(tileSet == null) tileSet = layer.map.getGidOwner(source);
+				var relativeID = source - tileSet.firstGID;
+				var y = Math.floor(relativeID / tileSet.numCols);
+				var x = relativeID - tileSet.numCols * y;
+				var v = -16777216 | y << 8 | x;
+				textureData.data32[yp * textureData.w + xp] = v;
+			} else textureData.data32[yp * textureData.w + xp] = -1;
+		}
+	}
+	return textureData;
+}
+engine.map.tmx.TmxLayer.prototype = {
+	__class__: engine.map.tmx.TmxLayer
+}
+engine.map.tmx.TmxMap = function(data) {
+	this.properties = new engine.map.tmx.TmxPropertySet();
+	var source = null;
+	var node = null;
+	if(js.Boot.__instanceof(data,String)) source = new haxe.xml.Fast(Xml.parse(data)); else throw "Unknown TMX map format";
+	this.tilesets = new Array();
+	this.layers = new engine.map.tmx.TmxOrderedHash();
+	this.objectGroups = new engine.map.tmx.TmxOrderedHash();
+	source = source.node.resolve("map");
+	this.version = source.att.resolve("version");
+	if(this.version == null) this.version = "unknown";
+	this.orientation = source.att.resolve("orientation");
+	if(this.orientation == null) this.orientation = "orthogonal";
+	this.width = Std.parseInt(source.att.resolve("width"));
+	this.height = Std.parseInt(source.att.resolve("height"));
+	this.tileWidth = Std.parseInt(source.att.resolve("tilewidth"));
+	this.tileHeight = Std.parseInt(source.att.resolve("tileheight"));
+	this.fullWidth = this.width * this.tileWidth;
+	this.fullHeight = this.height * this.tileHeight;
+	var $it0 = source.nodes.resolve("properties").iterator();
+	while( $it0.hasNext() ) {
+		var node1 = $it0.next();
+		this.properties.extend(node1);
+	}
+	var $it1 = source.nodes.resolve("tileset").iterator();
+	while( $it1.hasNext() ) {
+		var node1 = $it1.next();
+		this.tilesets.push(new engine.map.tmx.TmxTileSet(node1));
+	}
+	var $it2 = source.nodes.resolve("layer").iterator();
+	while( $it2.hasNext() ) {
+		var node1 = $it2.next();
+		this.layers.set(node1.att.resolve("name"),new engine.map.tmx.TmxLayer(node1,this));
+	}
+	var $it3 = source.nodes.resolve("objectgroup").iterator();
+	while( $it3.hasNext() ) {
+		var node1 = $it3.next();
+		this.objectGroups.set(node1.att.resolve("name"),new engine.map.tmx.TmxObjectGroup(node1,this));
+	}
+};
+engine.map.tmx.TmxMap.__name__ = true;
+engine.map.tmx.TmxMap.prototype = {
+	getGidOwner: function(gid) {
+		var last = null;
+		var set;
+		var _g = 0, _g1 = this.tilesets;
+		while(_g < _g1.length) {
+			var set1 = _g1[_g];
+			++_g;
+			if(set1.hasGid(gid)) return set1;
+		}
+		return null;
+	}
+	,getObjectGroup: function(name) {
+		return this.objectGroups._map.get(name);
+	}
+	,getLayer: function(name) {
+		return this.layers._map.get(name);
+	}
+	,__class__: engine.map.tmx.TmxMap
+}
+engine.map.tmx.TmxObject = function(source,parent) {
+	this.group = parent;
+	this.name = source.has.resolve("name")?source.att.resolve("name"):"[object]";
+	this.type = source.has.resolve("type")?source.att.resolve("type"):"";
+	this.x = Std.parseInt(source.att.resolve("x"));
+	this.y = Std.parseInt(source.att.resolve("y"));
+	this.width = source.has.resolve("width")?Std.parseInt(source.att.resolve("width")):0;
+	this.height = source.has.resolve("height")?Std.parseInt(source.att.resolve("height")):0;
+	this.shared = null;
+	this.gid = -1;
+	if(source.has.resolve("gid") && source.att.resolve("gid").length != 0) {
+		this.gid = Std.parseInt(source.att.resolve("gid"));
+		var set;
+		var _g = 0, _g1 = this.group.map.tilesets;
+		while(_g < _g1.length) {
+			var set1 = _g1[_g];
+			++_g;
+			this.shared = set1.getPropertiesByGid(this.gid);
+			if(this.shared != null) break;
+		}
+	}
+	var node;
+	this.custom = new engine.map.tmx.TmxPropertySet();
+	var $it0 = source.nodes.resolve("properties").iterator();
+	while( $it0.hasNext() ) {
+		var node1 = $it0.next();
+		this.custom.extend(node1);
+	}
+};
+engine.map.tmx.TmxObject.__name__ = true;
+engine.map.tmx.TmxObject.prototype = {
+	__class__: engine.map.tmx.TmxObject
+}
+engine.map.tmx.TmxObjectGroup = function(source,parent) {
+	this.properties = new engine.map.tmx.TmxPropertySet();
+	this.objects = new Array();
+	this.map = parent;
+	this.name = source.att.resolve("name");
+	this.x = source.has.resolve("x")?Std.parseInt(source.att.resolve("x")):0;
+	this.y = source.has.resolve("y")?Std.parseInt(source.att.resolve("y")):0;
+	this.width = Std.parseInt(source.att.resolve("width"));
+	this.height = Std.parseInt(source.att.resolve("height"));
+	this.visible = source.has.resolve("visible") && source.att.resolve("visible") == "1"?true:false;
+	this.opacity = source.has.resolve("opacity")?Std.parseFloat(source.att.resolve("opacity")):0;
+	var node;
+	var $it0 = source.nodes.resolve("properties").iterator();
+	while( $it0.hasNext() ) {
+		var node1 = $it0.next();
+		this.properties.extend(node1);
+	}
+	var $it1 = source.nodes.resolve("object").iterator();
+	while( $it1.hasNext() ) {
+		var node1 = $it1.next();
+		this.objects.push(new engine.map.tmx.TmxObject(node1,this));
+	}
+};
+engine.map.tmx.TmxObjectGroup.__name__ = true;
+engine.map.tmx.TmxObjectGroup.prototype = {
+	__class__: engine.map.tmx.TmxObjectGroup
+}
+engine.map.tmx.TmxOrderedHash = function() {
+	this._keys = new Array();
+	this._map = new haxe.ds.StringMap();
+};
+engine.map.tmx.TmxOrderedHash.__name__ = true;
+engine.map.tmx.TmxOrderedHash.prototype = {
+	toString: function() {
+		var __map = this._map;
+		var pairs = Lambda.map(this._keys,function(x) {
+			return x + " => " + Std.string(__map.get(x));
+		});
+		return "{" + pairs.join(", ") + "}";
+	}
+	,keys: function() {
+		return HxOverrides.iter(this._keys);
+	}
+	,iterator: function() {
+		var _keys_itr = HxOverrides.iter(this._keys);
+		var __map = this._map;
+		return { next : function() {
+			return __map.get(_keys_itr.next());
+		}, hasNext : $bind(_keys_itr,_keys_itr.hasNext)};
+	}
+	,get: function(key) {
+		return this._map.get(key);
+	}
+	,exists: function(key) {
+		return this._map.exists(key);
+	}
+	,remove: function(key) {
+		HxOverrides.remove(this._keys,key);
+		return this._map.remove(key);
+	}
+	,set: function(key,value) {
+		if(!this._map.exists(key)) this._keys.push(key);
+		this._map.set(key,value);
+	}
+	,__class__: engine.map.tmx.TmxOrderedHash
+}
+engine.map.tmx.TmxPropertySet = function() {
+	this.keys = new haxe.ds.StringMap();
+};
+engine.map.tmx.TmxPropertySet.__name__ = true;
+engine.map.tmx.TmxPropertySet.prototype = {
+	extend: function(source) {
+		var prop;
+		var $it0 = source.nodes.resolve("property").iterator();
+		while( $it0.hasNext() ) {
+			var prop1 = $it0.next();
+			this.keys.set(prop1.att.resolve("name"),prop1.att.resolve("value"));
+		}
+	}
+	,resolve: function(name) {
+		return this.keys.get(name);
+	}
+	,__class__: engine.map.tmx.TmxPropertySet
+}
+engine.map.tmx.TmxTileSet = function(data) {
+	var node, source;
+	this.numTiles = 16777215;
+	this.numRows = this.numCols = 1;
+	if(js.Boot.__instanceof(data,haxe.xml.Fast)) source = data; else throw "Unknown TMX tileset format";
+	this.firstGID = source.has.resolve("firstgid")?Std.parseInt(source.att.resolve("firstgid")):1;
+	if(source.has.resolve("source")) {
+	} else {
+		var node1 = source.node.resolve("image");
+		this.imageSource = node1.att.resolve("source");
+		this.name = source.att.resolve("name");
+		if(source.has.resolve("tilewidth")) this.tileWidth = Std.parseInt(source.att.resolve("tilewidth"));
+		if(source.has.resolve("tileheight")) this.tileHeight = Std.parseInt(source.att.resolve("tileheight"));
+		if(source.has.resolve("spacing")) this.spacing = Std.parseInt(source.att.resolve("spacing"));
+		if(source.has.resolve("margin")) this.margin = Std.parseInt(source.att.resolve("margin"));
+		this._tileProps = new Array();
+		var $it0 = source.nodes.resolve("tile").iterator();
+		while( $it0.hasNext() ) {
+			var node2 = $it0.next();
+			if(node2.has.resolve("id")) {
+				var id = Std.parseInt(node2.att.resolve("id"));
+				this._tileProps[id] = new engine.map.tmx.TmxPropertySet();
+				var $it1 = node2.nodes.resolve("properties").iterator();
+				while( $it1.hasNext() ) {
+					var prop = $it1.next();
+					this._tileProps[id].extend(prop);
+				}
+			}
+		}
+	}
+};
+engine.map.tmx.TmxTileSet.__name__ = true;
+engine.map.tmx.TmxTileSet.prototype = {
+	getRect: function(id) {
+		return new wgr.geom.Rectangle(0,0,id % this.numCols * this.tileWidth,id / this.numCols * this.tileHeight);
+	}
+	,getProperties: function(id) {
+		return this._tileProps[id];
+	}
+	,getPropertiesByGid: function(gid) {
+		if(this._tileProps != null) return this._tileProps[gid - this.firstGID];
+		return null;
+	}
+	,toGid: function(id) {
+		return this.firstGID + id;
+	}
+	,fromGid: function(gid) {
+		return gid - this.firstGID;
+	}
+	,hasGid: function(gid) {
+		return gid >= this.firstGID && gid < this.firstGID + this.numTiles;
+	}
+	,set_image: function(v) {
+		this._image = v;
+		this.numCols = Math.floor(v.width / this.tileWidth);
+		this.numRows = Math.floor(v.height / this.tileHeight);
+		this.numTiles = this.numRows * this.numCols;
+		return this._image;
+	}
+	,get_image: function() {
+		return this._image;
+	}
+	,__class__: engine.map.tmx.TmxTileSet
+}
 var haxe = {}
 haxe.ds = {}
-haxe.ds.GenericCell = function(elt,next) {
-	this.elt = elt;
-	this.next = next;
-};
-haxe.ds.GenericCell.__name__ = true;
-haxe.ds.GenericCell.prototype = {
-	__class__: haxe.ds.GenericCell
-}
-haxe.ds.GenericStack = function() {
-};
-haxe.ds.GenericStack.__name__ = true;
-haxe.ds.GenericStack.prototype = {
-	iterator: function() {
-		var l = this.head;
-		return { hasNext : function() {
-			return l != null;
-		}, next : function() {
-			var k = l;
-			l = k.next;
-			return k.elt;
-		}};
-	}
-	,remove: function(v) {
-		var prev = null;
-		var l = this.head;
-		while(l != null) {
-			if(l.elt == v) {
-				if(prev == null) this.head = l.next; else prev.next = l.next;
-				break;
-			}
-			prev = l;
-			l = l.next;
-		}
-		return l != null;
-	}
-	,add: function(item) {
-		this.head = new haxe.ds.GenericCell(item,this.head);
-	}
-	,__class__: haxe.ds.GenericStack
-}
 haxe.ds.IntMap = function() {
 	this.h = { };
 };
 haxe.ds.IntMap.__name__ = true;
 haxe.ds.IntMap.__interfaces__ = [IMap];
 haxe.ds.IntMap.prototype = {
-	iterator: function() {
-		return { ref : this.h, it : this.keys(), hasNext : function() {
-			return this.it.hasNext();
-		}, next : function() {
-			var i = this.it.next();
-			return this.ref[i];
-		}};
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key | 0);
-		}
-		return HxOverrides.iter(a);
-	}
-	,remove: function(key) {
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty(key);
-	}
-	,get: function(key) {
+	get: function(key) {
 		return this.h[key];
 	}
 	,set: function(key,value) {
@@ -435,7 +852,13 @@ haxe.ds.StringMap = function() {
 haxe.ds.StringMap.__name__ = true;
 haxe.ds.StringMap.__interfaces__ = [IMap];
 haxe.ds.StringMap.prototype = {
-	exists: function(key) {
+	remove: function(key) {
+		key = "$" + key;
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
+	}
+	,exists: function(key) {
 		return this.h.hasOwnProperty("$" + key);
 	}
 	,get: function(key) {
@@ -445,6 +868,346 @@ haxe.ds.StringMap.prototype = {
 		this.h["$" + key] = value;
 	}
 	,__class__: haxe.ds.StringMap
+}
+haxe.xml = {}
+haxe.xml._Fast = {}
+haxe.xml._Fast.NodeAccess = function(x) {
+	this.__x = x;
+};
+haxe.xml._Fast.NodeAccess.__name__ = true;
+haxe.xml._Fast.NodeAccess.prototype = {
+	resolve: function(name) {
+		var x = this.__x.elementsNamed(name).next();
+		if(x == null) {
+			var xname = this.__x.nodeType == Xml.Document?"Document":this.__x.get_nodeName();
+			throw xname + " is missing element " + name;
+		}
+		return new haxe.xml.Fast(x);
+	}
+	,__class__: haxe.xml._Fast.NodeAccess
+}
+haxe.xml._Fast.AttribAccess = function(x) {
+	this.__x = x;
+};
+haxe.xml._Fast.AttribAccess.__name__ = true;
+haxe.xml._Fast.AttribAccess.prototype = {
+	resolve: function(name) {
+		if(this.__x.nodeType == Xml.Document) throw "Cannot access document attribute " + name;
+		var v = this.__x.get(name);
+		if(v == null) throw this.__x.get_nodeName() + " is missing attribute " + name;
+		return v;
+	}
+	,__class__: haxe.xml._Fast.AttribAccess
+}
+haxe.xml._Fast.HasAttribAccess = function(x) {
+	this.__x = x;
+};
+haxe.xml._Fast.HasAttribAccess.__name__ = true;
+haxe.xml._Fast.HasAttribAccess.prototype = {
+	resolve: function(name) {
+		if(this.__x.nodeType == Xml.Document) throw "Cannot access document attribute " + name;
+		return this.__x.exists(name);
+	}
+	,__class__: haxe.xml._Fast.HasAttribAccess
+}
+haxe.xml._Fast.HasNodeAccess = function(x) {
+	this.__x = x;
+};
+haxe.xml._Fast.HasNodeAccess.__name__ = true;
+haxe.xml._Fast.HasNodeAccess.prototype = {
+	__class__: haxe.xml._Fast.HasNodeAccess
+}
+haxe.xml._Fast.NodeListAccess = function(x) {
+	this.__x = x;
+};
+haxe.xml._Fast.NodeListAccess.__name__ = true;
+haxe.xml._Fast.NodeListAccess.prototype = {
+	resolve: function(name) {
+		var l = new List();
+		var $it0 = this.__x.elementsNamed(name);
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			l.add(new haxe.xml.Fast(x));
+		}
+		return l;
+	}
+	,__class__: haxe.xml._Fast.NodeListAccess
+}
+haxe.xml.Fast = function(x) {
+	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) throw "Invalid nodeType " + Std.string(x.nodeType);
+	this.x = x;
+	this.node = new haxe.xml._Fast.NodeAccess(x);
+	this.nodes = new haxe.xml._Fast.NodeListAccess(x);
+	this.att = new haxe.xml._Fast.AttribAccess(x);
+	this.has = new haxe.xml._Fast.HasAttribAccess(x);
+	this.hasNode = new haxe.xml._Fast.HasNodeAccess(x);
+};
+haxe.xml.Fast.__name__ = true;
+haxe.xml.Fast.prototype = {
+	get_innerData: function() {
+		var it = this.x.iterator();
+		if(!it.hasNext()) throw this.get_name() + " does not have data";
+		var v = it.next();
+		var n = it.next();
+		if(n != null) {
+			if(v.nodeType == Xml.PCData && n.nodeType == Xml.CData && StringTools.trim(v.get_nodeValue()) == "") {
+				var n2 = it.next();
+				if(n2 == null || n2.nodeType == Xml.PCData && StringTools.trim(n2.get_nodeValue()) == "" && it.next() == null) return n.get_nodeValue();
+			}
+			throw this.get_name() + " does not only have data";
+		}
+		if(v.nodeType != Xml.PCData && v.nodeType != Xml.CData) throw this.get_name() + " does not have data";
+		return v.get_nodeValue();
+	}
+	,get_name: function() {
+		return this.x.nodeType == Xml.Document?"Document":this.x.get_nodeName();
+	}
+	,__class__: haxe.xml.Fast
+}
+haxe.xml.Parser = function() { }
+haxe.xml.Parser.__name__ = true;
+haxe.xml.Parser.parse = function(str) {
+	var doc = Xml.createDocument();
+	haxe.xml.Parser.doParse(str,0,doc);
+	return doc;
+}
+haxe.xml.Parser.doParse = function(str,p,parent) {
+	if(p == null) p = 0;
+	var xml = null;
+	var state = 1;
+	var next = 1;
+	var aname = null;
+	var start = 0;
+	var nsubs = 0;
+	var nbrackets = 0;
+	var c = str.charCodeAt(p);
+	var buf = new StringBuf();
+	while(!(c != c)) {
+		switch(state) {
+		case 0:
+			switch(c) {
+			case 10:case 13:case 9:case 32:
+				break;
+			default:
+				state = next;
+				continue;
+			}
+			break;
+		case 1:
+			switch(c) {
+			case 60:
+				state = 0;
+				next = 2;
+				break;
+			default:
+				start = p;
+				state = 13;
+				continue;
+			}
+			break;
+		case 13:
+			if(c == 60) {
+				var child = Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start));
+				buf = new StringBuf();
+				parent.addChild(child);
+				nsubs++;
+				state = 0;
+				next = 2;
+			} else if(c == 38) {
+				buf.addSub(str,start,p - start);
+				state = 18;
+				next = 13;
+				start = p + 1;
+			}
+			break;
+		case 17:
+			if(c == 93 && str.charCodeAt(p + 1) == 93 && str.charCodeAt(p + 2) == 62) {
+				var child = Xml.createCData(HxOverrides.substr(str,start,p - start));
+				parent.addChild(child);
+				nsubs++;
+				p += 2;
+				state = 1;
+			}
+			break;
+		case 2:
+			switch(c) {
+			case 33:
+				if(str.charCodeAt(p + 1) == 91) {
+					p += 2;
+					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw "Expected <![CDATA[";
+					p += 5;
+					state = 17;
+					start = p + 1;
+				} else if(str.charCodeAt(p + 1) == 68 || str.charCodeAt(p + 1) == 100) {
+					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw "Expected <!DOCTYPE";
+					p += 8;
+					state = 16;
+					start = p + 1;
+				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw "Expected <!--"; else {
+					p += 2;
+					state = 15;
+					start = p + 1;
+				}
+				break;
+			case 63:
+				state = 14;
+				start = p;
+				break;
+			case 47:
+				if(parent == null) throw "Expected node name";
+				start = p + 1;
+				state = 0;
+				next = 10;
+				break;
+			default:
+				state = 3;
+				start = p;
+				continue;
+			}
+			break;
+		case 3:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				if(p == start) throw "Expected node name";
+				xml = Xml.createElement(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml);
+				state = 0;
+				next = 4;
+				continue;
+			}
+			break;
+		case 4:
+			switch(c) {
+			case 47:
+				state = 11;
+				nsubs++;
+				break;
+			case 62:
+				state = 9;
+				nsubs++;
+				break;
+			default:
+				state = 5;
+				start = p;
+				continue;
+			}
+			break;
+		case 5:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				var tmp;
+				if(start == p) throw "Expected attribute name";
+				tmp = HxOverrides.substr(str,start,p - start);
+				aname = tmp;
+				if(xml.exists(aname)) throw "Duplicate attribute";
+				state = 0;
+				next = 6;
+				continue;
+			}
+			break;
+		case 6:
+			switch(c) {
+			case 61:
+				state = 0;
+				next = 7;
+				break;
+			default:
+				throw "Expected =";
+			}
+			break;
+		case 7:
+			switch(c) {
+			case 34:case 39:
+				state = 8;
+				start = p;
+				break;
+			default:
+				throw "Expected \"";
+			}
+			break;
+		case 8:
+			if(c == str.charCodeAt(start)) {
+				var val = HxOverrides.substr(str,start + 1,p - start - 1);
+				xml.set(aname,val);
+				state = 0;
+				next = 4;
+			}
+			break;
+		case 9:
+			p = haxe.xml.Parser.doParse(str,p,xml);
+			start = p;
+			state = 1;
+			break;
+		case 11:
+			switch(c) {
+			case 62:
+				state = 1;
+				break;
+			default:
+				throw "Expected >";
+			}
+			break;
+		case 12:
+			switch(c) {
+			case 62:
+				if(nsubs == 0) parent.addChild(Xml.createPCData(""));
+				return p;
+			default:
+				throw "Expected >";
+			}
+			break;
+		case 10:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				if(start == p) throw "Expected node name";
+				var v = HxOverrides.substr(str,start,p - start);
+				if(v != parent.get_nodeName()) throw "Expected </" + parent.get_nodeName() + ">";
+				state = 0;
+				next = 12;
+				continue;
+			}
+			break;
+		case 15:
+			if(c == 45 && str.charCodeAt(p + 1) == 45 && str.charCodeAt(p + 2) == 62) {
+				parent.addChild(Xml.createComment(HxOverrides.substr(str,start,p - start)));
+				p += 2;
+				state = 1;
+			}
+			break;
+		case 16:
+			if(c == 91) nbrackets++; else if(c == 93) nbrackets--; else if(c == 62 && nbrackets == 0) {
+				parent.addChild(Xml.createDocType(HxOverrides.substr(str,start,p - start)));
+				state = 1;
+			}
+			break;
+		case 14:
+			if(c == 63 && str.charCodeAt(p + 1) == 62) {
+				p++;
+				var str1 = HxOverrides.substr(str,start + 1,p - start - 2);
+				parent.addChild(Xml.createProcessingInstruction(str1));
+				state = 1;
+			}
+			break;
+		case 18:
+			if(c == 59) {
+				var s = HxOverrides.substr(str,start,p - start);
+				if(s.charCodeAt(0) == 35) {
+					var i = s.charCodeAt(1) == 120?Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)):Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					buf.b += Std.string(String.fromCharCode(i));
+				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.b += Std.string(haxe.xml.Parser.escapes.get(s));
+				start = p + 1;
+				state = next;
+			}
+			break;
+		}
+		c = str.charCodeAt(++p);
+	}
+	if(state == 1) {
+		start = p;
+		state = 13;
+	}
+	if(state == 13) {
+		if(p != start || nsubs == 0) parent.addChild(Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start)));
+		return p;
+	}
+	throw "Unexpected end";
 }
 var js = {}
 js.Boot = function() { }
@@ -581,1843 +1344,143 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 	}
 	return null;
 }
-var physics = {}
-physics.Constants = function() { }
-physics.Constants.__name__ = true;
-physics.PhysicsEngine = function(fps,pps,narrowphase) {
-	this.fps = fps;
-	this.pps = pps;
-	this.narrowphase = narrowphase;
-	this.Initalize();
-};
-physics.PhysicsEngine.__name__ = true;
-physics.PhysicsEngine.prototype = {
-	ProcessShapes: function(position,range,action) {
-	}
-	,ProcessAction: function(action) {
-	}
-	,CastRay: function(ray) {
-		return null;
-	}
-	,WakeItem: function(body) {
-		return true;
-	}
-	,SleepItem: function(body) {
-		return true;
-	}
-	,RemoveBody: function(body) {
-	}
-	,AddBody: function(body) {
-		body.OnAddedToEngine(this);
-	}
-	,RenderItems: function(timeStamp,aabb) {
-	}
-	,ProcessOnStep: function(step) {
-	}
-	,EndStaticUpdate: function(body) {
-	}
-	,StartStaticUpdate: function(body) {
-	}
-	,Collide: function() {
-	}
-	,Update: function() {
-	}
-	,Step: function() {
-		this.step++;
-		var newTime = new Date().getTime();
-		this.deltaTime = newTime - this.currTime;
-		this.currTime = newTime;
-		this.ProcessOnStep(this.step);
-		if(this.deltaTime > 100) this.deltaTime = 100;
-		this.accumulator += this.deltaTime;
-		while(this.accumulator >= this.msPerPhysics) {
-			this.accumulator -= this.msPerPhysics;
-			this.update++;
-			this.Update();
-			this.Collide();
-		}
-		if(this.contactManager != null) this.contactManager.ProcessBodyContacts();
-	}
-	,Initalize: function() {
-		this.narrowphase.bodyContactManager = this.contactManager;
-		this.accumulator = 0.0;
-		this.currTime = 0.0;
-		this.msPerFrame = 1000 / this.fps;
-		this.msPerPhysics = 1000 / this.pps;
-		this.physicsDeltaTime = 1 / this.pps;
-		this.step = 0;
-		this.forces = new physics.geometry.Vector2D();
-		this.masslessForces = new physics.geometry.Vector2D();
-		this.damping = 0.995;
-	}
-	,__class__: physics.PhysicsEngine
-}
-physics.collision = {}
-physics.collision.broadphase = {}
-physics.collision.broadphase.action = {}
-physics.collision.broadphase.action.ActionParams = function() {
-};
-physics.collision.broadphase.action.ActionParams.__name__ = true;
-physics.collision.broadphase.action.ActionParams.prototype = {
-	PreProcess: function() {
-		this.radiusSqrd = this.radius * this.radius;
-	}
-	,__class__: physics.collision.broadphase.action.ActionParams
-}
-physics.collision.broadphase.action.ActionResult = function() {
-};
-physics.collision.broadphase.action.ActionResult.__name__ = true;
-physics.collision.broadphase.action.ActionResult.prototype = {
-	Reset: function() {
-		this.body = null;
-		this.distanceSqrd = 0;
-	}
-	,__class__: physics.collision.broadphase.action.ActionResult
-}
-physics.collision.broadphase.action.ActionResultCollection = function() {
-	this.results = new Array();
-	this.opaqueBodies = new Array();
-};
-physics.collision.broadphase.action.ActionResultCollection.__name__ = true;
-physics.collision.broadphase.action.ActionResultCollection.prototype = {
-	quicksort: function(arrayInput,left,right) {
-		var i = left;
-		var j = right;
-		var pivotPoint = arrayInput[Math.round((left + right) * .5)];
-		while(i <= j) {
-			while(arrayInput[i].distanceSqrd < pivotPoint.distanceSqrd) i++;
-			while(arrayInput[j].distanceSqrd > pivotPoint.distanceSqrd) j--;
-			if(i <= j) {
-				var tempStore = arrayInput[i];
-				arrayInput[i] = arrayInput[j];
-				i++;
-				arrayInput[j] = tempStore;
-				j--;
-			}
-		}
-		if(left < j) this.quicksort(arrayInput,left,j);
-		if(i < right) this.quicksort(arrayInput,i,right);
-	}
-	,Sort: function() {
-		this.quicksort(this.results,0,this.resultCount - 1);
-		this.quicksort(this.opaqueBodies,0,this.opaqueBodyCount - 1);
-	}
-	,AddResult: function(body,distanceSqrd) {
-		var result;
-		this.resultCount++;
-		if(this.resultCount > this.results.length) {
-			result = new physics.collision.broadphase.action.ActionResult();
-			this.results.push(result);
-		} else result = this.results[this.resultCount - 1];
-		result.body = body;
-		result.distanceSqrd = distanceSqrd;
-		if(body.isOpaque) {
-			this.opaqueBodyCount++;
-			if(this.opaqueBodyCount > this.opaqueBodies.length) {
-				result = new physics.collision.broadphase.action.ActionResult();
-				this.opaqueBodies.push(result);
-			} else result = this.opaqueBodies[this.opaqueBodyCount - 1];
-			result.body = body;
-			result.distanceSqrd = distanceSqrd;
-		}
-	}
-	,Reset: function() {
-		var _g1 = 0, _g = this.resultCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this.results[i].Reset();
-		}
-		this.resultCount = 0;
-		var _g1 = 0, _g = this.opaqueBodyCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this.opaqueBodies[i].Reset();
-		}
-		this.opaqueBodyCount = 0;
-		this.furthestDistSqrd = 0;
-	}
-	,__class__: physics.collision.broadphase.action.ActionResultCollection
-}
-physics.collision.broadphase.action.IBroadphaseAction = function() { }
-physics.collision.broadphase.action.IBroadphaseAction.__name__ = true;
-physics.collision.broadphase.action.IBroadphaseAction.prototype = {
-	__class__: physics.collision.broadphase.action.IBroadphaseAction
-}
-physics.collision.broadphase.managedgrid = {}
-physics.collision.broadphase.managedgrid.Cell = function(manager,index,x,y,w,h) {
-	this.manager = manager;
-	this.index = index;
-	this.width = w;
-	this.height = h;
-	this.aabb = new physics.geometry.AABB(x,y + h,x + w,y);
-	this.dynamicItems = new haxe.ds.GenericStack();
-	this.sleepingItems = new haxe.ds.GenericStack();
-	this.staticItems = new haxe.ds.GenericStack();
-	this.adjacentCells = new Array();
-	this.stamp = -1;
-	this.forceWakeLockCount = 0;
-	this.isPaused = true;
-};
-physics.collision.broadphase.managedgrid.Cell.__name__ = true;
-physics.collision.broadphase.managedgrid.Cell.prototype = {
-	SearchCell: function(action,actionResultCollection) {
-		this.SearchList(this.dynamicItems,action,actionResultCollection);
-		this.SearchList(this.sleepingItems,action,actionResultCollection);
-		this.SearchList(this.staticItems,action,actionResultCollection);
-	}
-	,SearchList: function(list,action,actionResultCollection) {
-		var $it0 = list.iterator();
-		while( $it0.hasNext() ) {
-			var body = $it0.next();
-			if(body == action.params.queryBody) continue;
-			var dX = action.params.position.x - body.averageCenter.x;
-			var dY = action.params.position.y - body.averageCenter.y;
-			var dSqrd = dX * dX + dY * dY;
-			if(dSqrd <= action.params.radiusSqrd - body.radiusSqrd) actionResultCollection.AddResult(body,dSqrd);
-		}
-	}
-	,WakeAll: function() {
-		var $it0 = this.sleepingItems.iterator();
-		while( $it0.hasNext() ) {
-			var body = $it0.next();
-			body.Wake();
-		}
-	}
-	,WakeItem: function(body) {
-		console.log("Wake " + Std.string(body));
-		if(!body.isSleeping) return false;
-		this.ClearOccupancy(body);
-		this.RemoveItem(body);
-		body.isSleeping = false;
-		this.AddItem(body);
-		return true;
-	}
-	,SleepItem: function(body) {
-		console.log("Sleep " + Std.string(body));
-		if(body.isSleeping || this.forceWakeLockCount > 0) return false;
-		this.ClearOccupancy(body);
-		this.RemoveItem(body);
-		body.isSleeping = true;
-		this.AddItem(body);
-		return true;
-	}
-	,Pause: function() {
-		if(this.isPaused) return;
-		this.isPaused = true;
-		var $it0 = this.dynamicItems.iterator();
-		while( $it0.hasNext() ) {
-			var body = $it0.next();
-			if(body.broadphaseData == this.index) {
-				if(!body.OnPause()) this.manager.RemoveBody(body);
-			}
-		}
-		var $it1 = this.sleepingItems.iterator();
-		while( $it1.hasNext() ) {
-			var body = $it1.next();
-			if(body.broadphaseData == this.index) {
-				if(!body.OnPause()) this.manager.RemoveBody(body);
-			}
-		}
-		this.manager.CellPause(this);
-	}
-	,Start: function() {
-		if(!this.isPaused) return;
-		this.isPaused = false;
-		this.manager.CellStart(this);
-	}
-	,OnStep: function(step) {
-		this.SetProcessOnStepStatus();
-		if(this.transientActivity && !this.persistentActivity && !this.adjacentPersistentActivity) this.Pause();
-		if(this.persistentActivity || this.adjacentPersistentActivity) {
-			var $it0 = this.dynamicItems.iterator();
-			while( $it0.hasNext() ) {
-				var body = $it0.next();
-				if(body.broadphaseData == this.index) body.OnStep(step);
-			}
-			var $it1 = this.sleepingItems.iterator();
-			while( $it1.hasNext() ) {
-				var body = $it1.next();
-				if(body.broadphaseData == this.index) body.OnStep(step);
-			}
-			var $it2 = this.staticItems.iterator();
-			while( $it2.hasNext() ) {
-				var body = $it2.next();
-				body.OnStep(step);
-			}
-		} else if(this.forceWakeLockCount > 0) {
-			var $it3 = this.staticItems.iterator();
-			while( $it3.hasNext() ) {
-				var body = $it3.next();
-				body.OnStep(step);
-			}
-		}
-	}
-	,AdditionalCollide: function(body) {
-	}
-	,Collide: function() {
-		var s1 = this.dynamicItems.head;
-		while(s1 != null) {
-			var item1 = s1.elt;
-			var s2 = s1.next;
-			while(s2 != null) {
-				var item2 = s2.elt;
-				this.manager.CheckDoubleCollisions(item1,item2);
-				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item2.aabb,item2.position)) this.manager.narrowphase.CollideBodies(item1,item2);
-				s2 = s2.next;
-			}
-			var s3 = this.staticItems.head;
-			while(s3 != null) {
-				var item3 = s3.elt;
-				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item3.aabb,item3.position)) this.manager.narrowphase.CollideBodies(item1,item3);
-				s3 = s3.next;
-			}
-			var s4 = this.sleepingItems.head;
-			while(s4 != null) {
-				var item4 = s4.elt;
-				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item4.aabb,item4.position)) this.manager.narrowphase.CollideBodies(item1,item4);
-				s4 = s4.next;
-			}
-			this.AdditionalCollide(item1);
-			s1 = s1.next;
-		}
-	}
-	,Update: function() {
-		if(this.aabb.l == 0 && this.aabb.t == 0) {
-			var stop = 1;
-		}
-		this.processSleep = false;
-		this.persistentActivity = false;
-		this.transientActivity = false;
-		var $it0 = this.dynamicItems.iterator();
-		while( $it0.hasNext() ) {
-			var body = $it0.next();
-			if(body.broadphaseData == this.index) {
-				body.Update();
-				this.HashCellItem(body);
-				if(body.canSleep) body.Sleep();
-			}
-			if(body.canKeepAlive && !body.isSleeping) this.persistentActivity = true; else this.transientActivity = true;
-		}
-	}
-	,SetProcessOnStepStatus: function() {
-		this.adjacentPersistentActivity = false;
-		this.adjacentTransientActivity = false;
-		var cell;
-		var offset;
-		var _g = 0;
-		while(_g < 8) {
-			var i = _g++;
-			cell = this.adjacentCells[i];
-			if(cell != null) {
-				this.adjacentPersistentActivity = this.adjacentPersistentActivity || cell.persistentActivity;
-				this.adjacentTransientActivity = this.adjacentTransientActivity || cell.transientActivity;
-			}
-		}
-	}
-	,HashCellItem: function(body) {
-		if(body.broadphaseData == this.index) {
-			if(body.position.x >= this.aabb.l && body.position.x < this.aabb.r && body.position.y >= this.aabb.t && body.position.y < this.aabb.b) {
-				var newOccupany = this.CalcCellItemOccupancy(body);
-				if(newOccupany != body.broadphaseData2) {
-					this.ClearOccupancy(body);
-					body.broadphaseData2 = newOccupany;
-					this.SetOccupancy(body);
-				}
-			} else {
-				this.manager.RemoveDynamicBody(body);
-				this.manager.AddDynamicBody(body);
-			}
-		}
-	}
-	,CalcCellItemOccupancy: function(body) {
-		var occupany = 0;
-		if(body.position.x + body.aabb.l < this.aabb.l) occupany |= 1; else if(body.position.x + body.aabb.r > this.aabb.r) occupany |= 16;
-		if(body.position.y + body.aabb.t < this.aabb.t) occupany |= 4; else if(body.position.y + body.aabb.b > this.aabb.b) occupany |= 64;
-		if(occupany > 0) {
-			if((occupany & 1) > 0 && (occupany & 4) > 0) occupany |= 2;
-			if((occupany & 16) > 0 && (occupany & 4) > 0) occupany |= 8;
-			if((occupany & 1) > 0 && (occupany & 64) > 0) occupany |= 128;
-			if((occupany & 16) > 0 && (occupany & 64) > 0) occupany |= 32;
-		}
-		return occupany;
-	}
-	,IsCoreCell: function(body) {
-		return body.position.x >= this.aabb.l && body.position.x < this.aabb.r && body.position.y >= this.aabb.t && body.position.y < this.aabb.b;
-	}
-	,ClearOccupancy: function(body) {
-		var cell;
-		var offset;
-		var _g = 0;
-		while(_g < 8) {
-			var i = _g++;
-			offset = 1 << i;
-			if((body.broadphaseData2 & offset) > 0) this.adjacentCells[i].RemoveItem(body);
-		}
-	}
-	,SetOccupancy: function(body) {
-		var cell;
-		var offset;
-		var _g = 0;
-		while(_g < 8) {
-			var i = _g++;
-			offset = 1 << i;
-			if((body.broadphaseData2 & offset) > 0) {
-				var cell1 = this.adjacentCells[i];
-				if(cell1 != null) cell1.AddItem(body);
-			}
-		}
-	}
-	,RemoveStaticItem: function(body) {
-		this.staticItems.remove(body);
-		this.staticCount--;
-	}
-	,RemoveItem: function(body) {
-		if(!body.isSleeping) {
-			this.dynamicItems.remove(body);
-			this.dynamicCount--;
-		} else {
-			this.sleepingItems.remove(body);
-			this.sleepingCount--;
-		}
-	}
-	,AddStaticItem: function(body) {
-		this.staticItems.add(body);
-		this.staticCount++;
-	}
-	,AddItem: function(body) {
-		if(!body.isSleeping) {
-			this.dynamicItems.add(body);
-			this.dynamicCount++;
-			this.Start();
-		} else {
-			this.sleepingItems.add(body);
-			this.sleepingCount++;
-		}
-		if(body.position.x >= this.aabb.l && body.position.x < this.aabb.r && body.position.y >= this.aabb.t && body.position.y < this.aabb.b) {
-			body.broadphaseData = this.index;
-			body.broadphaseData2 = this.CalcCellItemOccupancy(body);
-			this.SetOccupancy(body);
-		}
-	}
-	,__class__: physics.collision.broadphase.managedgrid.Cell
-}
-physics.collision.broadphase.managedgrid.ManagedGrid = function(fps,pps,narrowphase,worldGridWidth,worldGridHeight,cellSize) {
-	physics.PhysicsEngine.call(this,fps,pps,narrowphase);
-	this.grid = new ds.Grid2D(worldGridWidth,worldGridHeight,cellSize);
-	this.worldExtents = new physics.geometry.AABB(0,worldGridHeight * cellSize,worldGridWidth * cellSize,0);
-	this.actionResultCollection = new physics.collision.broadphase.action.ActionResultCollection();
-	this.doubleCollisionList = new Array();
-	this.staticUpdateHash = new haxe.ds.IntMap();
-	this.init();
-};
-physics.collision.broadphase.managedgrid.ManagedGrid.__name__ = true;
-physics.collision.broadphase.managedgrid.ManagedGrid.__super__ = physics.PhysicsEngine;
-physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics.PhysicsEngine.prototype,{
-	toString: function() {
-		var result = "";
-		var _g = 0, _g1 = this.grid.data;
-		while(_g < _g1.length) {
-			var cell = _g1[_g];
-			++_g;
-			if(cell.dynamicCount > 0) result += "(" + cell.aabb.l / 100 + ":" + cell.aabb.t / 100 + "=" + cell.dynamicCount + ")";
-		}
-		return result;
-	}
-	,CheckDoubleCollisions: function(body1,body2) {
-		if(this.doubleCollisionLength == 0 || body1.broadphaseData2 == 0 && body2.broadphaseData2 == 0) return false; else {
-			var hash = physics.dynamics.Body.HashBodyIDs(body1.id,body2.id);
-			var _g = 0, _g1 = this.doubleCollisionList;
-			while(_g < _g1.length) {
-				var i = _g1[_g];
-				++_g;
-				if(i == hash) {
-					hash = -1;
-					break;
-				}
-			}
-			return hash == -1;
-		}
-	}
-	,ProcessAction: function(action) {
-		this.actionResultCollection.Reset();
-		action.params.PreProcess();
-		var x1 = (action.params.position.x - action.params.radius) * this.grid.invCellSize | 0;
-		var y1 = (action.params.position.y - action.params.radius) * this.grid.invCellSize | 0;
-		var x2 = ((action.params.position.x + action.params.radius) * this.grid.invCellSize | 0) + 1;
-		var y2 = ((action.params.position.y + action.params.radius) * this.grid.invCellSize | 0) + 1;
-		var _g = x1;
-		while(_g < x2) {
-			var x = _g++;
-			var _g1 = y1;
-			while(_g1 < y2) {
-				var y = _g1++;
-				var cell = this.grid.GetGridSafe(x,y);
-				if(cell != null) cell.SearchCell(action,this.actionResultCollection);
-			}
-		}
-		action.Execute(this.actionResultCollection);
-	}
-	,CastRay: function(ray) {
-		return null;
-	}
-	,CellStart: function(cell) {
-	}
-	,CellPause: function(cell) {
-	}
-	,EndStaticUpdate: function(body) {
-		if(!this.staticUpdateHash.exists(body.id)) return;
-		var indexPos = this.staticUpdateHash.get(body.id);
-		this.staticUpdateHash.remove(body.id);
-		var _g1 = indexPos.x - 1 | 0, _g = indexPos.x + 1 | 0;
-		while(_g1 < _g) {
-			var x = _g1++;
-			var _g3 = indexPos.y - 1 | 0, _g2 = indexPos.y + 1 | 0;
-			while(_g3 < _g2) {
-				var y = _g3++;
-				var cell = this.grid.GetGridSafe(x,y);
-				if(cell != null) cell.forceWakeLockCount--;
-			}
-		}
-	}
-	,StartStaticUpdate: function(body) {
-		if(this.staticUpdateHash.exists(body.id)) return;
-		var indexPos = new physics.geometry.Vector2D(body.position.x * this.grid.invCellSize | 0,body.position.y * this.grid.invCellSize | 0);
-		this.staticUpdateHash.set(body.id,indexPos);
-		var _g1 = indexPos.x - 1 | 0, _g = indexPos.x + 1 | 0;
-		while(_g1 < _g) {
-			var x = _g1++;
-			var _g3 = indexPos.y - 1 | 0, _g2 = indexPos.y + 1 | 0;
-			while(_g3 < _g2) {
-				var y = _g3++;
-				var cell = this.grid.GetGridSafe(x,y);
-				if(cell != null) {
-					cell.forceWakeLockCount++;
-					cell.WakeAll();
-				}
-			}
-		}
-	}
-	,WakeItem: function(body) {
-		return this.grid.data[body.broadphaseData].WakeItem(body);
-	}
-	,SleepItem: function(body) {
-		return this.grid.data[body.broadphaseData].SleepItem(body);
-	}
-	,RemoveDynamicBody: function(body) {
-		var cell = this.grid.data[body.broadphaseData];
-		cell.ClearOccupancy(body);
-		cell.RemoveItem(body);
-	}
-	,RemoveBody: function(body) {
-		if(!body.isStatic) this.RemoveDynamicBody(body); else {
-			var x1 = (body.aabb.l + body.position.x) * this.grid.invCellSize | 0;
-			var y1 = (body.aabb.t + body.position.y) * this.grid.invCellSize | 0;
-			var x2 = ((body.aabb.r + body.position.x) * this.grid.invCellSize | 0) + 1;
-			var y2 = ((body.aabb.b + body.position.y) * this.grid.invCellSize | 0) + 1;
-			var _g = x1;
-			while(_g < x2) {
-				var x = _g++;
-				var _g1 = y1;
-				while(_g1 < y2) {
-					var y = _g1++;
-					var cell = this.grid.GetGridSafe(x,y);
-					cell.RemoveStaticItem(body);
-				}
-			}
-		}
-		physics.PhysicsEngine.prototype.RemoveBody.call(this,body);
-	}
-	,AddDynamicBody: function(body) {
-		var cell = this.grid.GetGridSafe(body.position.x * this.grid.invCellSize | 0,body.position.y * this.grid.invCellSize | 0);
-		if(cell != null) cell.AddItem(body);
-	}
-	,AddBody: function(body) {
-		if(!body.isStatic) this.AddDynamicBody(body); else {
-			var x1 = (body.aabb.l + body.position.x) * this.grid.invCellSize | 0;
-			var y1 = (body.aabb.t + body.position.y) * this.grid.invCellSize | 0;
-			var x2 = ((body.aabb.r + body.position.x) * this.grid.invCellSize | 0) + 1;
-			var y2 = ((body.aabb.b + body.position.y) * this.grid.invCellSize | 0) + 1;
-			var _g = x1;
-			while(_g < x2) {
-				var x = _g++;
-				var _g1 = y1;
-				while(_g1 < y2) {
-					var y = _g1++;
-					var cell = this.grid.GetGridSafe(x,y);
-					cell.AddStaticItem(body);
-				}
-			}
-		}
-		physics.PhysicsEngine.prototype.AddBody.call(this,body);
-	}
-	,ProcessOnStep: function(step) {
-		var _g = 0, _g1 = this.grid.data;
-		while(_g < _g1.length) {
-			var cell = _g1[_g];
-			++_g;
-			cell.OnStep(step);
-		}
-	}
-	,Collide: function() {
-		this.doubleCollisionLength = 0;
-		var _g = 0, _g1 = this.grid.data;
-		while(_g < _g1.length) {
-			var cell = _g1[_g];
-			++_g;
-			cell.Collide();
-		}
-	}
-	,Update: function() {
-		var _g = 0, _g1 = this.grid.data;
-		while(_g < _g1.length) {
-			var cell = _g1[_g];
-			++_g;
-			cell.Update();
-		}
-	}
-	,CellFactory: function(i,x,y) {
-		return new physics.collision.broadphase.managedgrid.Cell(this,i,x * this.grid.cellSize,y * this.grid.cellSize,this.grid.cellSize,this.grid.cellSize);
-	}
-	,init: function() {
-		var index = 0;
-		var _g1 = 0, _g = this.grid.gridWidth;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0, _g2 = this.grid.gridHeight;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				this.grid.data.push(this.CellFactory(index++,x,y));
-			}
-		}
-		var _g1 = 0, _g = this.grid.gridWidth;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0, _g2 = this.grid.gridHeight;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				var cell = this.grid.GetGridSafe(x,y);
-				cell.adjacentCells.push(this.grid.GetGridSafe(x - 1,y));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x - 1,y - 1));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x,y - 1));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x + 1,y - 1));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x + 1,y));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x + 1,y + 1));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x,y + 1));
-				cell.adjacentCells.push(this.grid.GetGridSafe(x - 1,y + 1));
-			}
-		}
-	}
-	,__class__: physics.collision.broadphase.managedgrid.ManagedGrid
-});
-physics.collision.narrowphase = {}
-physics.collision.narrowphase.INarrowphase = function() { }
-physics.collision.narrowphase.INarrowphase.__name__ = true;
-physics.collision.narrowphase.INarrowphase.prototype = {
-	__class__: physics.collision.narrowphase.INarrowphase
-}
-physics.collision.narrowphase.sat = {}
-physics.collision.narrowphase.sat.SAT = function() {
-	this.result = new physics.dynamics.Arbiter();
-};
-physics.collision.narrowphase.sat.SAT.__name__ = true;
-physics.collision.narrowphase.sat.SAT.__interfaces__ = [physics.collision.narrowphase.INarrowphase];
-physics.collision.narrowphase.sat.SAT.poly2poly = function(shape1,shape1Pos,shape2,shape2Pos,arbiter) {
-	var vertValOnAxis;
-	var minValOnAxis;
-	var minPen1 = -1e+99;
-	var minAxis1 = null;
-	var _g = 0, _g1 = shape1.transformedAxes;
-	while(_g < _g1.length) {
-		var a = _g1[_g];
-		++_g;
-		minValOnAxis = shape2.ValueOnAxis(a,shape1Pos,shape2Pos);
-		if(minValOnAxis > 0) return false;
-		if(minValOnAxis > minPen1) {
-			minPen1 = minValOnAxis;
-			minAxis1 = a;
-		}
-	}
-	var minPen2 = -1e+99;
-	var minAxis2 = null;
-	var _g = 0, _g1 = shape2.transformedAxes;
-	while(_g < _g1.length) {
-		var a = _g1[_g];
-		++_g;
-		minValOnAxis = shape1.ValueOnAxis(a,shape2Pos,shape1Pos);
-		if(minValOnAxis > 0) return false;
-		if(minValOnAxis > minPen2) {
-			minPen2 = minValOnAxis;
-			minAxis2 = a;
-		}
-	}
-	var minAxis;
-	var nCoef;
-	var dist;
-	if(minPen1 > minPen2) {
-		minAxis = minAxis1;
-		nCoef = 1;
-		dist = minPen1;
-	} else {
-		minAxis = minAxis2;
-		nCoef = -1;
-		dist = minPen2;
-	}
-	arbiter.AddContact(0,0,minAxis.n.x,minAxis.n.y,nCoef,dist);
-	return true;
-}
-physics.collision.narrowphase.sat.SAT.circle2circle = function(circle1,circle1Pos,circle2,circle2Pos,arbiter) {
-	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(circle1.transformedCentre.x + circle1Pos.x,circle1.transformedCentre.y + circle1Pos.y,circle2.transformedCentre.x + circle2Pos.x,circle2.transformedCentre.y + circle2Pos.y,circle1.radius,circle2.radius,arbiter);
-}
-physics.collision.narrowphase.sat.SAT.circle2circleQuery = function(p1x,p1y,p2x,p2y,r1,r2,arbiter) {
-	var minDist = r1 + r2;
-	var x = p2x - p1x;
-	var y = p2y - p1y;
-	var distSqr = x * x + y * y;
-	var result = false;
-	if(distSqr < minDist * minDist) {
-		var dist = Math.sqrt(distSqr) + 0.0000001;
-		var invDist = 1 / dist;
-		var deltaFact = 0.5 + (r1 - 0.5 * minDist) / dist;
-		arbiter.AddContact(p1x + x * deltaFact,p1y + y * deltaFact,x * invDist,y * invDist,1,dist - minDist);
-		result = true;
-	}
-	return result;
-}
-physics.collision.narrowphase.sat.SAT.circle2poly = function(circle,circlePos,poly,polyPos,arbiter) {
-	var miniA = null;
-	var min = -1e+99;
-	var tCx = circle.transformedCentre.x + circlePos.x;
-	var tCy = circle.transformedCentre.y + circlePos.y;
-	var miniVindex = 0;
-	var _g1 = 0, _g = poly.vertexCount;
-	while(_g1 < _g) {
-		var i = _g1++;
-		var tA = poly.transformedAxes[i];
-		var dist = tA.n.x * tCx + tA.n.y * tCy - (polyPos.x * tA.n.x + polyPos.y * tA.n.y + tA.d) - circle.radius;
-		if(dist > 0) return false;
-		if(dist > min) {
-			min = dist;
-			miniA = tA;
-			miniVindex = i;
-		}
-	}
-	var miniV = poly.transformedVertices[miniVindex];
-	var n = miniA.n;
-	var ax = miniV.x + polyPos.x;
-	var ay = miniV.y + polyPos.y;
-	miniVindex++;
-	var b = poly.transformedVertices[miniVindex % poly.vertexCount];
-	var bx = b.x + polyPos.x;
-	var by = b.y + polyPos.y;
-	var dtb = n.x * by - n.y * bx;
-	var dt = n.x * tCy - n.y * tCx;
-	if(dt < dtb) return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCx,tCy,bx,by,circle.radius,0,arbiter);
-	var dta = n.x * ay - n.y * ax;
-	if(dt < dta) {
-		var factor = circle.radius + min / 2;
-		arbiter.AddContact(tCx - n.x * factor,tCy - n.y * factor,n.x,n.y,-1,min);
-		return true;
-	}
-	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCx,tCy,ax,ay,circle.radius,0,arbiter);
-}
-physics.collision.narrowphase.sat.SAT.circle2segment = function(circle,circlePos,segment,segmentPos,arbiter) {
-	var tAP = segment.tA.plus(segmentPos);
-	var tCP = circle.transformedCentre.plus(circlePos);
-	var closest_t = segment.delta.dot(new physics.geometry.Vector2D(tCP.x - tAP.x,tCP.y - tAP.y)) / segment.delta.lengthSqr();
-	if(closest_t < 0) closest_t = 0;
-	if(closest_t > 1) closest_t = 1;
-	var closest = tAP.plus(segment.delta.mult(closest_t));
-	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCP.x,tCP.y,closest.x,closest.y,circle.radius,segment.radius,arbiter);
-}
-physics.collision.narrowphase.sat.SAT.prototype = {
-	CollideFeatures: function(feature1,feature2,n) {
-		if(feature1.body == feature2.body) return false;
-		if((feature1.body.layers & feature2.body.layers) == 0) return false;
-		if(feature1.body.group > 0 && feature2.body.group > 0 && feature1.body.group == feature2.body.group) return false;
-		var s1 = feature1.shape;
-		var s2 = feature2.shape;
-		this.result.contactCount = 0;
-		if(s1.typeID > s2.typeID) {
-			var tempShape2 = s1;
-			s1 = s2;
-			s2 = tempShape2;
-			this.result.feature1 = feature2;
-			this.result.feature2 = feature1;
-		} else {
-			this.result.feature1 = feature1;
-			this.result.feature2 = feature2;
-		}
-		var collided = false;
-		if(s1.typeID == 0) collided = true; else {
-			var _g = s1.typeID | s2.typeID;
-			switch(_g) {
-			case 4:
-				collided = physics.collision.narrowphase.sat.SAT.poly2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 5:
-				collided = physics.collision.narrowphase.sat.SAT.circle2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 1:
-				collided = physics.collision.narrowphase.sat.SAT.circle2circle(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 3:
-				collided = physics.collision.narrowphase.sat.SAT.circle2segment(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			}
-		}
-		if(collided) {
-			feature1.body.Wake();
-			feature2.body.Wake();
-			if(this.result.Resolve()) {
-				if(this.bodyContactManager != null) this.bodyContactManager.UpdateContacts(feature1.body,feature2.body);
-				return true;
-			}
-		}
-		return false;
-	}
-	,CollideBodies: function(body1,body2,n) {
-		if(body1.features.length == 1 && body2.features.length == 1) this.CollideFeatures(body1.features[0],body2.features[0],n); else {
-			var _g = 0, _g1 = body1.features;
-			while(_g < _g1.length) {
-				var feature1 = _g1[_g];
-				++_g;
-				var _g2 = 0, _g3 = body2.features;
-				while(_g2 < _g3.length) {
-					var feature2 = _g3[_g2];
-					++_g2;
-					if(physics.geometry.AABB.intersects(feature1.shape.aabb,feature1.body.position,feature2.shape.aabb,feature2.body.position)) this.CollideFeatures(feature1,feature2,n);
-				}
-			}
-		}
-	}
-	,__class__: physics.collision.narrowphase.sat.SAT
-}
-physics.constraints = {}
-physics.constraints.Constraint = function() {
-};
-physics.constraints.Constraint.__name__ = true;
-physics.constraints.Constraint.prototype = {
-	Destroy: function() {
-		if(this.destroyCallback != null) this.destroyCallback(this);
-		this.body1.RemoveConstraint(this);
-		this.body2.RemoveConstraint(this);
-	}
-	,resolve: function() {
-		return false;
-	}
-	,__class__: physics.constraints.Constraint
-}
-physics.dynamics = {}
-physics.dynamics.Arbiter = function() {
-	this.contacts = new Array();
-	var _g = 0;
-	while(_g < 2) {
-		var i = _g++;
-		this.contacts.push(new physics.dynamics.Contact());
-	}
-	this.contactCount = 0;
-	this.mtdA = new physics.geometry.Vector2D();
-	this.mtdB = new physics.geometry.Vector2D();
-	this.vnA = new physics.geometry.Vector2D();
-	this.vnB = new physics.geometry.Vector2D();
-};
-physics.dynamics.Arbiter.__name__ = true;
-physics.dynamics.Arbiter.prototype = {
-	Resolve: function() {
-		var bodyA = this.feature1.body;
-		var bodyB = this.feature2.body;
-		this.isSensor = this.feature1.isSensor || this.feature2.isSensor;
-		if(!this.isSensor) {
-			var normal = this.contacts[0].normal;
-			var depth = this.contacts[0].penDist;
-			var mtd = new physics.geometry.Vector2D(normal.x * depth,normal.y * depth);
-			var te = this.feature1.material.elasticity + this.feature2.material.elasticity;
-			var sumInvMass = this.feature1.body.invMass + this.feature2.body.invMass;
-			var tf = utils.Maths.Clamp(1 - (this.feature1.material.friction + this.feature2.material.friction),0,1);
-			var ca_velX = bodyA.position.x - bodyA.prevPosition.x;
-			var ca_velY = bodyA.position.y - bodyA.prevPosition.y;
-			var ca_vdotn = normal.x * ca_velX + normal.y * ca_velY;
-			var ca_vnX = normal.x * ca_vdotn;
-			var ca_vnY = normal.y * ca_vdotn;
-			var ca_vtX = ca_velX - ca_vnX;
-			var ca_vtY = ca_velY - ca_vnY;
-			var cb_velX = bodyB.position.x - bodyB.prevPosition.x;
-			var cb_velY = bodyB.position.y - bodyB.prevPosition.y;
-			var cb_vdotn = normal.x * cb_velX + normal.y * cb_velY;
-			var cb_vnX = normal.x * cb_vdotn;
-			var cb_vnY = normal.y * cb_vdotn;
-			var cb_vtX = cb_velX - cb_vnX;
-			var cb_vtY = cb_velY - cb_vnY;
-			var vnAX = (cb_vnX * ((te + 1) * bodyA.invMass) + ca_vnX * (bodyB.invMass - te * bodyA.invMass)) / sumInvMass;
-			var vnAY = (cb_vnY * ((te + 1) * bodyA.invMass) + ca_vnY * (bodyB.invMass - te * bodyA.invMass)) / sumInvMass;
-			var vnBX = (ca_vnX * ((te + 1) * bodyB.invMass) + cb_vnX * (bodyA.invMass - te * bodyB.invMass)) / sumInvMass;
-			var vnBY = (ca_vnY * ((te + 1) * bodyB.invMass) + cb_vnY * (bodyA.invMass - te * bodyB.invMass)) / sumInvMass;
-			ca_vtX *= tf;
-			ca_vtY *= tf;
-			cb_vtX *= tf;
-			cb_vtY *= tf;
-			var aMassRatio = bodyA.invMass / sumInvMass;
-			this.mtdA.x = mtd.x * aMassRatio;
-			this.mtdA.y = mtd.y * aMassRatio;
-			var bMassRatio = -bodyB.invMass / sumInvMass;
-			this.mtdB.x = mtd.x * bMassRatio;
-			this.mtdB.y = mtd.y * bMassRatio;
-			this.vnA.x = vnAX + ca_vtX;
-			this.vnA.y = vnAY + ca_vtY;
-			this.vnB.x = vnBX + cb_vtX;
-			this.vnB.y = vnBY + cb_vtY;
-			bodyA.RespondToCollision(this,this.mtdA,this.vnA,normal,depth,-1);
-			bodyB.RespondToCollision(this,this.mtdB,this.vnB,normal,depth,1);
-		}
-		if(this.feature1.contactCallback != null) this.feature1.contactCallback(this);
-		if(this.feature2.contactCallback != null) this.feature2.contactCallback(this);
-		return !this.isSensor;
-	}
-	,OpposingBody: function(thiz) {
-		return thiz.id == this.feature1.body.id?this.feature2.body:this.feature1.body;
-	}
-	,AddContact: function(pX,pY,nX,nY,nCoef,dist) {
-		var contact = this.contacts[this.contactCount];
-		contact.point.x = pX;
-		contact.point.y = pY;
-		contact.normal.x = nX * nCoef;
-		contact.normal.y = nY * nCoef;
-		contact.penDist = dist;
-	}
-	,Reset: function() {
-		this.contactCount = 0;
-	}
-	,__class__: physics.dynamics.Arbiter
-}
-physics.dynamics.Body = function() {
-	this.id = this["transient"]?ds.IDManager.GetTransientID():ds.IDManager.GetPersistentID();
-	this.aabb = new physics.geometry.AABB();
-	this.averageCenterOffset = new physics.geometry.Vector2D();
-	this.averageCenter = new physics.geometry.Vector2D();
-	this.position = new physics.geometry.Vector2D();
-	this.prevPosition = new physics.geometry.Vector2D();
-	this.tempPosition = new physics.geometry.Vector2D();
-	this.accumulatedForces = new physics.geometry.Vector2D();
-	this.rotation = new physics.geometry.Vector2D();
-	this.features = new Array();
-	this.constraints = new haxe.ds.GenericStack();
-	this.SetAngle(0);
-	this.SetMass(1);
-	this.SetMaximumScalarVelocity(20);
-	this.maxAcceleration = 5;
-	this.motion = 10;
-	this.damping = 1;
-	this.masslessForcesFactor = 1;
-	this.radius = this.radiusSqrd = 0;
-	this.group = 0;
-	this.layers = 65535;
-	this.canKeepAlive = true;
-	this.allowedToSleep = true;
-	this.canSleep = true;
-	this.isSleeping = false;
-	this.isStatic = false;
-	this.isOpaque = false;
-	this.collisionProcessingMask = 0;
-	this.Initalize();
-};
-physics.dynamics.Body.__name__ = true;
-physics.dynamics.Body.HashBodyIDs = function(body1ID,body2ID) {
-	return body1ID < body2ID?body1ID << 16 | body2ID:body2ID << 16 | body1ID;
-}
-physics.dynamics.Body.prototype = {
-	Destroy: function() {
-		this.engine.RemoveBody(this);
-		var $it0 = this.constraints.iterator();
-		while( $it0.hasNext() ) {
-			var constraint = $it0.next();
-			constraint.Destroy();
-		}
-		if(this["transient"]) ds.IDManager.ReleaseTransientID(this.id);
-	}
-	,OnEndCollision: function(contact) {
-	}
-	,OnCollision: function(contact) {
-	}
-	,OnStartCollision: function(contact) {
-		console.log("Start " + contact.hash);
-	}
-	,OnAddedToEngine: function(engine) {
-		this.engine = engine;
-		this.createdMS = engine.currTime;
-	}
-	,RemoveConstraint: function(constraint) {
-		this.constraints.remove(constraint);
-	}
-	,AddConstraint: function(constraint) {
-		this.constraints.add(constraint);
-	}
-	,UpdateFeatures: function() {
-		this.aabb.reset();
-		var _g = 0, _g1 = this.features;
-		while(_g < _g1.length) {
-			var feature = _g1[_g];
-			++_g;
-			feature.shape.Update(this.rotation);
-			this.aabb.expand(feature.shape.aabb);
-		}
-		this.aabb.setToCenter(this.averageCenterOffset);
-		var rX = this.averageCenterOffset.x - this.aabb.r;
-		var rY = this.averageCenterOffset.y - this.aabb.t;
-		this.radiusSqrd = rX * rX + rY * rY;
-		this.radius = Math.sqrt(this.radiusSqrd);
-		if(this.relativePoints != null) this.relativePoints.Update(this.rotation,false);
-	}
-	,AddFeature: function(shape,material) {
-		var feature = new physics.dynamics.Feature(this,shape,material == null?new physics.dynamics.Material():material);
-		this.features.push(feature);
-		feature.shape.Update(this.rotation);
-		this.aabb.expand(feature.shape.aabb);
-		this.aabb.setToCenter(this.averageCenterOffset);
-		var rX = this.averageCenterOffset.x - this.aabb.r;
-		var rY = this.averageCenterOffset.y - this.aabb.t;
-		this.radiusSqrd = rX * rX + rY * rY;
-		this.radius = Math.sqrt(this.radiusSqrd);
-		return feature;
-	}
-	,SetRadius: function(r) {
-		this.radius = r;
-		this.radiusSqrd = r * r;
-	}
-	,Skew: function(delta) {
-		this.position.plusEquals(delta);
-		this.prevPosition.plusEquals(delta);
-		if(this.isSleeping) this.Wake();
-	}
-	,SetStaticPosition: function(position) {
-		this.position.copy(position);
-		this.prevPosition.copy(position);
-		this.averageCenter.x = position.x + this.averageCenterOffset.x;
-		this.averageCenter.y = position.y + this.averageCenterOffset.y;
-		if(this.isSleeping) this.Wake();
-	}
-	,SetMaximumScalarVelocity: function(maxVelocity) {
-		this.maxVelocityScalar = maxVelocity;
-		this.maxVelocityScalarSqrd = this.maxVelocityScalar * this.maxVelocityScalar;
-	}
-	,MakeStatic: function() {
-		this.isStatic = true;
-		this.isOpaque = true;
-		this.SetMass(Math.POSITIVE_INFINITY);
-	}
-	,SetMass: function(mass) {
-		this.mass = mass;
-		this.invMass = 1 / mass;
-	}
-	,SetAngle: function(angle) {
-		this.angle = angle % 6.28318530717;
-		this.rotation.x = Math.cos(this.angle);
-		this.rotation.y = Math.sin(this.angle);
-		this.UpdateFeatures();
-	}
-	,RespondToCollision: function(collision,mtd,newVelocity,normal,depth,o) {
-		if(this.isStatic) return;
-		this.position.x += mtd.x;
-		this.position.y += mtd.y;
-		this.prevPosition.x = this.position.x - newVelocity.x;
-		this.prevPosition.y = this.position.y - newVelocity.y;
-		if(this.isSleeping) this.Wake();
-		if(this.isSleeping) this.Wake();
-	}
-	,AddMasslessForce: function(force) {
-		this.accumulatedForces.plusEquals(force);
-		if(this.isSleeping) this.Wake();
-	}
-	,AddForce: function(force) {
-		this.accumulatedForces.plusEquals(force.mult(this.invMass));
-		if(this.isSleeping) this.Wake();
-	}
-	,SetVelocity: function(value) {
-		this.prevPosition.x = this.position.x - value.x;
-		this.prevPosition.y = this.position.y - value.y;
-		if(this.isSleeping) this.Wake();
-	}
-	,GetVelocity: function() {
-		return this.position.minus(this.prevPosition);
-	}
-	,Wake: function() {
-		if(!this.isSleeping) return false;
-		if(this.engine.WakeItem(this)) {
-			this.motion = 10;
-			return true;
-		}
-		return false;
-	}
-	,Sleep: function() {
-		if(this.isSleeping || !this.allowedToSleep) return false;
-		if(this.engine.SleepItem(this)) {
-			this.motion = 0;
-			return true;
-		}
-		return false;
-	}
-	,OnPause: function() {
-		return true;
-	}
-	,OnStep: function(step) {
-		return true;
-	}
-	,Update: function() {
-		if(this.isStatic || this.isSleeping) return;
-		this.accumulatedForces.x += this.engine.masslessForces.x * this.masslessForcesFactor;
-		this.accumulatedForces.y += this.engine.masslessForces.y * this.masslessForcesFactor;
-		this.accumulatedForces.x += this.engine.forces.x * this.invMass;
-		this.accumulatedForces.y += this.engine.forces.y * this.invMass;
-		this.tempPosition.x = this.position.x;
-		this.tempPosition.y = this.position.y;
-		var nvX = this.position.x - this.prevPosition.x + this.accumulatedForces.x * this.engine.physicsDeltaTime;
-		var nvY = this.position.y - this.prevPosition.y + this.accumulatedForces.y * this.engine.physicsDeltaTime;
-		nvX *= this.damping * this.engine.damping;
-		nvY *= this.damping * this.engine.damping;
-		if(this.maxVelocityScalarSqrd > 0) {
-			var scalarVelocitySqr = nvX * nvX + nvY * nvY;
-			if(scalarVelocitySqr > this.maxVelocityScalarSqrd) {
-				var factor = this.maxVelocityScalar / Math.sqrt(scalarVelocitySqr);
-				nvX *= factor;
-				nvY *= factor;
-			}
-		}
-		this.position.x += nvX;
-		this.position.y += nvY;
-		this.prevPosition.x = this.tempPosition.x;
-		this.prevPosition.y = this.tempPosition.y;
-		this.accumulatedForces.x = this.accumulatedForces.y = 0;
-		this.damping = 1;
-		this.motion = 0.99332805041467 * this.motion + (1 - 0.99332805041467) * (nvX * nvX + nvY * nvY);
-		if(this.motion > 0.009) this.motion = 0.009;
-		this.canSleep = false;
-		if(this.motion < 0.0009) this.canSleep = true;
-		var $it0 = this.constraints.iterator();
-		while( $it0.hasNext() ) {
-			var constraint = $it0.next();
-			if(!constraint.resolve()) constraint.Destroy();
-		}
-		this.averageCenter.x = this.position.x + this.averageCenterOffset.x;
-		this.averageCenter.y = this.position.y + this.averageCenterOffset.y;
-	}
-	,Initalize: function() {
-	}
-	,__class__: physics.dynamics.Body
-}
-physics.dynamics.BodyContact = function() {
-};
-physics.dynamics.BodyContact.__name__ = true;
-physics.dynamics.BodyContact.prototype = {
-	__class__: physics.dynamics.BodyContact
-}
-physics.dynamics.BodyContactManager = function(engine) {
-	this.engine = engine;
-	this.contacts = new haxe.ds.IntMap();
-};
-physics.dynamics.BodyContactManager.__name__ = true;
-physics.dynamics.BodyContactManager.prototype = {
-	ProcessBodyContacts: function() {
-		var contactIter = this.contacts.iterator();
-		var count = 0;
-		while( contactIter.hasNext() ) {
-			var bodyContact = contactIter.next();
-			count++;
-			if(bodyContact.stamp < this.engine.update) bodyContact.endContact = true;
-			if(bodyContact.bodyA.collisionProcessingMask > 0) {
-				if((bodyContact.bodyA.collisionProcessingMask & 1) > 0 && bodyContact.startContact) bodyContact.bodyA.OnStartCollision(bodyContact);
-				if((bodyContact.bodyA.collisionProcessingMask & 2) > 0) bodyContact.bodyA.OnCollision(bodyContact);
-				if((bodyContact.bodyA.collisionProcessingMask & 4) > 0 && bodyContact.endContact) bodyContact.bodyA.OnEndCollision(bodyContact);
-			}
-			if(bodyContact.bodyB.collisionProcessingMask > 0) {
-				if((bodyContact.bodyB.collisionProcessingMask & 1) > 0 && bodyContact.startContact) bodyContact.bodyB.OnStartCollision(bodyContact);
-				if((bodyContact.bodyB.collisionProcessingMask & 2) > 0) bodyContact.bodyB.OnCollision(bodyContact);
-				if((bodyContact.bodyB.collisionProcessingMask & 4) > 0 && bodyContact.endContact) bodyContact.bodyB.OnEndCollision(bodyContact);
-			}
-			bodyContact.startContact = false;
-			if(bodyContact.endContact) this.contacts.remove(bodyContact.hash);
-		}
-		console.log("Count=" + count);
-	}
-	,UpdateContacts: function(body1,body2) {
-		if(body1.collisionProcessingMask == 0 && body2.collisionProcessingMask == 0) return false;
-		var bodyHash = physics.dynamics.Body.HashBodyIDs(body1.id,body2.id);
-		var bodyContact = this.contacts.get(bodyHash);
-		if(bodyContact != null) {
-			if(bodyContact.stamp < this.engine.update) {
-				bodyContact.contactCount = 0;
-				bodyContact.stamp = this.engine.update;
-			}
-			bodyContact.contactCount++;
-		} else {
-			bodyContact = new physics.dynamics.BodyContact();
-			bodyContact.hash = bodyHash;
-			bodyContact.stamp = this.engine.update;
-			bodyContact.contactCount = 1;
-			bodyContact.startContact = true;
-			bodyContact.endContact = false;
-			bodyContact.bodyA = body1;
-			bodyContact.bodyB = body2;
-			this.contacts.set(bodyHash,bodyContact);
-		}
-		return true;
-	}
-	,__class__: physics.dynamics.BodyContactManager
-}
-physics.dynamics.Contact = function() {
-	this.point = new physics.geometry.Vector2D();
-	this.normal = new physics.geometry.Vector2D();
-	this.penDist = 0;
-};
-physics.dynamics.Contact.__name__ = true;
-physics.dynamics.Contact.prototype = {
-	__class__: physics.dynamics.Contact
-}
-physics.dynamics.Feature = function(body,shape,material) {
-	this.body = body;
-	this.shape = shape;
-	this.material = material;
-	this.isSensor = false;
-	this.isCollidable = false;
-	this.position = body.position;
-};
-physics.dynamics.Feature.__name__ = true;
-physics.dynamics.Feature.prototype = {
-	copy: function(feature) {
-		this.body = feature.body;
-		this.shape = feature.shape;
-		this.material = feature.material;
-		this.position = feature.position;
-	}
-	,__class__: physics.dynamics.Feature
-}
-physics.dynamics.Material = function(density,elasticity,friction) {
-	if(friction == null) friction = 0.0;
-	if(elasticity == null) elasticity = 0.3;
-	if(density == null) density = 1;
-	this.density = density;
-	this.elasticity = elasticity;
-	this.friction = friction;
-};
-physics.dynamics.Material.__name__ = true;
-physics.dynamics.Material.prototype = {
-	__class__: physics.dynamics.Material
-}
-physics.geometry = {}
-physics.geometry.AABB = function(l,b,r,t) {
-	if(t == null) t = .0;
-	if(r == null) r = .0;
-	if(b == null) b = .0;
-	if(l == null) l = .0;
-	this.l = l;
-	this.b = b;
-	this.r = r;
-	this.t = t;
-};
-physics.geometry.AABB.__name__ = true;
-physics.geometry.AABB.intersects = function(aabb1,position1,aabb2,position2) {
-	if(aabb1.l + position1.x > aabb2.r + position2.x) return false; else if(aabb1.r + position1.x < aabb2.l + position2.x) return false; else if(aabb1.t + position1.y > aabb2.b + position2.y) return false; else if(aabb1.b + position1.y < aabb2.t + position2.y) return false; else return true;
-}
-physics.geometry.AABB.prototype = {
-	Union: function(position,aabb,aabbPosition) {
-		return new physics.geometry.AABB(Math.max(this.l + position.x,aabb.l + aabbPosition.x),Math.min(this.b + position.y,aabb.b + aabbPosition.y),Math.min(this.r + position.x,aabb.r + aabbPosition.x),Math.max(this.t + position.y,aabb.t + aabbPosition.y));
-	}
-	,setToCenter: function(c) {
-		c.x = (this.r + this.l) / 2;
-		c.y = (this.b + this.t) / 2;
-	}
-	,area: function() {
-		return (this.r - this.l) * (this.b - this.t);
-	}
-	,height: function() {
-		return this.b - this.t;
-	}
-	,width: function() {
-		return this.r - this.l;
-	}
-	,reset: function() {
-		this.l = 1e99;
-		this.r = -1e+99;
-		this.t = 1e99;
-		this.b = -1e+99;
-	}
-	,expand: function(aabb) {
-		if(aabb.l < this.l) this.l = aabb.l;
-		if(aabb.r > this.r) this.r = aabb.r;
-		if(aabb.t < this.t) this.t = aabb.t;
-		if(aabb.b > this.b) this.b = aabb.b;
-	}
-	,__class__: physics.geometry.AABB
-}
-physics.geometry.Axis = function(n,d) {
-	this.n = n;
-	this.d = d;
-};
-physics.geometry.Axis.__name__ = true;
-physics.geometry.Axis.prototype = {
-	clone: function() {
-		return new physics.geometry.Axis(this.n.clone(),this.d);
-	}
-	,__class__: physics.geometry.Axis
-}
-physics.geometry.GeometricShape = function(typeID,offset) {
-	this.typeID = typeID;
-	this.offset = offset;
-	this.aabb = new physics.geometry.AABB();
-	this.UID = physics.geometry.GeometricShape.nextUID++;
-};
-physics.geometry.GeometricShape.__name__ = true;
-physics.geometry.GeometricShape.prototype = {
-	IntersectSegment: function(a,b,feature) {
-	}
-	,IntersectRay: function(ray,feature) {
-		return false;
-	}
-	,ContainsPoint: function(point,shapePosition) {
-		return false;
-	}
-	,Update: function(rotation) {
-	}
-	,__class__: physics.geometry.GeometricShape
-}
-physics.geometry.Circle = function(radius,offset) {
-	physics.geometry.GeometricShape.call(this,1,offset);
-	this.radius = radius;
-	this.InitShape();
-};
-physics.geometry.Circle.__name__ = true;
-physics.geometry.Circle.__super__ = physics.geometry.GeometricShape;
-physics.geometry.Circle.prototype = $extend(physics.geometry.GeometricShape.prototype,{
-	IntersectSegment: function(a,b,feature) {
-		var tA = a.minus(this.transformedCentre).minus(feature.position);
-		var tB = b.minus(this.transformedCentre).minus(feature.position);
-		var qa = a.x * a.x + a.y * a.y - 2 * (a.x * b.x + a.y * b.y) + (b.x * b.x + b.y * b.y);
-		var qb = -2 * (a.x * a.x + a.y * a.y) + 2 * (a.x * b.x + a.y * b.y);
-		var qc = a.x * a.x + a.y * a.y - this.radius * this.radius;
-		var det = qb * qb - 4 * qa * qc;
-		if(det >= 0.0) {
-			var t = (-qb - Math.sqrt(det)) / (2 * qa);
-			if(0.0 <= t && t <= 1.0) {
-			}
-		}
-	}
-	,IntersectRay: function(ray,feature) {
-		var distX = ray.origin.x - (this.transformedCentre.x + feature.position.x);
-		var distY = ray.origin.y - (this.transformedCentre.y + feature.position.y);
-		var b = distX * ray.direction.x + distY * ray.direction.y;
-		if(b > 0) return false;
-		var d = this.radius * this.radius - (distX * distX + distY * distY - b * b);
-		if(d < 0) return false;
-		d = -b - Math.sqrt(d);
-		return ray.ReportResult(feature,d,ray.returnNormal?new physics.geometry.Vector2D(ray.origin.x + ray.direction.x * d - (this.transformedCentre.x + feature.position.x),ray.origin.y + ray.direction.y * d - (this.transformedCentre.y + feature.position.y)).unitEquals():null);
-	}
-	,ContainsPoint: function(point,shapePosition) {
-		var x = this.transformedCentre.x + shapePosition.x - point.x;
-		var y = this.transformedCentre.y + shapePosition.y - point.y;
-		return x * x + y * y <= this.radius * this.radius;
-	}
-	,Update: function(rotation) {
-		this.transformedCentre.x = this.centre.x * rotation.x - this.centre.y * rotation.y;
-		this.transformedCentre.y = this.centre.x * rotation.y + this.centre.y * rotation.x;
-		this.aabb.l = this.transformedCentre.x - this.radius;
-		this.aabb.r = this.transformedCentre.x + this.radius;
-		this.aabb.t = this.transformedCentre.y - this.radius;
-		this.aabb.b = this.transformedCentre.y + this.radius;
-	}
-	,InitShape: function() {
-		this.centre = this.offset.clone();
-		this.transformedCentre = this.centre.clone();
-		this.area = Math.PI * (this.radius * this.radius);
-	}
-	,__class__: physics.geometry.Circle
-});
-physics.geometry.Polygon = function(vertices,offset) {
-	physics.geometry.GeometricShape.call(this,4,offset);
-	this.InitShape(vertices);
-};
-physics.geometry.Polygon.__name__ = true;
-physics.geometry.Polygon.CreateRectangle = function(w,h) {
-	var rect = new Array();
-	rect.push(new physics.geometry.Vector2D(-w / 2,-h / 2));
-	rect.push(new physics.geometry.Vector2D(-w / 2,h / 2));
-	rect.push(new physics.geometry.Vector2D(w / 2,h / 2));
-	rect.push(new physics.geometry.Vector2D(w / 2,-h / 2));
-	return rect;
-}
-physics.geometry.Polygon.__super__ = physics.geometry.GeometricShape;
-physics.geometry.Polygon.prototype = $extend(physics.geometry.GeometricShape.prototype,{
-	ValueOnAxis: function(a,axisPosition,shapePosition) {
-		var min = 4294967296;
-		var result;
-		var _g = 0, _g1 = this.transformedVertices;
-		while(_g < _g1.length) {
-			var vertex = _g1[_g];
-			++_g;
-			result = a.n.x * (vertex.x + shapePosition.x) + a.n.y * (vertex.y + shapePosition.y) - (axisPosition.x * a.n.x + axisPosition.y * a.n.y + a.d);
-			if(result < min) min = result;
-		}
-		return min;
-	}
-	,IntersectSegment: function(a,b,feature) {
-		var ta;
-		var _g1 = 0, _g = this.vertexCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			ta = this.transformedAxes[i];
-			var an = a.dot(ta.n);
-			var ad = feature.position.x * ta.n.x + feature.position.y * ta.n.y + ta.d;
-			if(ad > an) continue;
-			var bn = b.dot(ta.n);
-			var t = (ad - an) / (bn - an);
-			if(t < 0.0 || 1.0 < t) continue;
-			var point = a.interpolate(b,t);
-			var dt = -ta.n.cross(point);
-			var dtMin = -ta.n.cross(this.transformedVertices[i]);
-			var dtMax = -ta.n.cross(this.transformedVertices[(i + 1) % this.vertexCount]);
-			if(dtMin <= dt && dt <= dtMax) {
-			}
-		}
-	}
-	,IntersectRay: function(ray,feature) {
-		var tfar = ray.range;
-		var tnear = 0;
-		var nnear = null;
-		var nfar = null;
-		var ta;
-		var tv;
-		var _g1 = 0, _g = this.vertexCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			ta = this.transformedAxes[i];
-			tv = this.transformedVertices[i];
-			var Dx = tv.x + feature.position.x - ray.origin.x;
-			var Dy = tv.y + feature.position.y - ray.origin.y;
-			var denom = Dx * ta.n.x + Dy * ta.n.y;
-			var numer = ray.direction.x * ta.n.x + ray.direction.y * ta.n.y;
-			if((numer < 0?-numer:numer) < 0.000000001) {
-				if(denom < 0) return false;
-			} else {
-				var tclip = denom / numer;
-				if(numer < 0) {
-					if(tclip > tfar) return false;
-					if(tclip > tnear) {
-						tnear = tclip;
-						nnear = ta;
-					}
-				} else {
-					if(tclip < tnear) return false;
-					if(tclip < tfar) {
-						tfar = tclip;
-						nfar = ta;
-					}
-				}
-			}
-		}
-		if(nnear == null) return false;
-		var t = -(ray.origin.x * nnear.n.x + ray.origin.y * nnear.n.y - (feature.position.x * nnear.n.x + feature.position.y * nnear.n.y + nnear.d)) / (ray.direction.x * nnear.n.x + ray.direction.y * nnear.n.y);
-		return ray.ReportResult(feature,t,nnear.n);
-	}
-	,ContainsPoint: function(point,shapePosition) {
-		var _g = 0, _g1 = this.transformedAxes;
-		while(_g < _g1.length) {
-			var a = _g1[_g];
-			++_g;
-			if(a.n.x * point.x + a.n.y * point.y - (shapePosition.x * a.n.x + shapePosition.y * a.n.y + a.d) > 0) return false;
-		}
-		return true;
-	}
-	,Update: function(rotation) {
-		var v;
-		var tv;
-		this.aabb.l = this.aabb.t = 4294967296;
-		this.aabb.r = this.aabb.b = -4294967296;
-		var _g1 = 0, _g = this.vertexCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			v = this.vertices[i];
-			tv = this.transformedVertices[i];
-			tv.x = v.x * rotation.x - v.y * rotation.y;
-			tv.y = v.x * rotation.y + v.y * rotation.x;
-			if(tv.x < this.aabb.l) this.aabb.l = tv.x;
-			if(tv.x > this.aabb.r) this.aabb.r = tv.x;
-			if(tv.y < this.aabb.t) this.aabb.t = tv.y;
-			if(tv.y > this.aabb.b) this.aabb.b = tv.y;
-		}
-		var a;
-		var ta;
-		var _g1 = 0, _g = this.vertexCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			a = this.axes[i];
-			ta = this.transformedAxes[i];
-			ta.n.x = a.n.x * rotation.x - a.n.y * rotation.y;
-			ta.n.y = a.n.x * rotation.y + a.n.y * rotation.x;
-			ta.d = a.d;
-		}
-	}
-	,InitShape: function(originalVertices) {
-		var v0;
-		var v1;
-		var v2;
-		var a;
-		var b;
-		var n;
-		var axis;
-		this.vertices = new Array();
-		this.transformedVertices = new Array();
-		this.axes = new Array();
-		this.transformedAxes = new Array();
-		this.vertexCount = originalVertices.length;
-		this.area = 0;
-		var _g1 = 0, _g = this.vertexCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			v0 = originalVertices[i];
-			v1 = originalVertices[(i + 1) % this.vertexCount];
-			v2 = originalVertices[(i + 2) % this.vertexCount];
-			a = new physics.geometry.Vector2D(v0.x + this.offset.x,v0.y + this.offset.y);
-			b = new physics.geometry.Vector2D(v1.x + this.offset.x,v1.y + this.offset.y);
-			n = new physics.geometry.Vector2D(b.x - a.x,b.y - a.y).rightHandNormal().unit();
-			this.vertices.push(a);
-			this.transformedVertices.push(a.clone());
-			axis = new physics.geometry.Axis(n,n.x * a.x + n.y * a.y);
-			this.axes.push(axis);
-			this.transformedAxes.push(axis.clone());
-			this.area += v1.x * (v2.y - v0.y);
-		}
-		this.area /= -2;
-		originalVertices = null;
-	}
-	,__class__: physics.geometry.Polygon
-});
-physics.geometry.Ray = function() {
-};
-physics.geometry.Ray.__name__ = true;
-physics.geometry.Ray.prototype = {
-	IntersectBoundingCircle: function(position,radius) {
-		var distX = this.origin.x - position.x;
-		var distY = this.origin.y - position.y;
-		var b = distX * this.direction.x + distY * this.direction.y;
-		if(b > 0) return false;
-		var d = radius * radius - (distX * distX + distY * distY - b * b);
-		if(d < 0) return false;
-		return true;
-	}
-	,ClosestIntersectPoint: function() {
-		return new physics.geometry.Vector2D(this.origin.x + this.direction.x * this.closestIntersectDistance,this.origin.y + this.direction.y * this.closestIntersectDistance);
-	}
-	,LastIntersectPoint: function() {
-		return new physics.geometry.Vector2D(this.origin.x + this.direction.x * this.lastIntersectDistance,this.origin.y + this.direction.y * this.lastIntersectDistance);
-	}
-	,ReportResult: function(feature,dist,normal) {
-		if(dist >= this.range) {
-			this.lastIntersectResult = false;
-			return false;
-		}
-		this.intersectInRange = true;
-		this.lastIntersectResult = true;
-		this.lastIntersectDistance = dist;
-		this.lastIntersectFeature = feature;
-		if(dist < this.closestIntersectDistance) {
-			this.closestIntersectDistance = dist;
-			this.closestIntersectFeature = feature;
-			this.closestIntersectNormal = normal;
-		}
-		return true;
-	}
-	,TestFeature: function(feature) {
-		this.lastIntersectResult = false;
-		return feature.shape.IntersectRay(this,feature);
-	}
-	,Seen2: function() {
-		return this.lastIntersectDistance >= this.range;
-	}
-	,Seen: function() {
-		return this.lastIntersectFeature == null || this.lastIntersectDistance >= this.range;
-	}
-	,SetParams: function(origin,target,range) {
-		this.origin = origin;
-		this.target = target;
-		this.delta = new physics.geometry.Vector2D(target.x - origin.x,target.y - origin.y);
-		var m = this.delta.length();
-		if(m == 0) m = 0.0000001;
-		this.direction = this.delta.mult(1 / m);
-		this.lastIntersectResult = false;
-		this.lastIntersectDistance = 0;
-		this.lastIntersectFeature = null;
-		this.intersectInRange = false;
-		this.closestIntersectDistance = Math.POSITIVE_INFINITY;
-		this.closestIntersectFeature = null;
-		this.range = range == 0?m:range;
-		this.rangeSqr = this.range * this.range;
-	}
-	,__class__: physics.geometry.Ray
-}
-physics.geometry.Segment = function(a,b,radius) {
-	physics.geometry.GeometricShape.call(this,2,null);
-	this.a = a.clone();
-	this.b = b.clone();
-	this.radius = radius;
-	this.InitShape();
-};
-physics.geometry.Segment.__name__ = true;
-physics.geometry.Segment.__super__ = physics.geometry.GeometricShape;
-physics.geometry.Segment.prototype = $extend(physics.geometry.GeometricShape.prototype,{
-	Update: function(rotation) {
-		this.tA.x = this.a.x * rotation.x - this.a.y * rotation.y;
-		this.tA.y = this.a.x * rotation.y + this.a.y * rotation.x;
-		this.tB.x = this.b.x * rotation.x - this.b.y * rotation.y;
-		this.tB.y = this.b.x * rotation.y + this.b.y * rotation.x;
-		this.tN.x = this.n.x * rotation.x - this.n.y * rotation.y;
-		this.tN.y = this.n.y * rotation.y + this.n.y * rotation.x;
-		this.tNneg.x = -this.tN.x;
-		this.tNneg.y = -this.tN.y;
-		this.tNdottA = this.tN.x * this.tA.x + this.tN.y * this.tA.y;
-		if(this.tA.x < this.tB.x) {
-			this.aabb.l = this.tA.x - this.radius;
-			this.aabb.r = this.tB.x + this.radius;
-		} else {
-			this.aabb.l = this.tB.x - this.radius;
-			this.aabb.r = this.tA.x + this.radius;
-		}
-		if(this.tA.y < this.tB.y) {
-			this.aabb.t = this.tA.y - this.radius;
-			this.aabb.b = this.tB.y + this.radius;
-		} else {
-			this.aabb.t = this.tB.y - this.radius;
-			this.aabb.b = this.tA.y + this.radius;
-		}
-	}
-	,InitShape: function() {
-		this.delta = this.b.minus(this.a);
-		this.n = this.delta.unit().rightHandNormal();
-		this.tA = new physics.geometry.Vector2D();
-		this.tB = new physics.geometry.Vector2D();
-		this.tN = new physics.geometry.Vector2D();
-		this.tNneg = new physics.geometry.Vector2D();
-	}
-	,__class__: physics.geometry.Segment
-});
-physics.geometry.Shapes = function() { }
-physics.geometry.Shapes.__name__ = true;
-physics.geometry.Vector2D = function(x,y) {
-	if(y == null) y = .0;
-	if(x == null) x = .0;
-	this.x = x;
-	this.y = y;
-};
-physics.geometry.Vector2D.__name__ = true;
-physics.geometry.Vector2D.fromString = function(str) {
-	if(str == null) return null;
-	var vectorParts = str.split(":");
-	if(vectorParts == null || vectorParts.length != 2) return null;
-	var xVal = Std.parseFloat(vectorParts[0]);
-	var yVal = Std.parseFloat(vectorParts[1]);
-	if(Math.isNaN(xVal) || Math.isNaN(yVal)) return null;
-	return new physics.geometry.Vector2D(xVal,yVal);
-}
-physics.geometry.Vector2D.prototype = {
-	toString: function() {
-		return this.x + ":" + this.y;
-	}
-	,clone: function() {
-		return new physics.geometry.Vector2D(this.x,this.y);
-	}
-	,equalsZero: function() {
-		return this.x == 0 && this.y == 0;
-	}
-	,isEquals: function(v) {
-		return this.x == v.x && this.y == v.y;
-	}
-	,rotateEquals: function(angle) {
-		var a = angle * Math.PI / 180;
-		var cos = Math.cos(a);
-		var sin = Math.sin(a);
-		var rx = cos * this.x - sin * this.y;
-		var ry = cos * this.y + sin * this.x;
-		this.x = rx;
-		this.y = ry;
-		return this;
-	}
-	,rotate: function(angle) {
-		var a = angle * Math.PI / 180;
-		var cos = Math.cos(a);
-		var sin = Math.sin(a);
-		return new physics.geometry.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
-	}
-	,interpolate: function(v,t) {
-		return this.mult(1 - t).plus(new physics.geometry.Vector2D(v.x * t,v.y * t));
-	}
-	,clampMax: function(max) {
-		var l = Math.sqrt(this.x * this.x + this.y * this.y);
-		if(l > max) this.multEquals(max / l);
-		return this;
-	}
-	,distanceSqrd: function(v) {
-		var dX = this.x - v.x;
-		var dY = this.y - v.y;
-		return dX * dX + dY * dY;
-	}
-	,distance: function(v) {
-		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
-		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-	}
-	,rightHandNormalEquals: function() {
-		var t = this.x;
-		this.x = -this.y;
-		this.y = this.x;
-		return this;
-	}
-	,rightHandNormal: function() {
-		return new physics.geometry.Vector2D(-this.y,this.x);
-	}
-	,leftHandNormalEquals: function() {
-		var t = this.x;
-		this.x = this.y;
-		this.y = -t;
-		return this;
-	}
-	,leftHandNormal: function() {
-		return new physics.geometry.Vector2D(this.y,-this.x);
-	}
-	,unitEquals: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		this.x /= t;
-		this.y /= t;
-		return this;
-	}
-	,unit: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		return new physics.geometry.Vector2D(this.x / t,this.y / t);
-	}
-	,lengthSqr: function() {
-		return this.x * this.x + this.y * this.y;
-	}
-	,length: function() {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-	,divEquals: function(s) {
-		if(s == 0) s = 0.0001;
-		this.x /= s;
-		this.y /= s;
-		return this;
-	}
-	,div: function(s) {
-		if(s == 0) s = 0.0001;
-		return new physics.geometry.Vector2D(this.x / s,this.y / s);
-	}
-	,timesEquals2: function(x,y) {
-		this.x *= x;
-		this.y *= y;
-		return this;
-	}
-	,timesEquals: function(v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		return this;
-	}
-	,times2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x * x,this.y * y);
-	}
-	,times: function(v) {
-		return new physics.geometry.Vector2D(this.x * v.x,this.y * v.y);
-	}
-	,multEquals: function(s) {
-		this.x *= s;
-		this.y *= s;
-		return this;
-	}
-	,mult: function(s) {
-		return new physics.geometry.Vector2D(this.x * s,this.y * s);
-	}
-	,minusEquals2: function(x,y) {
-		this.x -= x;
-		this.y -= y;
-		return this;
-	}
-	,minusEquals: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-		return this;
-	}
-	,minus2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x - x,this.y - y);
-	}
-	,minus: function(v) {
-		return new physics.geometry.Vector2D(this.x - v.x,this.y - v.y);
-	}
-	,plusEquals2: function(x,y) {
-		this.x += x;
-		this.y += y;
-		return this;
-	}
-	,plusEquals: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-		return this;
-	}
-	,plus2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x + x,this.y + y);
-	}
-	,plus: function(v) {
-		return new physics.geometry.Vector2D(this.x + v.x,this.y + v.y);
-	}
-	,cross: function(v) {
-		return this.x * v.y - this.y * v.x;
-	}
-	,dot: function(v) {
-		return this.x * v.x + this.y * v.y;
-	}
-	,copy: function(v) {
-		this.x = v.x;
-		this.y = v.y;
-	}
-	,setTo: function(x,y) {
-		this.x = x;
-		this.y = y;
-		return this;
-	}
-	,__class__: physics.geometry.Vector2D
-}
-physics.geometry.VertexList = function() {
-	this.vertices = new Array();
-	this.transformedVertices = new Array();
-};
-physics.geometry.VertexList.__name__ = true;
-physics.geometry.VertexList.prototype = {
-	Update: function(rotation,flipVerticaly) {
-		var vertexCount = this.vertices.length;
-		var _g = 0;
-		while(_g < vertexCount) {
-			var i = _g++;
-			var v = this.vertices[i];
-			var tv = this.transformedVertices[i];
-			tv.x = v.x * rotation.x - v.y * rotation.y;
-			tv.y = v.x * rotation.y + v.y * rotation.x;
-			if(flipVerticaly) {
-				tv.x *= -1;
-				tv.y *= -1;
-			}
-		}
-	}
-	,RemoveVertex: function(v) {
-		var _g1 = 0, _g = this.transformedVertices.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			if(this.transformedVertices[i] == v) {
-				this.vertices.splice(i,1);
-				this.transformedVertices.splice(i,1);
-				return;
-			}
-		}
-	}
-	,AddVertex: function(v) {
-		this.vertices.push(v);
-		var tV = v.clone();
-		this.transformedVertices.push(tV);
-		return tV;
-	}
-	,__class__: physics.geometry.VertexList
-}
 var utils = {}
+utils.EventTarget = function() {
+	this.listeners = new haxe.ds.StringMap();
+};
+utils.EventTarget.__name__ = true;
+utils.EventTarget.prototype = {
+	removeEventListener: function(type,listener) {
+	}
+	,dispatchEvent: function(event) {
+		var listenerTypes = this.listeners.get(event.type);
+		if(listenerTypes == null) return;
+		var _g = 0;
+		while(_g < listenerTypes.length) {
+			var listener = listenerTypes[_g];
+			++_g;
+			listener(event);
+		}
+	}
+	,addEventListener: function(type,listener) {
+		if(!this.listeners.exists(type)) this.listeners.set(type,new Array());
+		var listenerTypes = this.listeners.get(type);
+		if(Lambda.indexOf(listenerTypes,listener) < 0) listenerTypes.push(listener);
+	}
+	,__class__: utils.EventTarget
+}
+utils.AssetLoader = function() {
+	utils.EventTarget.call(this);
+	this.assets = new haxe.ds.StringMap();
+	this.Reset();
+};
+utils.AssetLoader.__name__ = true;
+utils.AssetLoader.__super__ = utils.EventTarget;
+utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
+	onLoad: function(item) {
+		this.completeCount--;
+		this.assets.set(item.getKey(),item.getValue());
+		if(this.completeCount == 0) {
+			utils.EventTarget.prototype.dispatchEvent.call(this,{ type : "loaded", count : this.completeCount});
+			this.running = false;
+		}
+	}
+	,Load: function() {
+		if(this.running == true || this.loaders.length == 0) return;
+		this.completeCount = this.loaders.length;
+		this.running = true;
+		var _g = 0, _g1 = this.loaders;
+		while(_g < _g1.length) {
+			var loader = _g1[_g];
+			++_g;
+			loader.Load();
+		}
+	}
+	,LoaderFactory: function(url) {
+		var extention = url.substring(url.length - 3,url.length);
+		if(extention == "png") return new utils.ImageAsset(this);
+		if(extention == "tmx") return new utils.BlobAsset(this);
+		return null;
+	}
+	,AddAsset: function(url) {
+		if(this.running == true) return;
+		var loader = this.LoaderFactory(url);
+		loader.Init(url);
+		this.loaders.push(loader);
+	}
+	,SetImagesToLoad: function(urls) {
+		var _g = 0;
+		while(_g < urls.length) {
+			var url = urls[_g];
+			++_g;
+			this.AddAsset(url);
+		}
+	}
+	,Reset: function() {
+		this.running = false;
+		this.loaders = new Array();
+	}
+	,__class__: utils.AssetLoader
+});
+utils.ILoader = function() { }
+utils.ILoader.__name__ = true;
+utils.ILoader.prototype = {
+	__class__: utils.ILoader
+}
+utils.ImageAsset = function(mgr) {
+	this.mgr = mgr;
+};
+utils.ImageAsset.__name__ = true;
+utils.ImageAsset.__interfaces__ = [utils.ILoader];
+utils.ImageAsset.prototype = {
+	getValue: function() {
+		return this.image;
+	}
+	,getKey: function() {
+		return this.url;
+	}
+	,onLoad: function(event) {
+		if(this.mgr != null) this.mgr.onLoad(this);
+	}
+	,Load: function() {
+		this.image.src = this.url;
+		if(this.image.complete == true) this.onLoad(null);
+	}
+	,Init: function(url) {
+		this.url = url;
+		this.image = new Image();
+		this.image.onload = $bind(this,this.onLoad);
+		this.image.crossOrigin = "anonymous";
+	}
+	,__class__: utils.ImageAsset
+}
+utils.BlobAsset = function(mgr) {
+	this.mgr = mgr;
+};
+utils.BlobAsset.__name__ = true;
+utils.BlobAsset.__interfaces__ = [utils.ILoader];
+utils.BlobAsset.prototype = {
+	getValue: function() {
+		return this.xhr.response;
+	}
+	,getKey: function() {
+		return this.url;
+	}
+	,onLoad: function(event) {
+		if(this.mgr != null) this.mgr.onLoad(this);
+	}
+	,Load: function() {
+		this.xhr.send();
+	}
+	,Init: function(url) {
+		this.url = url;
+		this.xhr = new XMLHttpRequest();
+		this.xhr.open("GET",url,true);
+		this.xhr.responseType = "text";
+		this.xhr.onload = $bind(this,this.onLoad);
+	}
+	,__class__: utils.BlobAsset
+}
 utils.Base64 = function() { }
 utils.Base64.__name__ = true;
 utils.Base64.Decode = function(input) {
@@ -2445,75 +1508,6 @@ utils.Base64.Decode = function(input) {
 		i += 3;
 	}
 	return ab;
-}
-utils.EventTarget = function() {
-	this.listeners = new haxe.ds.StringMap();
-};
-utils.EventTarget.__name__ = true;
-utils.EventTarget.prototype = {
-	removeEventListener: function(type,listener) {
-	}
-	,dispatchEvent: function(event) {
-		var listenerTypes = this.listeners.get(event.type);
-		if(listenerTypes == null) return;
-		var _g = 0;
-		while(_g < listenerTypes.length) {
-			var listener = listenerTypes[_g];
-			++_g;
-			listener(event);
-		}
-	}
-	,addEventListener: function(type,listener) {
-		if(!this.listeners.exists(type)) this.listeners.set(type,new Array());
-		var listenerTypes = this.listeners.get(type);
-		if(Lambda.indexOf(listenerTypes,listener) < 0) listenerTypes.push(listener);
-	}
-	,__class__: utils.EventTarget
-}
-utils.ImageLoader = function() {
-	utils.EventTarget.call(this);
-	this.assets = new Array();
-};
-utils.ImageLoader.__name__ = true;
-utils.ImageLoader.__super__ = utils.EventTarget;
-utils.ImageLoader.prototype = $extend(utils.EventTarget.prototype,{
-	onLoad: function(event) {
-		this.completeCount--;
-		if(this.completeCount == 0) utils.EventTarget.prototype.dispatchEvent.call(this,{ type : "loaded", count : this.completeCount});
-	}
-	,SetImagesToLoad: function(urls) {
-		this.completeCount = urls.length;
-		var _g = 0;
-		while(_g < urls.length) {
-			var url = urls[_g];
-			++_g;
-			var image = new Image();
-			this.assets.push(image);
-			image.onload = $bind(this,this.onLoad);
-			image.src = url;
-			image.crossOrigin = "anonymous";
-			if(image.complete == true) this.onLoad(null);
-		}
-	}
-	,__class__: utils.ImageLoader
-});
-utils.Maths = function() { }
-utils.Maths.__name__ = true;
-utils.Maths.toRad = function(deg) {
-	return deg * (3.141592653589793 / 180);
-}
-utils.Maths.toDeg = function(rad) {
-	return rad * (180 / 3.141592653589793);
-}
-utils.Maths.Clamp = function(input,min,max) {
-	if(input > max) return max; else if(input < min) return min; else return input;
-}
-utils.Maths.ScaleRectangleWithRatio = function(containerRect,itemRect) {
-	var sX = containerRect.x / itemRect.x;
-	var sY = containerRect.y / itemRect.y;
-	var rD = containerRect.x / containerRect.y;
-	var rR = itemRect.x / itemRect.y;
-	return rD < rR?sX:sY;
 }
 var wgr = {}
 wgr.display = {}
@@ -3805,7 +2799,12 @@ wgr.renderers.webgl.WebGLShaders.CompileProgram = function(gl,vertexSrc,fragment
 	gl.attachShader(shaderProgram,vertexShader);
 	gl.attachShader(shaderProgram,fragmentShader);
 	gl.linkProgram(shaderProgram);
-	if(!gl.getProgramParameter(shaderProgram,35714)) js.Lib.alert("Could not initialize shaders");
+	if(!gl.getProgramParameter(shaderProgram,35714)) {
+		js.Lib.alert("Could not initialize program");
+		console.log(vertexSrc);
+		console.log(fragmentSrc);
+		console.log(gl.getProgramInfoLog(shaderProgram));
+	}
 	return shaderProgram;
 }
 wgr.texture = {}
@@ -3869,6 +2868,12 @@ wgr.texture.TextureManager.prototype = {
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
+if(Array.prototype.indexOf) HxOverrides.remove = function(a,o) {
+	var i = a.indexOf(o);
+	if(i == -1) return false;
+	a.splice(i,1);
+	return true;
+};
 Math.__name__ = ["Math"];
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
@@ -3893,65 +2898,35 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = { __name__ : ["Class"]};
 var Enum = { };
-ds.IDManager.NEXT_PERSISTENT_ID = 0;
-ds.IDManager.TRANSIENT_START_ID = 10000;
-ds.IDManager.TRANSIENT_CACHE_LENGTH = 10000;
-ds.IDManager.TRANSIENT_CACHE = (function($this) {
+Xml.Element = "element";
+Xml.PCData = "pcdata";
+Xml.CData = "cdata";
+Xml.Comment = "comment";
+Xml.DocType = "doctype";
+Xml.ProcessingInstruction = "processingInstruction";
+Xml.Document = "document";
+engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+haxe.xml.Parser.escapes = (function($this) {
 	var $r;
-	var cache = new Array();
-	{
-		var _g1 = 0, _g = ds.IDManager.TRANSIENT_CACHE_LENGTH;
-		while(_g1 < _g) {
-			var i = _g1++;
-			cache.push(ds.IDManager.TRANSIENT_START_ID + i);
-		}
-	}
-	$r = cache;
+	var h = new haxe.ds.StringMap();
+	h.set("lt","<");
+	h.set("gt",">");
+	h.set("amp","&");
+	h.set("quot","\"");
+	h.set("apos","'");
+	h.set("nbsp",String.fromCharCode(160));
+	$r = h;
 	return $r;
 }(this));
-ds.IDManager.TRANSIENT_POINTER = 0;
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
-physics.Constants.FMAX = 1e99;
-physics.Constants.SLEEP_BIAS = 0.99332805041467;
-physics.Constants.SLEEP_EPSILON = 0.0009;
-physics.Constants.WAKE_MOTION = 10;
-physics.collision.broadphase.managedgrid.Cell.LEFT = 1;
-physics.collision.broadphase.managedgrid.Cell.LEFTUP = 2;
-physics.collision.broadphase.managedgrid.Cell.UP = 4;
-physics.collision.broadphase.managedgrid.Cell.UPRIGHT = 8;
-physics.collision.broadphase.managedgrid.Cell.RIGHT = 16;
-physics.collision.broadphase.managedgrid.Cell.RIGHTDOWN = 32;
-physics.collision.broadphase.managedgrid.Cell.DOWN = 64;
-physics.collision.broadphase.managedgrid.Cell.DOWNLEFT = 128;
-physics.dynamics.Body.nextBodyID = 0;
-physics.geometry.GeometricShape.nextUID = 0;
-physics.geometry.Shapes.AXIS_ALIGNED_BOX_SHAPE = 0;
-physics.geometry.Shapes.CIRCLE_SHAPE = 1;
-physics.geometry.Shapes.SEGMENT_SHAPE = 2;
-physics.geometry.Shapes.POLYGON_SHAPE = 4;
-physics.geometry.Shapes.POLYGON_POLYGON = 4;
-physics.geometry.Shapes.CIRCLE_POLYGON = 5;
-physics.geometry.Shapes.CIRCLE_CIRCLE = 1;
-physics.geometry.Shapes.CIRCLE_SEGMENT = 3;
-physics.geometry.Shapes.SEGMENT_POLYGON = 6;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-utils.Maths.ZERO_TOLERANCE = 1e-08;
-utils.Maths.RAD_DEG = 180 / 3.141592653589793;
-utils.Maths.DEG_RAD = 3.141592653589793 / 180;
-utils.Maths.LN2 = 0.6931471805599453;
-utils.Maths.LN10 = 2.302585092994046;
-utils.Maths.PIHALF = 1.5707963267948966;
-utils.Maths.PI = 3.141592653589793;
-utils.Maths.PI2 = 6.283185307179586;
-utils.Maths.EPS = 1e-6;
-utils.Maths.SQRT2 = 1.414213562373095;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 1 / 255;
-wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
-wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
+wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
-wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
+wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["precision mediump float;","attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
 wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();
 })();

@@ -12,7 +12,7 @@ class DisplayObjectContainer extends DisplayObject
 
     public var subTreeAABB:AABB;
 
-    public function new() {
+    public function new() { 
         super();
         subTreeAABB = new AABB();
         childCount = 0;

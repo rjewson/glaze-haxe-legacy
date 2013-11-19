@@ -124,6 +124,7 @@ class PointSpriteRenderer implements IRenderer
     }
 
     public static var SPRITE_VERTEX_SHADER:Array<String> = [
+        "precision mediump float;",
         "uniform float texTilesWide;",
         "uniform float texTilesHigh;",
         "uniform float invTexTilesWide;",
