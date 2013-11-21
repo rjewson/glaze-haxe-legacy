@@ -190,6 +190,8 @@ Main.main = function() {
 		var startTime = new Date().getTime();
 		var stop = false;
 		var debugSwitch = false;
+		var engine1 = new engine.Engine();
+		var cameraX = 300, cameraY = 300, cameraDelta = 6;
 		var tick = function() {
 			var _g = spr1;
 			_g._rotation = _g._rotation + 0.01;
@@ -216,19 +218,18 @@ Main.main = function() {
 				_g1._rotationComponents.y = Math.sin(_g1._rotation);
 				_g1._rotation;
 			}
-			pointParticleEngine.Update();
-			var elapsed = new Date().getTime() - startTime;
-			var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
-			var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-			camera.Focus(xp,yp);
+			camera.Focus(spr3.position.x,spr3.position.y);
 			renderer.Render(camera.viewPortAABB);
 			if(debugSwitch) {
 				debug.Clear(camera);
 				debug.DrawAABB(spr1.subTreeAABB);
 				debug.DrawAABB(spr2.subTreeAABB);
 			}
+			if(engine1.keyboard.keyMap[65] > 0) spr3.position.x -= cameraDelta;
+			if(engine1.keyboard.keyMap[68] > 0) spr3.position.x += cameraDelta;
+			if(engine1.keyboard.keyMap[87] > 0) spr3.position.y -= cameraDelta;
+			if(engine1.keyboard.keyMap[83] > 0) spr3.position.y += cameraDelta;
 		};
-		var engine1 = new engine.Engine();
 		engine1.updateFunc = tick;
 		engine1.start();
 		js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event1) {
@@ -447,6 +448,8 @@ ds.Array2D.prototype = {
 var engine = {}
 engine.Engine = function() {
 	this.isRunning = false;
+	this.keyboard = new engine.input.DigitalInput();
+	this.keyboard.InputTarget(js.Browser.document);
 };
 engine.Engine.__name__ = true;
 engine.Engine.prototype = {
@@ -464,11 +467,54 @@ engine.Engine.prototype = {
 	,update: function(timestamp) {
 		this.delta = timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
+		this.keyboard.Update();
 		if(this.updateFunc != null) this.updateFunc();
 		this.rafID = js.Browser.window.requestAnimationFrame($bind(this,this.update));
 		return false;
 	}
 	,__class__: engine.Engine
+}
+engine.input = {}
+engine.input.DigitalInput = function() {
+	this.keyMap = new Array();
+	var _g = 0;
+	while(_g < 255) {
+		var i = _g++;
+		this.keyMap[i] = 0;
+	}
+	this.frameRef = 1;
+};
+engine.input.DigitalInput.__name__ = true;
+engine.input.DigitalInput.prototype = {
+	Released: function(keyCode) {
+		return this.keyMap[keyCode] == 0;
+	}
+	,PressedDuration: function(keyCode) {
+		var duration = this.keyMap[keyCode];
+		return duration > 0?this.frameRef - duration:0;
+	}
+	,JustPressed: function(keyCode) {
+		return this.keyMap[keyCode] == this.frameRef - 1;
+	}
+	,Pressed: function(keyCode) {
+		return this.keyMap[keyCode] > 0;
+	}
+	,KeyUp: function(event) {
+		this.keyMap[event.keyCode] = 0;
+	}
+	,KeyDown: function(event) {
+		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+	}
+	,Update: function() {
+		if(this.target == null) return;
+		this.frameRef++;
+	}
+	,InputTarget: function(target) {
+		this.target = target;
+		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
+		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+	}
+	,__class__: engine.input.DigitalInput
 }
 engine.map = {}
 engine.map.TileMapMap = function(w,h,data) {

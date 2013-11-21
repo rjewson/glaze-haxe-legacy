@@ -139,6 +139,8 @@ class Main
             var stop = false;
             var debugSwitch = false;
 
+            var engine = new engine.Engine();
+            var cameraX = 300, cameraY = 300 , cameraDelta = 6;
             function tick() {
                 spr1.rotation += 0.01;
                 spr2.rotation -= 0.02;
@@ -159,13 +161,15 @@ class Main
                 //     //pointParticleEngine.EmitParticle(400,300,vX,vY,0,0,ttl,0.99,true,true,null,type,8,0xFFFFFFFF);                    
 
                 // }
-                pointParticleEngine.Update();
+                // pointParticleEngine.Update();
 
-                var elapsed = Date.now().getTime() - startTime;
-                var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
-                var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
-                //xp =yp =0; //Remove camera
-                camera.Focus(xp,yp);
+                // var elapsed = Date.now().getTime() - startTime;
+                // var xp = (Math.sin(elapsed / 2000) * 0.5 + 0.5) * 528;
+                // var yp = (Math.sin(elapsed / 5000) * 0.5 + 0.5) * 570;
+                // //xp =yp =0; //Remove camera
+                // camera.Focus(xp,yp);
+                // renderer.Render(camera.viewPortAABB);
+                camera.Focus(spr3.position.x,spr3.position.y);
                 renderer.Render(camera.viewPortAABB);
 
                 if (debugSwitch) {
@@ -173,14 +177,23 @@ class Main
                     debug.DrawAABB(spr1.subTreeAABB);
                     debug.DrawAABB(spr2.subTreeAABB);                    
                 }
-                //if (!stop) Browser.window.requestAnimationFrame(cast tick);
+
+                if (engine.keyboard.Pressed(65)) {
+                    spr3.position.x-=cameraDelta;
+                }
+                if (engine.keyboard.Pressed(68)) {
+                    spr3.position.x+=cameraDelta;
+                }
+                if (engine.keyboard.Pressed(87)) {
+                    spr3.position.y-=cameraDelta;
+                }
+                if (engine.keyboard.Pressed(83)) {
+                    spr3.position.y+=cameraDelta;
+                }
             }
 
-            var engine = new engine.Engine();
             engine.updateFunc = tick;
             engine.start();
-            // tick();            
-
 
             Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
                 engine.stop();
