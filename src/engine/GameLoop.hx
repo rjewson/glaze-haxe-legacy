@@ -5,7 +5,7 @@ import engine.input.DigitalInput;
 import js.Browser;
 import wgr.renderers.webgl.WebGLRenderer;
 
-class Engine 
+class GameLoop 
 {
 
     public var renderer:WebGLRenderer;
