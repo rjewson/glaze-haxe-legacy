@@ -110,6 +110,21 @@ List.prototype = {
 var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
+	var splat = function(str) {
+		console.log(str);
+	};
+	var s1 = new engine.core.signals.Signal1(splat);
+	s1.emit("splat");
+	var entity = new engine.core.Entity();
+	var dog = new game.Dog();
+	entity.add(dog);
+	var cat = new game.Cat();
+	entity.add(cat);
+	var p = entity.firstComponent;
+	while(p != null) {
+		p.onUpdate(16);
+		p = p.next;
+	}
 	var assets = new utils.AssetLoader();
 	assets.addEventListener("loaded",function(event) {
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
@@ -190,7 +205,7 @@ Main.main = function() {
 		var startTime = new Date().getTime();
 		var stop = false;
 		var debugSwitch = false;
-		var engine1 = new engine.Engine();
+		var gameLoop = new engine.GameLoop();
 		var cameraX = 300, cameraY = 300, cameraDelta = 6;
 		var tick = function() {
 			var _g = spr1;
@@ -225,18 +240,18 @@ Main.main = function() {
 				debug.DrawAABB(spr1.subTreeAABB);
 				debug.DrawAABB(spr2.subTreeAABB);
 			}
-			if(engine1.keyboard.keyMap[65] > 0) spr3.position.x -= cameraDelta;
-			if(engine1.keyboard.keyMap[68] > 0) spr3.position.x += cameraDelta;
-			if(engine1.keyboard.keyMap[87] > 0) spr3.position.y -= cameraDelta;
-			if(engine1.keyboard.keyMap[83] > 0) spr3.position.y += cameraDelta;
+			if(gameLoop.keyboard.keyMap[65] > 0) spr3.position.x -= cameraDelta;
+			if(gameLoop.keyboard.keyMap[68] > 0) spr3.position.x += cameraDelta;
+			if(gameLoop.keyboard.keyMap[87] > 0) spr3.position.y -= cameraDelta;
+			if(gameLoop.keyboard.keyMap[83] > 0) spr3.position.y += cameraDelta;
 		};
-		engine1.updateFunc = tick;
-		engine1.start();
+		gameLoop.updateFunc = tick;
+		gameLoop.start();
 		js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event1) {
-			engine1.stop();
+			gameLoop.stop();
 		});
 		js.Browser.document.getElementById("startbutton").addEventListener("click",function(event1) {
-			engine1.start();
+			gameLoop.start();
 		});
 		js.Browser.document.getElementById("debugbutton").addEventListener("click",function(event1) {
 			debugSwitch = !debugSwitch;
@@ -446,13 +461,13 @@ ds.Array2D.prototype = {
 	,__class__: ds.Array2D
 }
 var engine = {}
-engine.Engine = function() {
+engine.GameLoop = function() {
 	this.isRunning = false;
 	this.keyboard = new engine.input.DigitalInput();
 	this.keyboard.InputTarget(js.Browser.document);
 };
-engine.Engine.__name__ = true;
-engine.Engine.prototype = {
+engine.GameLoop.__name__ = true;
+engine.GameLoop.prototype = {
 	stop: function() {
 		if(this.isRunning == false) return;
 		this.isRunning = false;
@@ -472,7 +487,234 @@ engine.Engine.prototype = {
 		this.rafID = js.Browser.window.requestAnimationFrame($bind(this,this.update));
 		return false;
 	}
-	,__class__: engine.Engine
+	,__class__: engine.GameLoop
+}
+engine.core = {}
+engine.core.Component = function() { }
+engine.core.Component.__name__ = true;
+engine.core.Component.prototype = {
+	setNext: function(next) {
+		this.next = next;
+	}
+	,init: function(owner,next) {
+		this.owner = owner;
+		this.next = next;
+	}
+	,dispose: function() {
+		if(this.owner != null) this.owner.remove(this);
+	}
+	,onUpdate: function(dt) {
+	}
+	,onRemoved: function() {
+	}
+	,onAdded: function() {
+	}
+	,__class__: engine.core.Component
+}
+engine.core.Entity = function() {
+	this.firstComponent = null;
+	this._compMap = { };
+};
+engine.core.Entity.__name__ = true;
+engine.core.Entity.prototype = {
+	getComponent: function(name) {
+		return this._compMap[name];
+	}
+	,remove: function(component) {
+		var prev = null, p = this.firstComponent;
+		while(p != null) {
+			var next = p.next;
+			if(p == component) {
+				if(prev == null) this.firstComponent = next; else prev.init(this,next);
+				delete(this._compMap[p.name]);
+				p.onRemoved();
+				p.init(null,null);
+				return true;
+			}
+			prev = p;
+			p = next;
+		}
+		return false;
+	}
+	,add: function(component) {
+		if(component.owner != null) component.owner.remove(component);
+		var name = component.name;
+		var prev = this._compMap[name];
+		if(prev != null) this.remove(prev);
+		this._compMap[name] = component;
+		var tail = null, p = this.firstComponent;
+		while(p != null) {
+			tail = p;
+			p = p.next;
+		}
+		if(tail != null) tail.next = component; else this.firstComponent = component;
+		component.init(this,null);
+		component.onAdded();
+		return this;
+	}
+	,__class__: engine.core.Entity
+}
+engine.core.signals = {}
+engine.core.signals.SignalConnection = function(signal,listener) {
+	this._next = null;
+	this._signal = signal;
+	this._listener = listener;
+	this.stayInList = true;
+};
+engine.core.signals.SignalConnection.__name__ = true;
+engine.core.signals.SignalConnection.prototype = {
+	dispose: function() {
+		if(this._signal != null) {
+			this._signal.disconnect(this);
+			this._signal = null;
+		}
+	}
+	,once: function() {
+		this.stayInList = false;
+		return this;
+	}
+	,__class__: engine.core.signals.SignalConnection
+}
+engine.core.signals.SignalBase = function(listener) {
+	this._head = listener != null?new engine.core.signals.SignalConnection(this,listener):null;
+	this._deferredTasks = null;
+};
+engine.core.signals.SignalBase.__name__ = true;
+engine.core.signals.SignalBase.prototype = {
+	dispatching: function() {
+		return this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL;
+	}
+	,listRemove: function(conn) {
+		var prev = null, p = this._head;
+		while(p != null) {
+			if(p == conn) {
+				var next = p._next;
+				if(prev == null) this._head = next; else prev._next = next;
+				return;
+			}
+			prev = p;
+			p = p._next;
+		}
+	}
+	,listAdd: function(conn,prioritize) {
+		if(prioritize) {
+			conn._next = this._head;
+			this._head = conn;
+		} else {
+			var tail = null, p = this._head;
+			while(p != null) {
+				tail = p;
+				p = p._next;
+			}
+			if(tail != null) tail._next = conn; else this._head = conn;
+		}
+	}
+	,didEmit: function(head) {
+		this._head = head;
+		while(this._deferredTasks != null) {
+			this._deferredTasks.fn();
+			this._deferredTasks = this._deferredTasks.next;
+		}
+	}
+	,willEmit: function() {
+		var snapshot = this._head;
+		this._head = engine.core.signals.SignalBase.DISPATCHING_SENTINEL;
+		return snapshot;
+	}
+	,defer: function(fn) {
+		var tail = null, p = this._deferredTasks;
+		while(p != null) {
+			tail = p;
+			p = p.next;
+		}
+		var task = new engine.core.signals._SignalBase.Task(fn);
+		if(tail != null) tail.next = task; else this._deferredTasks = task;
+	}
+	,emit2: function(arg1,arg2) {
+		var head = this.willEmit();
+		var p = head;
+		while(p != null) {
+			p._listener(arg1,arg2);
+			if(!p.stayInList) p.dispose();
+			p = p._next;
+		}
+		this.didEmit(head);
+	}
+	,emit1: function(arg1) {
+		var head = this.willEmit();
+		var p = head;
+		while(p != null) {
+			p._listener(arg1);
+			if(!p.stayInList) p.dispose();
+			p = p._next;
+		}
+		this.didEmit(head);
+	}
+	,emit0: function() {
+		var head = this.willEmit();
+		var p = head;
+		while(p != null) {
+			p._listener();
+			if(!p.stayInList) p.dispose();
+			p = p._next;
+		}
+		this.didEmit(head);
+	}
+	,disconnect: function(conn) {
+		var _g = this;
+		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
+			_g.listRemove(conn);
+		}); else this.listRemove(conn);
+	}
+	,connectImpl: function(listener,prioritize) {
+		var _g = this;
+		var conn = new engine.core.signals.SignalConnection(this,listener);
+		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
+			_g.listAdd(conn,prioritize);
+		}); else this.listAdd(conn,prioritize);
+		return conn;
+	}
+	,hasListeners: function() {
+		return this._head != null;
+	}
+	,__class__: engine.core.signals.SignalBase
+}
+engine.core.signals.Signal1 = function(listener) {
+	engine.core.signals.SignalBase.call(this,listener);
+};
+engine.core.signals.Signal1.__name__ = true;
+engine.core.signals.Signal1.__super__ = engine.core.signals.SignalBase;
+engine.core.signals.Signal1.prototype = $extend(engine.core.signals.SignalBase.prototype,{
+	emitImpl: function(arg1) {
+		var head = this.willEmit();
+		var p = head;
+		while(p != null) {
+			p._listener(arg1);
+			if(!p.stayInList) p.dispose();
+			p = p._next;
+		}
+		this.didEmit(head);
+	}
+	,emit: function(arg1) {
+		var _g = this;
+		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
+			_g.emitImpl(arg1);
+		}); else this.emitImpl(arg1);
+	}
+	,connect: function(listener,prioritize) {
+		if(prioritize == null) prioritize = false;
+		return this.connectImpl(listener,prioritize);
+	}
+	,__class__: engine.core.signals.Signal1
+});
+engine.core.signals._SignalBase = {}
+engine.core.signals._SignalBase.Task = function(fn) {
+	this.next = null;
+	this.fn = fn;
+};
+engine.core.signals._SignalBase.Task.__name__ = true;
+engine.core.signals._SignalBase.Task.prototype = {
+	__class__: engine.core.signals._SignalBase.Task
 }
 engine.input = {}
 engine.input.DigitalInput = function() {
@@ -876,6 +1118,31 @@ engine.map.tmx.TmxTileSet.prototype = {
 	}
 	,__class__: engine.map.tmx.TmxTileSet
 }
+var game = {}
+game.Cat = function() {
+	this.name = "Cat";
+};
+game.Cat.__name__ = true;
+game.Cat.__super__ = engine.core.Component;
+game.Cat.prototype = $extend(engine.core.Component.prototype,{
+	meeew: function() {
+		console.log("meew");
+	}
+	,__class__: game.Cat
+});
+game.Dog = function() {
+	this.name = "Dog";
+};
+game.Dog.__name__ = true;
+game.Dog.__super__ = engine.core.Component;
+game.Dog.prototype = $extend(engine.core.Component.prototype,{
+	onUpdate: function(dt) {
+		console.log("here");
+		var cat = this.owner._compMap.Cat;
+		cat.meeew();
+	}
+	,__class__: game.Dog
+});
 var haxe = {}
 haxe.ds = {}
 haxe.ds.IntMap = function() {
@@ -2951,6 +3218,7 @@ Xml.Comment = "comment";
 Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
+engine.core.signals.SignalBase.DISPATCHING_SENTINEL = new engine.core.signals.SignalConnection(null,null);
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
@@ -2976,5 +3244,3 @@ wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["precision mediump float;",
 wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();
 })();
-
-//@ sourceMappingURL=script.js.map

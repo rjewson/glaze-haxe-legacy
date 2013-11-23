@@ -1,6 +1,7 @@
 
 package ;
 
+import engine.core.signals.Signal1;
 import engine.map.TileMapMap;
 import engine.map.tmx.TmxMap;
 import js.Browser;
@@ -30,6 +31,26 @@ class Main
 {
 
 	public static function main() {
+
+        function splat(str:String) {
+            trace(str);
+        }
+
+        var s1 = new Signal1(splat);
+        s1.emit("splat");
+
+        var entity = new engine.core.Entity();
+
+        var dog = new game.Dog();
+        entity.add(dog);
+        var cat = new game.Cat();
+        entity.add(cat);
+
+        var p = entity.firstComponent;
+        while (p != null) {
+            p.onUpdate(16);
+            p = p.next;
+        }
 
         var assets = new utils.AssetLoader();
 
@@ -139,7 +160,7 @@ class Main
             var stop = false;
             var debugSwitch = false;
 
-            var engine = new engine.Engine();
+            var gameLoop = new engine.GameLoop();
             var cameraX = 300, cameraY = 300 , cameraDelta = 6;
             function tick() {
                 spr1.rotation += 0.01;
@@ -178,28 +199,28 @@ class Main
                     debug.DrawAABB(spr2.subTreeAABB);                    
                 }
 
-                if (engine.keyboard.Pressed(65)) {
+                if (gameLoop.keyboard.Pressed(65)) {
                     spr3.position.x-=cameraDelta;
                 }
-                if (engine.keyboard.Pressed(68)) {
+                if (gameLoop.keyboard.Pressed(68)) {
                     spr3.position.x+=cameraDelta;
                 }
-                if (engine.keyboard.Pressed(87)) {
+                if (gameLoop.keyboard.Pressed(87)) {
                     spr3.position.y-=cameraDelta;
                 }
-                if (engine.keyboard.Pressed(83)) {
+                if (gameLoop.keyboard.Pressed(83)) {
                     spr3.position.y+=cameraDelta;
                 }
             }
 
-            engine.updateFunc = tick;
-            engine.start();
+            gameLoop.updateFunc = tick;
+            gameLoop.start();
 
             Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
-                engine.stop();
+                gameLoop.stop();
             });
             Browser.document.getElementById("startbutton").addEventListener("click",function(event){
-                engine.start();
+                gameLoop.start();
             });
             Browser.document.getElementById("debugbutton").addEventListener("click",function(event){
                 debugSwitch = !debugSwitch;
