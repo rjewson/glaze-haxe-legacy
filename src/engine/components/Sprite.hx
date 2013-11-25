@@ -1,7 +1,7 @@
 
 package engine.components;
 
-import engine.Component;
+import engine.core.Component;
 import wgr.display.DisplayObject;
 import wgr.display.DisplayObjectContainer;
 
@@ -20,6 +20,7 @@ class Sprite extends Component
         var physics:engine.components.Physics = cast owner.getComponent(engine.components.Physics.NAME);
         display.position.x = physics.position.x;
         display.position.y = physics.position.y;
+        display.rotation = physics.rotation;
     }
 
 

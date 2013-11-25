@@ -110,21 +110,6 @@ List.prototype = {
 var Main = function() { }
 Main.__name__ = true;
 Main.main = function() {
-	var splat = function(str) {
-		console.log(str);
-	};
-	var s1 = new engine.core.signals.Signal1(splat);
-	s1.emit("splat");
-	var entity = new engine.core.Entity();
-	var dog = new game.Dog();
-	entity.add(dog);
-	var cat = new game.Cat();
-	entity.add(cat);
-	var p = entity.firstComponent;
-	while(p != null) {
-		p.onUpdate(16);
-		p = p.next;
-	}
 	var assets = new utils.AssetLoader();
 	assets.addEventListener("loaded",function(event) {
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
@@ -157,6 +142,13 @@ Main.main = function() {
 		var itemContainer = new wgr.display.DisplayObjectContainer();
 		itemContainer.id = "itemContainer";
 		camera.addChild(itemContainer);
+		var entityManager = new engine.core.EntityManager();
+		var e1 = new engine.core.Entity();
+		e1.add(new engine.components.Physics(100,100,0));
+		var mroom = createSprite("spr1",128,128,128,128,texture1up);
+		itemContainer.addChild(mroom);
+		e1.add(new engine.components.Sprite(mroom));
+		entityManager.add(e1);
 		var shrooms = false;
 		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
 		spr1.alpha = 1;
@@ -233,6 +225,7 @@ Main.main = function() {
 				_g1._rotationComponents.y = Math.sin(_g1._rotation);
 				_g1._rotation;
 			}
+			entityManager.Update(1000 / 60);
 			camera.Focus(spr3.position.x,spr3.position.y);
 			renderer.Render(camera.viewPortAABB);
 			if(debugSwitch) {
@@ -460,6 +453,54 @@ ds.Array2D.prototype = {
 	}
 	,__class__: ds.Array2D
 }
+ds.DLLNode = function() { }
+ds.DLLNode.__name__ = true;
+ds.DLLNode.prototype = {
+	__class__: ds.DLLNode
+}
+ds.DLL = function() {
+};
+ds.DLL.__name__ = true;
+ds.DLL.prototype = {
+	remove: function(node) {
+		var next = node.next;
+		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
+		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
+		node.prev = node.next = null;
+		return next;
+	}
+	,insertEnd: function(newNode) {
+		if(this.tail == null) {
+			if(this.head == null) {
+				this.head = newNode;
+				this.tail = newNode;
+				newNode.prev = null;
+				newNode.next = null;
+			} else this.insertBefore(this.head,newNode);
+		} else this.insertAfter(this.tail,newNode);
+	}
+	,insertBeginning: function(newNode) {
+		if(this.head == null) {
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.prev = null;
+			newNode.next = null;
+		} else this.insertBefore(this.head,newNode);
+	}
+	,insertBefore: function(node,newNode) {
+		newNode.prev = node.prev;
+		newNode.next = node;
+		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+		node.prev = newNode;
+	}
+	,insertAfter: function(node,newNode) {
+		newNode.prev = node;
+		newNode.next = node.next;
+		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+		node.next = newNode;
+	}
+	,__class__: ds.DLL
+}
 var engine = {}
 engine.GameLoop = function() {
 	this.isRunning = false;
@@ -492,15 +533,9 @@ engine.GameLoop.prototype = {
 engine.core = {}
 engine.core.Component = function() { }
 engine.core.Component.__name__ = true;
+engine.core.Component.__interfaces__ = [ds.DLLNode];
 engine.core.Component.prototype = {
-	setNext: function(next) {
-		this.next = next;
-	}
-	,init: function(owner,next) {
-		this.owner = owner;
-		this.next = next;
-	}
-	,dispose: function() {
+	dispose: function() {
 		if(this.owner != null) this.owner.remove(this);
 	}
 	,onUpdate: function(dt) {
@@ -511,210 +546,154 @@ engine.core.Component.prototype = {
 	}
 	,__class__: engine.core.Component
 }
+engine.components = {}
+engine.components.Physics = function(x,y,rotation) {
+	this.name = "Physics";
+	this.position = new physics.geometry.Vector2D(x,y);
+	this.rotation = rotation;
+};
+engine.components.Physics.__name__ = true;
+engine.components.Physics.__super__ = engine.core.Component;
+engine.components.Physics.prototype = $extend(engine.core.Component.prototype,{
+	onUpdate: function(dt) {
+		this.rotation += 0.04;
+	}
+	,__class__: engine.components.Physics
+});
+engine.components.Sprite = function(display) {
+	this.name = "Sprite";
+	this.display = display;
+};
+engine.components.Sprite.__name__ = true;
+engine.components.Sprite.__super__ = engine.core.Component;
+engine.components.Sprite.prototype = $extend(engine.core.Component.prototype,{
+	onUpdate: function(dt) {
+		var physics = this.owner.componentMap.Physics;
+		this.display.position.x = physics.position.x;
+		this.display.position.y = physics.position.y;
+		this.display.set_rotation(physics.rotation);
+	}
+	,__class__: engine.components.Sprite
+});
 engine.core.Entity = function() {
-	this.firstComponent = null;
-	this._compMap = { };
+	this.components = new ds.DLL();
+	this.componentMap = { };
 };
 engine.core.Entity.__name__ = true;
+engine.core.Entity.__interfaces__ = [ds.DLLNode];
 engine.core.Entity.prototype = {
 	getComponent: function(name) {
-		return this._compMap[name];
+		return this.componentMap[name];
 	}
 	,remove: function(component) {
-		var prev = null, p = this.firstComponent;
-		while(p != null) {
-			var next = p.next;
-			if(p == component) {
-				if(prev == null) this.firstComponent = next; else prev.init(this,next);
-				delete(this._compMap[p.name]);
-				p.onRemoved();
-				p.init(null,null);
-				return true;
-			}
-			prev = p;
-			p = next;
-		}
-		return false;
+		this.components.remove(component);
+		component.onRemoved();
 	}
 	,add: function(component) {
 		if(component.owner != null) component.owner.remove(component);
 		var name = component.name;
-		var prev = this._compMap[name];
+		var prev = this.componentMap[name];
 		if(prev != null) this.remove(prev);
-		this._compMap[name] = component;
-		var tail = null, p = this.firstComponent;
-		while(p != null) {
-			tail = p;
-			p = p.next;
-		}
-		if(tail != null) tail.next = component; else this.firstComponent = component;
-		component.init(this,null);
+		component.owner = this;
+		this.componentMap[name] = component;
+		this.components.insertEnd(component);
 		component.onAdded();
 		return this;
 	}
 	,__class__: engine.core.Entity
 }
+engine.core.EntityManager = function() {
+	this.entities = new ds.DLL();
+	this.entityAddedSignal = new engine.core.signals.Signal1();
+};
+engine.core.EntityManager.__name__ = true;
+engine.core.EntityManager.prototype = {
+	Update: function(dt) {
+		var entity = this.entities.head;
+		while(entity != null) {
+			var component = entity.components.head;
+			while(component != null) {
+				component.onUpdate(dt);
+				component = component.next;
+			}
+			entity = entity.next;
+		}
+	}
+	,remove: function(entity) {
+		this.entities.insertEnd(entity);
+		this.entityAddedSignal.dispatch(entity);
+	}
+	,add: function(entity) {
+		this.entities.insertEnd(entity);
+		this.entityAddedSignal.dispatch(entity);
+	}
+	,__class__: engine.core.EntityManager
+}
 engine.core.signals = {}
-engine.core.signals.SignalConnection = function(signal,listener) {
-	this._next = null;
-	this._signal = signal;
-	this._listener = listener;
-	this.stayInList = true;
+engine.core.signals.Signal = function(listener,once) {
+	if(once == null) once = false;
+	this.slots = new ds.DLL();
+	if(listener != null) this.add(listener,once);
 };
-engine.core.signals.SignalConnection.__name__ = true;
-engine.core.signals.SignalConnection.prototype = {
-	dispose: function() {
-		if(this._signal != null) {
-			this._signal.disconnect(this);
-			this._signal = null;
+engine.core.signals.Signal.__name__ = true;
+engine.core.signals.Signal.prototype = {
+	findSlot: function(listener) {
+		var slot = this.slots.head;
+		while(slot != null) {
+			if(slot.listener == listener) return slot;
+			slot = slot.next;
 		}
+		return null;
 	}
-	,once: function() {
-		this.stayInList = false;
-		return this;
+	,remove: function(listener) {
+		var slot = this.findSlot(listener);
+		if(slot != null) this.slots.remove(slot);
 	}
-	,__class__: engine.core.signals.SignalConnection
+	,add: function(listener,once) {
+		if(once == null) once = false;
+		var slot = new engine.core.signals.Slot(listener,once);
+		this.slots.insertEnd(slot);
+	}
+	,__class__: engine.core.signals.Signal
 }
-engine.core.signals.SignalBase = function(listener) {
-	this._head = listener != null?new engine.core.signals.SignalConnection(this,listener):null;
-	this._deferredTasks = null;
+engine.core.signals.Signal0 = function(listener) {
+	engine.core.signals.Signal.call(this,listener);
 };
-engine.core.signals.SignalBase.__name__ = true;
-engine.core.signals.SignalBase.prototype = {
-	dispatching: function() {
-		return this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL;
-	}
-	,listRemove: function(conn) {
-		var prev = null, p = this._head;
-		while(p != null) {
-			if(p == conn) {
-				var next = p._next;
-				if(prev == null) this._head = next; else prev._next = next;
-				return;
-			}
-			prev = p;
-			p = p._next;
+engine.core.signals.Signal0.__name__ = true;
+engine.core.signals.Signal0.__super__ = engine.core.signals.Signal;
+engine.core.signals.Signal0.prototype = $extend(engine.core.signals.Signal.prototype,{
+	dispatch: function() {
+		var slot = this.slots.head;
+		while(slot != null) {
+			slot.listener();
+			slot = slot.once?this.slots.remove(slot):slot.next;
 		}
 	}
-	,listAdd: function(conn,prioritize) {
-		if(prioritize) {
-			conn._next = this._head;
-			this._head = conn;
-		} else {
-			var tail = null, p = this._head;
-			while(p != null) {
-				tail = p;
-				p = p._next;
-			}
-			if(tail != null) tail._next = conn; else this._head = conn;
-		}
-	}
-	,didEmit: function(head) {
-		this._head = head;
-		while(this._deferredTasks != null) {
-			this._deferredTasks.fn();
-			this._deferredTasks = this._deferredTasks.next;
-		}
-	}
-	,willEmit: function() {
-		var snapshot = this._head;
-		this._head = engine.core.signals.SignalBase.DISPATCHING_SENTINEL;
-		return snapshot;
-	}
-	,defer: function(fn) {
-		var tail = null, p = this._deferredTasks;
-		while(p != null) {
-			tail = p;
-			p = p.next;
-		}
-		var task = new engine.core.signals._SignalBase.Task(fn);
-		if(tail != null) tail.next = task; else this._deferredTasks = task;
-	}
-	,emit2: function(arg1,arg2) {
-		var head = this.willEmit();
-		var p = head;
-		while(p != null) {
-			p._listener(arg1,arg2);
-			if(!p.stayInList) p.dispose();
-			p = p._next;
-		}
-		this.didEmit(head);
-	}
-	,emit1: function(arg1) {
-		var head = this.willEmit();
-		var p = head;
-		while(p != null) {
-			p._listener(arg1);
-			if(!p.stayInList) p.dispose();
-			p = p._next;
-		}
-		this.didEmit(head);
-	}
-	,emit0: function() {
-		var head = this.willEmit();
-		var p = head;
-		while(p != null) {
-			p._listener();
-			if(!p.stayInList) p.dispose();
-			p = p._next;
-		}
-		this.didEmit(head);
-	}
-	,disconnect: function(conn) {
-		var _g = this;
-		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
-			_g.listRemove(conn);
-		}); else this.listRemove(conn);
-	}
-	,connectImpl: function(listener,prioritize) {
-		var _g = this;
-		var conn = new engine.core.signals.SignalConnection(this,listener);
-		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
-			_g.listAdd(conn,prioritize);
-		}); else this.listAdd(conn,prioritize);
-		return conn;
-	}
-	,hasListeners: function() {
-		return this._head != null;
-	}
-	,__class__: engine.core.signals.SignalBase
-}
+	,__class__: engine.core.signals.Signal0
+});
 engine.core.signals.Signal1 = function(listener) {
-	engine.core.signals.SignalBase.call(this,listener);
+	engine.core.signals.Signal.call(this,listener);
 };
 engine.core.signals.Signal1.__name__ = true;
-engine.core.signals.Signal1.__super__ = engine.core.signals.SignalBase;
-engine.core.signals.Signal1.prototype = $extend(engine.core.signals.SignalBase.prototype,{
-	emitImpl: function(arg1) {
-		var head = this.willEmit();
-		var p = head;
-		while(p != null) {
-			p._listener(arg1);
-			if(!p.stayInList) p.dispose();
-			p = p._next;
+engine.core.signals.Signal1.__super__ = engine.core.signals.Signal;
+engine.core.signals.Signal1.prototype = $extend(engine.core.signals.Signal.prototype,{
+	dispatch: function(arg1) {
+		var slot = this.slots.head;
+		while(slot != null) {
+			slot.listener(arg1);
+			slot = slot.once?this.slots.remove(slot):slot.next;
 		}
-		this.didEmit(head);
-	}
-	,emit: function(arg1) {
-		var _g = this;
-		if(this._head == engine.core.signals.SignalBase.DISPATCHING_SENTINEL) this.defer(function() {
-			_g.emitImpl(arg1);
-		}); else this.emitImpl(arg1);
-	}
-	,connect: function(listener,prioritize) {
-		if(prioritize == null) prioritize = false;
-		return this.connectImpl(listener,prioritize);
 	}
 	,__class__: engine.core.signals.Signal1
 });
-engine.core.signals._SignalBase = {}
-engine.core.signals._SignalBase.Task = function(fn) {
-	this.next = null;
-	this.fn = fn;
+engine.core.signals.Slot = function(listener,once) {
+	this.listener = listener;
+	this.once = once;
 };
-engine.core.signals._SignalBase.Task.__name__ = true;
-engine.core.signals._SignalBase.Task.prototype = {
-	__class__: engine.core.signals._SignalBase.Task
+engine.core.signals.Slot.__name__ = true;
+engine.core.signals.Slot.__interfaces__ = [ds.DLLNode];
+engine.core.signals.Slot.prototype = {
+	__class__: engine.core.signals.Slot
 }
 engine.input = {}
 engine.input.DigitalInput = function() {
@@ -1118,31 +1097,6 @@ engine.map.tmx.TmxTileSet.prototype = {
 	}
 	,__class__: engine.map.tmx.TmxTileSet
 }
-var game = {}
-game.Cat = function() {
-	this.name = "Cat";
-};
-game.Cat.__name__ = true;
-game.Cat.__super__ = engine.core.Component;
-game.Cat.prototype = $extend(engine.core.Component.prototype,{
-	meeew: function() {
-		console.log("meew");
-	}
-	,__class__: game.Cat
-});
-game.Dog = function() {
-	this.name = "Dog";
-};
-game.Dog.__name__ = true;
-game.Dog.__super__ = engine.core.Component;
-game.Dog.prototype = $extend(engine.core.Component.prototype,{
-	onUpdate: function(dt) {
-		console.log("here");
-		var cat = this.owner._compMap.Cat;
-		cat.meeew();
-	}
-	,__class__: game.Dog
-});
 var haxe = {}
 haxe.ds = {}
 haxe.ds.IntMap = function() {
@@ -1657,6 +1611,187 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 	}
 	return null;
 }
+var physics = {}
+physics.geometry = {}
+physics.geometry.Vector2D = function(x,y) {
+	if(y == null) y = .0;
+	if(x == null) x = .0;
+	this.x = x;
+	this.y = y;
+};
+physics.geometry.Vector2D.__name__ = true;
+physics.geometry.Vector2D.fromString = function(str) {
+	if(str == null) return null;
+	var vectorParts = str.split(":");
+	if(vectorParts == null || vectorParts.length != 2) return null;
+	var xVal = Std.parseFloat(vectorParts[0]);
+	var yVal = Std.parseFloat(vectorParts[1]);
+	if(Math.isNaN(xVal) || Math.isNaN(yVal)) return null;
+	return new physics.geometry.Vector2D(xVal,yVal);
+}
+physics.geometry.Vector2D.prototype = {
+	toString: function() {
+		return this.x + ":" + this.y;
+	}
+	,clone: function() {
+		return new physics.geometry.Vector2D(this.x,this.y);
+	}
+	,equalsZero: function() {
+		return this.x == 0 && this.y == 0;
+	}
+	,isEquals: function(v) {
+		return this.x == v.x && this.y == v.y;
+	}
+	,rotateEquals: function(angle) {
+		var a = angle * Math.PI / 180;
+		var cos = Math.cos(a);
+		var sin = Math.sin(a);
+		var rx = cos * this.x - sin * this.y;
+		var ry = cos * this.y + sin * this.x;
+		this.x = rx;
+		this.y = ry;
+		return this;
+	}
+	,rotate: function(angle) {
+		var a = angle * Math.PI / 180;
+		var cos = Math.cos(a);
+		var sin = Math.sin(a);
+		return new physics.geometry.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
+	}
+	,interpolate: function(v,t) {
+		return this.mult(1 - t).plus(new physics.geometry.Vector2D(v.x * t,v.y * t));
+	}
+	,clampMax: function(max) {
+		var l = Math.sqrt(this.x * this.x + this.y * this.y);
+		if(l > max) this.multEquals(max / l);
+		return this;
+	}
+	,distanceSqrd: function(v) {
+		var dX = this.x - v.x;
+		var dY = this.y - v.y;
+		return dX * dX + dY * dY;
+	}
+	,distance: function(v) {
+		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
+		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+	}
+	,rightHandNormalEquals: function() {
+		var t = this.x;
+		this.x = -this.y;
+		this.y = this.x;
+		return this;
+	}
+	,rightHandNormal: function() {
+		return new physics.geometry.Vector2D(-this.y,this.x);
+	}
+	,leftHandNormalEquals: function() {
+		var t = this.x;
+		this.x = this.y;
+		this.y = -t;
+		return this;
+	}
+	,leftHandNormal: function() {
+		return new physics.geometry.Vector2D(this.y,-this.x);
+	}
+	,unitEquals: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		this.x /= t;
+		this.y /= t;
+		return this;
+	}
+	,unit: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		return new physics.geometry.Vector2D(this.x / t,this.y / t);
+	}
+	,lengthSqr: function() {
+		return this.x * this.x + this.y * this.y;
+	}
+	,length: function() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	,divEquals: function(s) {
+		if(s == 0) s = 0.0001;
+		this.x /= s;
+		this.y /= s;
+		return this;
+	}
+	,div: function(s) {
+		if(s == 0) s = 0.0001;
+		return new physics.geometry.Vector2D(this.x / s,this.y / s);
+	}
+	,timesEquals2: function(x,y) {
+		this.x *= x;
+		this.y *= y;
+		return this;
+	}
+	,timesEquals: function(v) {
+		this.x *= v.x;
+		this.y *= v.y;
+		return this;
+	}
+	,times2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x * x,this.y * y);
+	}
+	,times: function(v) {
+		return new physics.geometry.Vector2D(this.x * v.x,this.y * v.y);
+	}
+	,multEquals: function(s) {
+		this.x *= s;
+		this.y *= s;
+		return this;
+	}
+	,mult: function(s) {
+		return new physics.geometry.Vector2D(this.x * s,this.y * s);
+	}
+	,minusEquals2: function(x,y) {
+		this.x -= x;
+		this.y -= y;
+		return this;
+	}
+	,minusEquals: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
+		return this;
+	}
+	,minus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x - x,this.y - y);
+	}
+	,minus: function(v) {
+		return new physics.geometry.Vector2D(this.x - v.x,this.y - v.y);
+	}
+	,plusEquals2: function(x,y) {
+		this.x += x;
+		this.y += y;
+		return this;
+	}
+	,plusEquals: function(v) {
+		this.x += v.x;
+		this.y += v.y;
+		return this;
+	}
+	,plus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x + x,this.y + y);
+	}
+	,plus: function(v) {
+		return new physics.geometry.Vector2D(this.x + v.x,this.y + v.y);
+	}
+	,cross: function(v) {
+		return this.x * v.y - this.y * v.x;
+	}
+	,dot: function(v) {
+		return this.x * v.x + this.y * v.y;
+	}
+	,copy: function(v) {
+		this.x = v.x;
+		this.y = v.y;
+	}
+	,setTo: function(x,y) {
+		this.x = x;
+		this.y = y;
+		return this;
+	}
+	,__class__: physics.geometry.Vector2D
+}
 var utils = {}
 utils.EventTarget = function() {
 	this.listeners = new haxe.ds.StringMap();
@@ -1821,6 +1956,24 @@ utils.Base64.Decode = function(input) {
 		i += 3;
 	}
 	return ab;
+}
+utils.Maths = function() { }
+utils.Maths.__name__ = true;
+utils.Maths.toRad = function(deg) {
+	return deg * (3.141592653589793 / 180);
+}
+utils.Maths.toDeg = function(rad) {
+	return rad * (180 / 3.141592653589793);
+}
+utils.Maths.Clamp = function(input,min,max) {
+	if(input > max) return max; else if(input < min) return min; else return input;
+}
+utils.Maths.ScaleRectangleWithRatio = function(containerRect,itemRect) {
+	var sX = containerRect.x / itemRect.x;
+	var sY = containerRect.y / itemRect.y;
+	var rD = containerRect.x / containerRect.y;
+	var rR = itemRect.x / itemRect.y;
+	return rD < rR?sX:sY;
 }
 var wgr = {}
 wgr.display = {}
@@ -3218,7 +3371,8 @@ Xml.Comment = "comment";
 Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
-engine.core.signals.SignalBase.DISPATCHING_SENTINEL = new engine.core.signals.SignalConnection(null,null);
+engine.components.Physics.NAME = "Physics";
+engine.components.Sprite.NAME = "Sprite";
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
@@ -3235,6 +3389,16 @@ haxe.xml.Parser.escapes = (function($this) {
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+utils.Maths.ZERO_TOLERANCE = 1e-08;
+utils.Maths.RAD_DEG = 180 / 3.141592653589793;
+utils.Maths.DEG_RAD = 3.141592653589793 / 180;
+utils.Maths.LN2 = 0.6931471805599453;
+utils.Maths.LN10 = 2.302585092994046;
+utils.Maths.PIHALF = 1.5707963267948966;
+utils.Maths.PI = 3.141592653589793;
+utils.Maths.PI2 = 6.283185307179586;
+utils.Maths.EPS = 1e-6;
+utils.Maths.SQRT2 = 1.414213562373095;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 1 / 255;
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
@@ -3244,3 +3408,5 @@ wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["precision mediump float;",
 wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 Main.main();
 })();
+
+//@ sourceMappingURL=script.js.map

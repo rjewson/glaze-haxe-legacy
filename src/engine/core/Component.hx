@@ -1,13 +1,16 @@
 
 package engine.core;
 
-class Component
+import ds.DLL.DLLNode;
+
+class Component implements DLLNode<Component>
 {
-    public var owner (default, null) :Entity;
-
-    public var next (default, null) :Component;
-
     public var name:String;
+    public var owner:Entity;
+
+    public var prev:Component;
+    public var next:Component;
+
 
     public function onAdded () {
     }
@@ -24,12 +27,4 @@ class Component
         }
     }
 
-    public function init (owner :Entity, next :Component) {
-        this.owner = owner;
-        this.next = next;
-    }
-
-    inline public function setNext (next :Component) {
-        this.next = next;
-    }
 }

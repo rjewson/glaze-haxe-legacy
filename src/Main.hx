@@ -33,33 +33,6 @@ class Main
 
 	public static function main() {
 
-        function splat(str:String) {
-            trace(str);
-        }
-
-        function splot() {
-            trace("splot");
-        }
-
-        var myS = new Signal0();
-        myS.add(splot);
-        myS.add(splat,true);
-        myS.dispatch();
-        myS.dispatch();
-
-        var entity = new engine.core.Entity();
-
-        var dog = new game.Dog();
-        entity.add(dog);
-        var cat = new game.Cat();
-        entity.add(cat);
-
-        var p = entity.firstComponent;
-        while (p != null) {
-            p.onUpdate(16);
-            p = p.next;
-        }
-
         var assets = new utils.AssetLoader();
 
         assets.addEventListener("loaded", function(event){
@@ -102,6 +75,18 @@ class Main
             var itemContainer = new DisplayObjectContainer();
             itemContainer.id = "itemContainer";
             camera.addChild(itemContainer);
+
+
+        var entityManager = new engine.core.EntityManager();
+        var e1 = new engine.core.Entity();
+        e1.add(new engine.components.Physics(100,100,0));
+        var mroom = createSprite("spr1",128,128,128,128,texture1up);
+        itemContainer.addChild(mroom);
+        e1.add(new engine.components.Sprite(mroom));
+
+        entityManager.add(e1);
+
+
 
             //var pengine = new SpriteParticleEngine(2000,60);
             //camera.addChild(pengine.canvas);
@@ -198,6 +183,8 @@ class Main
                 // //xp =yp =0; //Remove camera
                 // camera.Focus(xp,yp);
                 // renderer.Render(camera.viewPortAABB);
+
+                entityManager.Update(1000/60);
                 camera.Focus(spr3.position.x,spr3.position.y);
                 renderer.Render(camera.viewPortAABB);
 

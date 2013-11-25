@@ -1,5 +1,5 @@
 -js bin/script.js
 -cp src
 -main Main
-#-debug
+-debug
 -cmd osascript bin/refreshTab

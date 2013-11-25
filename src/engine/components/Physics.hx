@@ -1,7 +1,7 @@
 
 package engine.components;
 
-import engine.Component;
+import engine.core.Component;
 import physics.geometry.Vector2D;
 
 class Physics extends Component
