@@ -1,11 +1,17 @@
 
 package ds;
 
-class DLL<T>
+interface DLLNode<T>
+{
+    var prev:T;
+    var next:T;
+}
+
+class DLL<T:(DLLNode<T>)>
 {
 
-    public var head:<T>;
-    public var tail:<T>;
+    public var head:T;
+    public var tail:T;
 
     public function new() {
 
@@ -49,7 +55,8 @@ class DLL<T>
             insertAfter(tail, newNode);
      }
 
-    public inline function remove(node:T) {
+    public inline function remove(node:T):T {
+        var next = node.next;
         if (node.prev == null)
             head = node.next;
         else
@@ -59,6 +66,7 @@ class DLL<T>
         else
             node.next.prev = node.prev;
         node.prev = node.next = null;
+        return next;
     }
 
 }

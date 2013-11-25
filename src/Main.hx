@@ -1,6 +1,7 @@
 
 package ;
 
+import engine.core.signals.Signal0;
 import engine.core.signals.Signal1;
 import engine.map.TileMapMap;
 import engine.map.tmx.TmxMap;
@@ -36,8 +37,15 @@ class Main
             trace(str);
         }
 
-        var s1 = new Signal1(splat);
-        s1.emit("splat");
+        function splot() {
+            trace("splot");
+        }
+
+        var myS = new Signal0();
+        myS.add(splot);
+        myS.add(splat,true);
+        myS.dispatch();
+        myS.dispatch();
 
         var entity = new engine.core.Entity();
 

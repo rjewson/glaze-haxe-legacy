@@ -3,17 +3,18 @@ package engine.core.signals;
 
 typedef Listener0 = Void -> Void;
 
-class Signal0 extends SignalBase {
+class Signal0 extends Signal {
 
-    public function new (?listener :Listener0) {
+    public function new (?listener:Dynamic) {
         super(listener);
     }
 
-    public function connect (listener :Listener0, prioritize :Bool = false) :SignalConnection {
-        return connectImpl(listener, prioritize);
+    public function dispatch() {
+        var slot = slots.head;
+        while (slot!=null) {
+            slot.listener();
+            slot = slot.once ? slots.remove(slot) : slot.next;
+        }
     }
 
-    inline public function emit() {
-        emit0();
-    }
 }

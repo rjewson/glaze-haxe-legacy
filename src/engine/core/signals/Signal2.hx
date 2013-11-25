@@ -3,50 +3,18 @@ package engine.core.signals;
 
 typedef Listener2<A,B> = A -> B -> Void;
 
-class Signal2<A,B> extends SignalBase {
-    /**
-     * @param listener An optional listener to immediately connect to the signal.
-     */
-    public function new (?listener :Listener2<A,B>)
-    {
+class Signal2<A,B> extends Signal {
+
+    public function new (?listener:Dynamic) {
         super(listener);
     }
 
-    /**
-     * Connects a listener to this signal.
-     * @param prioritize True if this listener should fire before others.
-     * @returns A SignalConnection, that can be disposed to remove the listener.
-     */
-    public function connect (listener :Listener2<A,B>, prioritize :Bool = false) :SignalConnection
-    {
-        return connectImpl(listener, prioritize);
-    }
-
-    /**
-     * Emit the signal, notifying each connected listener.
-     */
-    public function emit (arg1 :A, arg2 :B)
-    {
-        if (dispatching()) {
-            defer(function () {
-                emitImpl(arg1, arg2);
-            });
-        } else {
-            emitImpl(arg1, arg2);
+    public function dispatch(arg1:A,arg2:B) {
+        var slot = slots.head;
+        while (slot!=null) {
+            slot.listener(arg1,arg2);
+            slot = slot.once ? slots.remove(slot) : slot.next;
         }
     }
 
-    private function emitImpl (arg1 :A, arg2 :B)
-    {
-        var head = willEmit();
-        var p = head;
-        while (p != null) {
-            p._listener(arg1, arg2);
-            if (!p.stayInList) {
-                p.dispose();
-            }
-            p = p._next;
-        }
-        didEmit(head);
-    }
 }
