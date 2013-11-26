@@ -112,6 +112,7 @@ Main.__name__ = true;
 Main.main = function() {
 	var assets = new utils.AssetLoader();
 	assets.addEventListener("loaded",function(event) {
+		var gameLoop = new engine.GameLoop();
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
 		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
 		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
@@ -123,16 +124,13 @@ Main.main = function() {
 		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,camera,canvasView,800,600);
 		var debugView = js.Boot.__cast(js.Browser.document.getElementById("viewDebug") , HTMLCanvasElement);
 		var debug = new wgr.renderers.canvas.CanvasDebugView(debugView,800,600);
-		var tm = new wgr.texture.TextureManager(renderer.gl);
-		var basetexture1up = tm.AddTexture("mushroom",assets.assets.get("data/1up.png"));
-		var texture1up = new wgr.texture.Texture(basetexture1up,new wgr.geom.Rectangle(0,0,256,256));
-		var basetexturechar = tm.AddTexture("char",assets.assets.get("data/characters.png"));
-		var texturechar1 = new wgr.texture.Texture(basetexturechar,new wgr.geom.Rectangle(0,0,50,75));
 		camera.Resize(renderer.width,renderer.height);
-		var createSprite = function(id,x,y,px,py,t) {
+		var tm = new wgr.texture.TextureManager(renderer.gl);
+		tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
+		var createSprite = function(id,x,y,px,py,tid) {
 			var s = new wgr.display.Sprite();
 			s.id = id;
-			s.texture = t;
+			s.texture = tm.textures.get(tid);
 			s.position.x = x;
 			s.position.y = y;
 			s.pivot.x = px;
@@ -143,43 +141,37 @@ Main.main = function() {
 		itemContainer.id = "itemContainer";
 		camera.addChild(itemContainer);
 		var entityManager = new engine.core.EntityManager();
+		entityManager.addSystem(new engine.systems.RenderSystem(itemContainer));
+		entityManager.componentAdded.add(function(component) {
+			console.log(component.name);
+		});
 		var e1 = new engine.core.Entity();
-		e1.add(new engine.components.Physics(100,100,0));
-		var mroom = createSprite("spr1",128,128,128,128,texture1up);
-		itemContainer.addChild(mroom);
-		e1.add(new engine.components.Sprite(mroom));
-		entityManager.add(e1);
-		var shrooms = false;
-		var spr1 = createSprite("spr1",128,128,128,128,texture1up);
-		spr1.alpha = 1;
-		if(shrooms) itemContainer.addChild(spr1);
-		var spr2 = createSprite("spr2",228,228,128,128,texture1up);
-		if(shrooms) itemContainer.addChild(spr2);
-		var spr21 = createSprite("spr21",328,328,128,128,texture1up);
-		spr21.alpha = 0.9;
-		if(shrooms) spr2.addChild(spr21);
-		var spr3 = createSprite("character",400,380,0,0,texturechar1);
+		e1.add(new engine.components.Physics(400,380,0));
+		var spr3 = createSprite("character",400,380,0,0,"texturechar1");
 		spr3.scale.x = -1;
-		itemContainer.addChild(spr3);
-		var sprArray = new Array();
+		spr3.pivot.x = 25.;
+		spr3.pivot.y = 75;
+		e1.add(new engine.components.Sprite(spr3));
+		entityManager.addEntity(e1);
+		e1.add(new engine.components.KeyboardControls(gameLoop.keyboard));
 		var xpos = 0, ypos = 0;
 		var _g = 0;
 		while(_g < 100) {
 			var i = _g++;
 			var newSpr = new wgr.display.Sprite();
 			newSpr.id = "newSpr" + i;
-			newSpr.texture = texturechar1;
+			newSpr.texture = tm.textures.get("texturechar1");
 			xpos++;
 			if(xpos > 99) {
 				xpos = 0;
 				ypos++;
 			}
-			newSpr.position.x = 100 + xpos * 20;
-			newSpr.position.y = 100 + ypos * 20;
 			newSpr.pivot.x = 25.;
 			newSpr.pivot.y = 37.5;
-			itemContainer.addChild(newSpr);
-			sprArray.push(newSpr);
+			var e = new engine.core.Entity();
+			e.add(new engine.components.Physics(100 + xpos * 20,100 + ypos * 20,0));
+			e.add(new engine.components.Sprite(newSpr));
+			entityManager.addEntity(e);
 		}
 		var tileMap = new wgr.renderers.webgl.TileMap();
 		renderer.AddRenderer(tileMap);
@@ -197,46 +189,21 @@ Main.main = function() {
 		var startTime = new Date().getTime();
 		var stop = false;
 		var debugSwitch = false;
-		var gameLoop = new engine.GameLoop();
-		var cameraX = 300, cameraY = 300, cameraDelta = 6;
 		var tick = function() {
-			var _g = spr1;
-			_g._rotation = _g._rotation + 0.01;
-			_g._rotationComponents.x = Math.cos(_g._rotation);
-			_g._rotationComponents.y = Math.sin(_g._rotation);
-			_g._rotation;
-			var _g = spr2;
-			_g._rotation = _g._rotation - 0.02;
-			_g._rotationComponents.x = Math.cos(_g._rotation);
-			_g._rotationComponents.y = Math.sin(_g._rotation);
-			_g._rotation;
-			var _g = spr21;
-			_g._rotation = _g._rotation + 0.04;
-			_g._rotationComponents.x = Math.cos(_g._rotation);
-			_g._rotationComponents.y = Math.sin(_g._rotation);
-			_g._rotation;
 			var _g = 0;
-			while(_g < sprArray.length) {
-				var spr = sprArray[_g];
-				++_g;
-				var _g1 = spr;
-				_g1._rotation = _g1._rotation + 0.04;
-				_g1._rotationComponents.x = Math.cos(_g1._rotation);
-				_g1._rotationComponents.y = Math.sin(_g1._rotation);
-				_g1._rotation;
+			while(_g < 5) {
+				var pCount = _g++;
+				var vX = Std.random(100) - 50;
+				var vY = Std.random(100) - 50;
+				var ttl = Std.random(1000) + 500;
+				var type = 1;
+				pointParticleEngine.EmitParticle(spr3.position.x,spr3.position.y,vX,vY,0,0,ttl,0.99,true,true,null,type,32,-1);
 			}
 			entityManager.Update(1000 / 60);
 			camera.Focus(spr3.position.x,spr3.position.y);
+			pointParticleEngine.Update();
 			renderer.Render(camera.viewPortAABB);
-			if(debugSwitch) {
-				debug.Clear(camera);
-				debug.DrawAABB(spr1.subTreeAABB);
-				debug.DrawAABB(spr2.subTreeAABB);
-			}
-			if(gameLoop.keyboard.keyMap[65] > 0) spr3.position.x -= cameraDelta;
-			if(gameLoop.keyboard.keyMap[68] > 0) spr3.position.x += cameraDelta;
-			if(gameLoop.keyboard.keyMap[87] > 0) spr3.position.y -= cameraDelta;
-			if(gameLoop.keyboard.keyMap[83] > 0) spr3.position.y += cameraDelta;
+			if(debugSwitch) debug.Clear(camera);
 		};
 		gameLoop.updateFunc = tick;
 		gameLoop.start();
@@ -255,12 +222,9 @@ Main.main = function() {
 			itemContainer.addChildAt(child,4);
 		});
 		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
-			spr2._visible = !spr2._visible;
-			if(spr2.stage != null) spr2.stage.dirty = true;
-			spr2._visible;
 		});
 	});
-	assets.SetImagesToLoad(["data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
+	assets.SetImagesToLoad(["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
 	assets.Load();
 }
 var IMap = function() { }
@@ -278,6 +242,9 @@ Std.parseInt = function(x) {
 }
 Std.parseFloat = function(x) {
 	return parseFloat(x);
+}
+Std.random = function(x) {
+	return x <= 0?0:Math.floor(Math.random() * x);
 }
 var StringBuf = function() {
 	this.b = "";
@@ -547,6 +514,23 @@ engine.core.Component.prototype = {
 	,__class__: engine.core.Component
 }
 engine.components = {}
+engine.components.KeyboardControls = function(input) {
+	this.name = "Keyboard";
+	this.input = input;
+};
+engine.components.KeyboardControls.__name__ = true;
+engine.components.KeyboardControls.__super__ = engine.core.Component;
+engine.components.KeyboardControls.prototype = $extend(engine.core.Component.prototype,{
+	onUpdate: function(dt) {
+		var physics = this.owner.componentMap.Physics;
+		var cameraDelta = 6;
+		if(this.input.keyMap[65] > 0) physics.position.x -= cameraDelta;
+		if(this.input.keyMap[68] > 0) physics.position.x += cameraDelta;
+		if(this.input.keyMap[87] > 0) physics.position.y -= cameraDelta;
+		if(this.input.keyMap[83] > 0) physics.position.y += cameraDelta;
+	}
+	,__class__: engine.components.KeyboardControls
+});
 engine.components.Physics = function(x,y,rotation) {
 	this.name = "Physics";
 	this.position = new physics.geometry.Vector2D(x,y);
@@ -556,7 +540,6 @@ engine.components.Physics.__name__ = true;
 engine.components.Physics.__super__ = engine.core.Component;
 engine.components.Physics.prototype = $extend(engine.core.Component.prototype,{
 	onUpdate: function(dt) {
-		this.rotation += 0.04;
 	}
 	,__class__: engine.components.Physics
 });
@@ -585,9 +568,27 @@ engine.core.Entity.prototype = {
 	getComponent: function(name) {
 		return this.componentMap[name];
 	}
+	,onRemovedFromManager: function() {
+		var component = this.components.head;
+		while(component != null) {
+			this.manager.componentRemoved.dispatch(component);
+			component = component.next;
+		}
+		this.manager = null;
+	}
+	,onAddedToManager: function(manager) {
+		this.manager = manager;
+		var component = this.components.head;
+		while(component != null) {
+			manager.componentAdded.dispatch(component);
+			component = component.next;
+		}
+	}
 	,remove: function(component) {
 		this.components.remove(component);
 		component.onRemoved();
+		delete(this.componentMap[component.name]);
+		if(this.manager != null) this.manager.componentRemoved.dispatch(component);
 	}
 	,add: function(component) {
 		if(component.owner != null) component.owner.remove(component);
@@ -598,13 +599,22 @@ engine.core.Entity.prototype = {
 		this.componentMap[name] = component;
 		this.components.insertEnd(component);
 		component.onAdded();
+		if(this.manager != null) this.manager.componentAdded.dispatch(component);
 		return this;
 	}
 	,__class__: engine.core.Entity
 }
 engine.core.EntityManager = function() {
 	this.entities = new ds.DLL();
-	this.entityAddedSignal = new engine.core.signals.Signal1();
+	this.entityAdded = new engine.core.signals.Signal1();
+	this.entityRemoved = new engine.core.signals.Signal1();
+	this.componentAdded = new engine.core.signals.Signal1();
+	this.componentRemoved = new engine.core.signals.Signal1();
+	this.systems = new ds.DLL();
+	this.systemAdded = new engine.core.signals.Signal1();
+	this.systemRemoved = new engine.core.signals.Signal1();
+	this.componentSystemMap = { };
+	this.componentAdded.add($bind(this,this.addComponentToSystem));
 };
 engine.core.EntityManager.__name__ = true;
 engine.core.EntityManager.prototype = {
@@ -618,16 +628,64 @@ engine.core.EntityManager.prototype = {
 			}
 			entity = entity.next;
 		}
+		var system = this.systems.head;
+		while(system != null) {
+			system.update(dt);
+			system = system.next;
+		}
 	}
-	,remove: function(entity) {
-		this.entities.insertEnd(entity);
-		this.entityAddedSignal.dispatch(entity);
+	,addComponentToSystem: function(component) {
+		var systemSignal = this.componentSystemMap[component.name];
+		if(systemSignal != null) systemSignal.dispatch(component);
 	}
-	,add: function(entity) {
+	,removeSystem: function(system) {
+		this.systems.insertEnd(system);
+		var signal = this.componentSystemMap[system.componentInterest];
+		if(signal == null) signal.remove($bind(system,system.onComponentAdded));
+		system.onRemovedFromManager();
+		this.systemRemoved.dispatch(system);
+	}
+	,addSystem: function(system) {
+		this.systems.insertEnd(system);
+		var signal = this.componentSystemMap[system.componentInterest];
+		if(signal == null) {
+			signal = new engine.core.signals.Signal1();
+			this.componentSystemMap[system.componentInterest] = signal;
+		}
+		signal.add($bind(system,system.onComponentAdded));
+		system.onAddedToManager(this);
+		this.systemAdded.dispatch(system);
+	}
+	,removeEntity: function(entity) {
 		this.entities.insertEnd(entity);
-		this.entityAddedSignal.dispatch(entity);
+		entity.onRemovedFromManager();
+		this.entityRemoved.dispatch(entity);
+	}
+	,addEntity: function(entity) {
+		this.entities.insertEnd(entity);
+		entity.onAddedToManager(this);
+		this.entityAdded.dispatch(entity);
 	}
 	,__class__: engine.core.EntityManager
+}
+engine.core.System = function() {
+};
+engine.core.System.__name__ = true;
+engine.core.System.__interfaces__ = [ds.DLLNode];
+engine.core.System.prototype = {
+	update: function(dt) {
+	}
+	,onComponentRemoved: function(component) {
+	}
+	,onComponentAdded: function(component) {
+	}
+	,onRemovedFromManager: function() {
+		this.maanger = null;
+	}
+	,onAddedToManager: function(manager) {
+		this.maanger = manager;
+	}
+	,__class__: engine.core.System
 }
 engine.core.signals = {}
 engine.core.signals.Signal = function(listener,once) {
@@ -1097,6 +1155,23 @@ engine.map.tmx.TmxTileSet.prototype = {
 	}
 	,__class__: engine.map.tmx.TmxTileSet
 }
+engine.systems = {}
+engine.systems.RenderSystem = function(container) {
+	engine.core.System.call(this);
+	this.container = container;
+	this.componentInterest = "Sprite";
+};
+engine.systems.RenderSystem.__name__ = true;
+engine.systems.RenderSystem.__super__ = engine.core.System;
+engine.systems.RenderSystem.prototype = $extend(engine.core.System.prototype,{
+	onComponentRemoved: function(component) {
+		this.container.removeChild((js.Boot.__cast(component , engine.components.Sprite)).display);
+	}
+	,onComponentAdded: function(component) {
+		this.container.addChild((js.Boot.__cast(component , engine.components.Sprite)).display);
+	}
+	,__class__: engine.systems.RenderSystem
+});
 var haxe = {}
 haxe.ds = {}
 haxe.ds.IntMap = function() {
@@ -1847,7 +1922,7 @@ utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
 	,LoaderFactory: function(url) {
 		var extention = url.substring(url.length - 3,url.length);
 		if(extention == "png") return new utils.ImageAsset(this);
-		if(extention == "tmx") return new utils.BlobAsset(this);
+		if(extention == "tmx" || extention == "xml") return new utils.BlobAsset(this);
 		return null;
 	}
 	,AddAsset: function(url) {
@@ -3320,10 +3395,33 @@ wgr.texture.Texture.prototype = {
 wgr.texture.TextureManager = function(gl) {
 	this.gl = gl;
 	this.baseTextures = new haxe.ds.StringMap();
+	this.textures = new haxe.ds.StringMap();
 };
 wgr.texture.TextureManager.__name__ = true;
 wgr.texture.TextureManager.prototype = {
-	AddTexture: function(id,image) {
+	AddTexturesFromConfig: function(textureConfig,assets) {
+		if(!js.Boot.__instanceof(textureConfig,String)) return;
+		var source = new haxe.xml.Fast(Xml.parse(textureConfig));
+		source = source.node.resolve("textureconfig");
+		var $it0 = source.nodes.resolve("basetexture").iterator();
+		while( $it0.hasNext() ) {
+			var btnode = $it0.next();
+			var id = btnode.att.resolve("id");
+			var asset = btnode.att.resolve("asset");
+			var baseTextureImage = assets.get(asset);
+			var baseTexture = this.AddTexture(id,baseTextureImage);
+			var $it1 = btnode.nodes.resolve("texture").iterator();
+			while( $it1.hasNext() ) {
+				var tnode = $it1.next();
+				var top = Std.parseInt(tnode.att.resolve("top"));
+				var left = Std.parseInt(tnode.att.resolve("left"));
+				var width = Std.parseInt(tnode.att.resolve("width"));
+				var height = Std.parseInt(tnode.att.resolve("height"));
+				this.textures.set(tnode.att.resolve("id"),new wgr.texture.Texture(baseTexture,new wgr.geom.Rectangle(top,left,width,height)));
+			}
+		}
+	}
+	,AddTexture: function(id,image) {
 		var baseTexture = new wgr.texture.BaseTexture(image);
 		baseTexture.RegisterTexture(this.gl);
 		this.baseTextures.set(id,baseTexture);
@@ -3371,6 +3469,7 @@ Xml.Comment = "comment";
 Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
+engine.components.KeyboardControls.NAME = "Keyboard";
 engine.components.Physics.NAME = "Physics";
 engine.components.Sprite.NAME = "Sprite";
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";

@@ -19,7 +19,7 @@ class Physics extends Component
     }
 
     override public function onUpdate(dt:Float) {
-        this.rotation += 0.04;
+        //this.rotation += 0.04;
     }
 
 }

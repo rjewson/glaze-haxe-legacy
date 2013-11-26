@@ -69,4 +69,6 @@ class DLL<T:(DLLNode<T>)>
         return next;
     }
 
+    //TODO Iterate,Sort
+
 }

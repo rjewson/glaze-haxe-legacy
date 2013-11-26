@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<textureconfig>
+    <basetexture id="mushroom" asset="data/1up.png">
+        <texture id="texture1up" top="0" left="0" width="256" height="256"/>
+    </basetexture>
+    <basetexture id="char" asset="data/characters.png">
+        <texture id="texturechar1" top="0" left="0" width="50" height="75"/>
+    </basetexture>
+</textureconfig>

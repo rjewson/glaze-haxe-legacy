@@ -44,7 +44,7 @@ class AssetLoader extends EventTarget
         var extention = url.substring(url.length-3,url.length);
         if (extention=="png")
             return new ImageAsset(this);
-        if (extention=="tmx")
+        if (extention=="tmx" || extention=="xml")
             return new BlobAsset(this);
         return null;
     }
