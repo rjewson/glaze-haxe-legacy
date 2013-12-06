@@ -5,7 +5,7 @@ import wgr.geom.Point;
 import wgr.particle.PointSpriteParticle;
 import wgr.renderers.webgl.PointSpriteRenderer;
 
-class PointSpriteParticleEngine
+class PointSpriteParticleEngine implements IParticleEngine
 {
     public var particleCount:Int;
     public var deltaTime:Float;

@@ -25,4 +25,7 @@ class RenderSystem extends System
         this.container.removeChild(cast(component,Sprite).display);
     }
 
+    override public function update(dt:Float) {
+
+    }
 }

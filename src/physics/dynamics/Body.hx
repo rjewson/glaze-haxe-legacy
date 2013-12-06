@@ -101,7 +101,7 @@ class Body
 		damping = 1;
 		masslessForcesFactor = 1;
 		
-		radius = radiusSqrd = 0;
+		radius = radiusSqrd = 0; 
 		
 		group = 0;
 		layers = 0xFFFF;

@@ -205,6 +205,19 @@ class Vector2D
 		return this;
 	}
 	
+	public function reverse() : Vector2D {
+		return new Vector2D( -x, -y );
+	}
+
+	public function majorAxis():Vector2D
+	{
+		if ( Math.abs( x )>Math.abs( y ) ) {
+			return new Vector2D( x>=0 ? 1 : -1, 0 );
+		} else {
+			return new Vector2D( 0, y>=0 ? 1 : -1 );
+		}
+	}
+
 	inline public function isEquals(v:Vector2D) : Bool {
 		return (this.x==v.x)&&(this.y==v.y);
 	}

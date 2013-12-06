@@ -1,7 +1,7 @@
 (function () { "use strict";
 var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
-	function inherit() {}; inherit.prototype = from; var proto = new inherit();
+	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
@@ -16,14 +16,14 @@ EReg.prototype = {
 		return s.replace(this.r,by);
 	}
 	,__class__: EReg
-}
-var HxOverrides = function() { }
+};
+var HxOverrides = function() { };
 HxOverrides.__name__ = true;
 HxOverrides.cca = function(s,index) {
 	var x = s.charCodeAt(index);
 	if(x != x) return undefined;
 	return x;
-}
+};
 HxOverrides.substr = function(s,pos,len) {
 	if(pos != null && pos != 0 && len != null && len < 0) return "";
 	if(len == null) len = s.length;
@@ -32,7 +32,7 @@ HxOverrides.substr = function(s,pos,len) {
 		if(pos < 0) pos = 0;
 	} else if(len < 0) len = s.length + len - pos;
 	return s.substr(pos,len);
-}
+};
 HxOverrides.remove = function(a,obj) {
 	var i = 0;
 	var l = a.length;
@@ -44,15 +44,15 @@ HxOverrides.remove = function(a,obj) {
 		i++;
 	}
 	return false;
-}
+};
 HxOverrides.iter = function(a) {
 	return { cur : 0, arr : a, hasNext : function() {
 		return this.cur < this.arr.length;
 	}, next : function() {
 		return this.arr[this.cur++];
 	}};
-}
-var Lambda = function() { }
+};
+var Lambda = function() { };
 Lambda.__name__ = true;
 Lambda.map = function(it,f) {
 	var l = new List();
@@ -62,7 +62,7 @@ Lambda.map = function(it,f) {
 		l.add(f(x));
 	}
 	return l;
-}
+};
 Lambda.indexOf = function(it,v) {
 	var i = 0;
 	var $it0 = $iterator(it)();
@@ -72,22 +72,17 @@ Lambda.indexOf = function(it,v) {
 		i++;
 	}
 	return -1;
-}
+};
 var List = function() {
 	this.length = 0;
 };
 List.__name__ = true;
 List.prototype = {
-	join: function(sep) {
-		var s = new StringBuf();
-		var first = true;
-		var l = this.h;
-		while(l != null) {
-			if(first) first = false; else s.b += Std.string(sep);
-			s.b += Std.string(l[0]);
-			l = l[1];
-		}
-		return s.b;
+	add: function(item) {
+		var x = [item];
+		if(this.h == null) this.h = x; else this.q[1] = x;
+		this.q = x;
+		this.length++;
 	}
 	,iterator: function() {
 		return { h : this.h, hasNext : function() {
@@ -99,15 +94,20 @@ List.prototype = {
 			return x;
 		}};
 	}
-	,add: function(item) {
-		var x = [item];
-		if(this.h == null) this.h = x; else this.q[1] = x;
-		this.q = x;
-		this.length++;
+	,join: function(sep) {
+		var s = new StringBuf();
+		var first = true;
+		var l = this.h;
+		while(l != null) {
+			if(first) first = false; else s.b += Std.string(sep);
+			s.b += Std.string(l[0]);
+			l = l[1];
+		}
+		return s.b;
 	}
 	,__class__: List
-}
-var Main = function() { }
+};
+var Main = function() { };
 Main.__name__ = true;
 Main.main = function() {
 	var assets = new utils.AssetLoader();
@@ -116,17 +116,22 @@ Main.main = function() {
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
 		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
 		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
-		var stage = new wgr.display.Stage();
-		var camera = new wgr.display.Camera();
-		camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
-		stage.addChild(camera);
-		var canvasView = js.Boot.__cast(js.Browser.document.getElementById("view") , HTMLCanvasElement);
-		var renderer = new wgr.renderers.webgl.WebGLRenderer(stage,camera,canvasView,800,600);
-		var debugView = js.Boot.__cast(js.Browser.document.getElementById("viewDebug") , HTMLCanvasElement);
-		var debug = new wgr.renderers.canvas.CanvasDebugView(debugView,800,600);
-		camera.Resize(renderer.width,renderer.height);
-		var tm = new wgr.texture.TextureManager(renderer.gl);
+		var view = new engine.view.View(800,600,false);
+		var tm = new wgr.texture.TextureManager(view.renderer.gl);
 		tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
+		var tileMap = new wgr.renderers.webgl.TileMap();
+		view.renderer.AddRenderer(tileMap);
+		tileMap.SetSpriteSheet(assets.assets.get("data/spelunky-tiles.png"));
+		tileMap.SetTileLayerFromData(mapData,"base",1,1);
+		tileMap.SetTileLayer(assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
+		tileMap.tileSize = 16;
+		tileMap.TileScale(2);
+		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
+		spriteRender.AddStage(view.stage);
+		view.renderer.AddRenderer(spriteRender);
+		var pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(3000,16.6666666666666679);
+		pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
+		view.renderer.AddRenderer(pointParticleEngine.renderer);
 		var createSprite = function(id,x,y,px,py,tid) {
 			var s = new wgr.display.Sprite();
 			s.id = id;
@@ -139,22 +144,22 @@ Main.main = function() {
 		};
 		var itemContainer = new wgr.display.DisplayObjectContainer();
 		itemContainer.id = "itemContainer";
-		camera.addChild(itemContainer);
+		view.camera.addChild(itemContainer);
 		var entityManager = new engine.core.EntityManager();
 		entityManager.addSystem(new engine.systems.RenderSystem(itemContainer));
+		entityManager.addSystem(new engine.systems.ParticleSystem(pointParticleEngine));
 		entityManager.componentAdded.add(function(component) {
 			console.log(component.name);
 		});
 		var e1 = new engine.core.Entity();
-		e1.add(new engine.components.Physics(400,380,0));
 		var spr3 = createSprite("character",400,380,0,0,"texturechar1");
 		spr3.scale.x = -1;
 		spr3.pivot.x = 25.;
 		spr3.pivot.y = 75;
-		e1.add(new engine.components.Sprite(spr3));
+		e1.add(new engine.components.Physics(400,380,0)).add(new engine.components.Sprite(spr3)).add(new engine.components.KeyboardControls(gameLoop.keyboard)).add(new engine.components.ParticleEmitter());
 		entityManager.addEntity(e1);
-		e1.add(new engine.components.KeyboardControls(gameLoop.keyboard));
-		var xpos = 0, ypos = 0;
+		var xpos = 0;
+		var ypos = 0;
 		var _g = 0;
 		while(_g < 100) {
 			var i = _g++;
@@ -169,121 +174,87 @@ Main.main = function() {
 			newSpr.pivot.x = 25.;
 			newSpr.pivot.y = 37.5;
 			var e = new engine.core.Entity();
-			e.add(new engine.components.Physics(100 + xpos * 20,100 + ypos * 20,0));
-			e.add(new engine.components.Sprite(newSpr));
+			e.add(new engine.components.Physics(100 + xpos * 20,100 + ypos * 20,0)).add(new engine.components.Sprite(newSpr));
 			entityManager.addEntity(e);
 		}
-		var tileMap = new wgr.renderers.webgl.TileMap();
-		renderer.AddRenderer(tileMap);
-		tileMap.SetSpriteSheet(assets.assets.get("data/spelunky-tiles.png"));
-		tileMap.SetTileLayerFromData(mapData,"base",1,1);
-		tileMap.SetTileLayer(assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
-		tileMap.tileSize = 16;
-		tileMap.TileScale(2);
-		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
-		spriteRender.AddStage(stage);
-		renderer.AddRenderer(spriteRender);
-		var pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(3000,1000 / 60);
-		pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
-		renderer.AddRenderer(pointParticleEngine.renderer);
-		var startTime = new Date().getTime();
-		var stop = false;
-		var debugSwitch = false;
 		var tick = function() {
-			var _g = 0;
-			while(_g < 5) {
-				var pCount = _g++;
-				var vX = Std.random(100) - 50;
-				var vY = Std.random(100) - 50;
-				var ttl = Std.random(1000) + 500;
-				var type = 1;
-				pointParticleEngine.EmitParticle(spr3.position.x,spr3.position.y,vX,vY,0,0,ttl,0.99,true,true,null,type,32,-1);
-			}
-			entityManager.Update(1000 / 60);
-			camera.Focus(spr3.position.x,spr3.position.y);
-			pointParticleEngine.Update();
-			renderer.Render(camera.viewPortAABB);
-			if(debugSwitch) debug.Clear(camera);
+			entityManager.Update(16.6666666666666679);
+			view.camera.Focus(spr3.position.x,spr3.position.y);
+			view.renderer.Render(view.camera.viewPortAABB);
 		};
 		gameLoop.updateFunc = tick;
 		gameLoop.start();
-		js.Browser.document.getElementById("stopbutton").addEventListener("click",function(event1) {
+		window.document.getElementById("stopbutton").addEventListener("click",function(event1) {
 			gameLoop.stop();
 		});
-		js.Browser.document.getElementById("startbutton").addEventListener("click",function(event1) {
+		window.document.getElementById("startbutton").addEventListener("click",function(event1) {
 			gameLoop.start();
 		});
-		js.Browser.document.getElementById("debugbutton").addEventListener("click",function(event1) {
-			debugSwitch = !debugSwitch;
-			debug.Clear(camera);
+		window.document.getElementById("debugbutton").addEventListener("click",function(event1) {
 		});
-		js.Browser.document.getElementById("action1").addEventListener("click",function(event1) {
-			var child = itemContainer.removeChildAt(3);
-			itemContainer.addChildAt(child,4);
+		window.document.getElementById("action1").addEventListener("click",function(event1) {
 		});
-		js.Browser.document.getElementById("action2").addEventListener("click",function(event1) {
+		window.document.getElementById("action2").addEventListener("click",function(event1) {
 		});
 	});
 	assets.SetImagesToLoad(["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"]);
 	assets.Load();
-}
-var IMap = function() { }
+};
+var IMap = function() { };
 IMap.__name__ = true;
-var Std = function() { }
+Math.__name__ = true;
+var Std = function() { };
 Std.__name__ = true;
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
-}
+};
 Std.parseInt = function(x) {
 	var v = parseInt(x,10);
 	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
 	if(isNaN(v)) return null;
 	return v;
-}
+};
 Std.parseFloat = function(x) {
 	return parseFloat(x);
-}
+};
 Std.random = function(x) {
-	return x <= 0?0:Math.floor(Math.random() * x);
-}
+	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
+};
 var StringBuf = function() {
 	this.b = "";
 };
 StringBuf.__name__ = true;
 StringBuf.prototype = {
-	addSub: function(s,pos,len) {
-		this.b += len == null?HxOverrides.substr(s,pos,null):HxOverrides.substr(s,pos,len);
-	}
-	,__class__: StringBuf
-}
-var StringTools = function() { }
+	__class__: StringBuf
+};
+var StringTools = function() { };
 StringTools.__name__ = true;
 StringTools.isSpace = function(s,pos) {
 	var c = HxOverrides.cca(s,pos);
 	return c > 8 && c < 14 || c == 32;
-}
+};
 StringTools.ltrim = function(s) {
 	var l = s.length;
 	var r = 0;
 	while(r < l && StringTools.isSpace(s,r)) r++;
 	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
-}
+};
 StringTools.rtrim = function(s) {
 	var l = s.length;
 	var r = 0;
 	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
 	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
-}
+};
 StringTools.trim = function(s) {
 	return StringTools.ltrim(StringTools.rtrim(s));
-}
-var XmlType = { __ename__ : true, __constructs__ : [] }
+};
+var XmlType = { __ename__ : true, __constructs__ : [] };
 var Xml = function() {
 };
 Xml.__name__ = true;
 Xml.parse = function(str) {
 	return haxe.xml.Parser.parse(str);
-}
+};
 Xml.createElement = function(name) {
 	var r = new Xml();
 	r.nodeType = Xml.Element;
@@ -291,49 +262,79 @@ Xml.createElement = function(name) {
 	r._attributes = new haxe.ds.StringMap();
 	r.set_nodeName(name);
 	return r;
-}
+};
 Xml.createPCData = function(data) {
 	var r = new Xml();
 	r.nodeType = Xml.PCData;
 	r.set_nodeValue(data);
 	return r;
-}
+};
 Xml.createCData = function(data) {
 	var r = new Xml();
 	r.nodeType = Xml.CData;
 	r.set_nodeValue(data);
 	return r;
-}
+};
 Xml.createComment = function(data) {
 	var r = new Xml();
 	r.nodeType = Xml.Comment;
 	r.set_nodeValue(data);
 	return r;
-}
+};
 Xml.createDocType = function(data) {
 	var r = new Xml();
 	r.nodeType = Xml.DocType;
 	r.set_nodeValue(data);
 	return r;
-}
+};
 Xml.createProcessingInstruction = function(data) {
 	var r = new Xml();
 	r.nodeType = Xml.ProcessingInstruction;
 	r.set_nodeValue(data);
 	return r;
-}
+};
 Xml.createDocument = function() {
 	var r = new Xml();
 	r.nodeType = Xml.Document;
 	r._children = new Array();
 	return r;
-}
+};
 Xml.prototype = {
-	addChild: function(x) {
+	get_nodeName: function() {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._nodeName;
+	}
+	,set_nodeName: function(n) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._nodeName = n;
+	}
+	,get_nodeValue: function() {
+		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
+		return this._nodeValue;
+	}
+	,set_nodeValue: function(v) {
+		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
+		return this._nodeValue = v;
+	}
+	,get: function(att) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._attributes.get(att);
+	}
+	,set: function(att,value) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		this._attributes.set(att,value);
+	}
+	,exists: function(att) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._attributes.exists(att);
+	}
+	,iterator: function() {
 		if(this._children == null) throw "bad nodetype";
-		if(x._parent != null) HxOverrides.remove(x._parent._children,x);
-		x._parent = this;
-		this._children.push(x);
+		return { cur : 0, x : this._children, hasNext : function() {
+			return this.cur < this.x.length;
+		}, next : function() {
+			return this.x[this.cur++];
+		}};
 	}
 	,elementsNamed: function(name) {
 		if(this._children == null) throw "bad nodetype";
@@ -361,45 +362,15 @@ Xml.prototype = {
 			return null;
 		}};
 	}
-	,iterator: function() {
+	,addChild: function(x) {
 		if(this._children == null) throw "bad nodetype";
-		return { cur : 0, x : this._children, hasNext : function() {
-			return this.cur < this.x.length;
-		}, next : function() {
-			return this.x[this.cur++];
-		}};
-	}
-	,exists: function(att) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._attributes.exists(att);
-	}
-	,set: function(att,value) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		this._attributes.set(att,value);
-	}
-	,get: function(att) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._attributes.get(att);
-	}
-	,set_nodeValue: function(v) {
-		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-		return this._nodeValue = v;
-	}
-	,get_nodeValue: function() {
-		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-		return this._nodeValue;
-	}
-	,set_nodeName: function(n) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName = n;
-	}
-	,get_nodeName: function() {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName;
+		if(x._parent != null) HxOverrides.remove(x._parent._children,x);
+		x._parent = this;
+		this._children.push(x);
 	}
 	,__class__: Xml
-}
-var ds = {}
+};
+var ds = {};
 ds.Array2D = function(width,height,buffer) {
 	this.w = width;
 	this.h = height;
@@ -409,32 +380,51 @@ ds.Array2D = function(width,height,buffer) {
 };
 ds.Array2D.__name__ = true;
 ds.Array2D.prototype = {
-	getIndex: function(x,y) {
-		return y * this.w + x;
+	get: function(x,y) {
+		return this.data32[y * this.w + x];
 	}
 	,set: function(x,y,v) {
 		this.data32[y * this.w + x] = v;
 	}
-	,get: function(x,y) {
-		return this.data32[y * this.w + x];
+	,getIndex: function(x,y) {
+		return y * this.w + x;
 	}
 	,__class__: ds.Array2D
-}
-ds.DLLNode = function() { }
+};
+ds.DLLNode = function() { };
 ds.DLLNode.__name__ = true;
 ds.DLLNode.prototype = {
 	__class__: ds.DLLNode
-}
+};
 ds.DLL = function() {
 };
 ds.DLL.__name__ = true;
 ds.DLL.prototype = {
-	remove: function(node) {
-		var next = node.next;
-		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
-		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
-		node.prev = node.next = null;
-		return next;
+	insertAfter: function(node,newNode) {
+		newNode.prev = node;
+		newNode.next = node.next;
+		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+		node.next = newNode;
+	}
+	,insertBefore: function(node,newNode) {
+		newNode.prev = node.prev;
+		newNode.next = node;
+		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+		node.prev = newNode;
+	}
+	,insertBeginning: function(newNode) {
+		if(this.head == null) {
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.prev = null;
+			newNode.next = null;
+		} else {
+			var node = this.head;
+			newNode.prev = node.prev;
+			newNode.next = node;
+			if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+			node.prev = newNode;
+		}
 	}
 	,insertEnd: function(newNode) {
 		if(this.tail == null) {
@@ -443,77 +433,76 @@ ds.DLL.prototype = {
 				this.tail = newNode;
 				newNode.prev = null;
 				newNode.next = null;
-			} else this.insertBefore(this.head,newNode);
-		} else this.insertAfter(this.tail,newNode);
+			} else {
+				var node = this.head;
+				newNode.prev = node.prev;
+				newNode.next = node;
+				if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+				node.prev = newNode;
+			}
+		} else {
+			var node = this.tail;
+			newNode.prev = node;
+			newNode.next = node.next;
+			if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+			node.next = newNode;
+		}
 	}
-	,insertBeginning: function(newNode) {
-		if(this.head == null) {
-			this.head = newNode;
-			this.tail = newNode;
-			newNode.prev = null;
-			newNode.next = null;
-		} else this.insertBefore(this.head,newNode);
-	}
-	,insertBefore: function(node,newNode) {
-		newNode.prev = node.prev;
-		newNode.next = node;
-		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
-		node.prev = newNode;
-	}
-	,insertAfter: function(node,newNode) {
-		newNode.prev = node;
-		newNode.next = node.next;
-		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
-		node.next = newNode;
+	,remove: function(node) {
+		var next = node.next;
+		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
+		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
+		node.prev = node.next = null;
+		return next;
 	}
 	,__class__: ds.DLL
-}
-var engine = {}
+};
+var engine = {};
 engine.GameLoop = function() {
 	this.isRunning = false;
 	this.keyboard = new engine.input.DigitalInput();
-	this.keyboard.InputTarget(js.Browser.document);
+	this.keyboard.InputTarget(window.document);
 };
 engine.GameLoop.__name__ = true;
 engine.GameLoop.prototype = {
-	stop: function() {
-		if(this.isRunning == false) return;
-		this.isRunning = false;
-		js.Browser.window.cancelAnimationFrame(this.rafID);
-	}
-	,start: function() {
-		if(this.isRunning == true) return;
-		this.isRunning = true;
-		this.prevAnimationTime = this.animationStartTimestamp = js.Browser.window.performance.now();
-		this.rafID = js.Browser.window.requestAnimationFrame($bind(this,this.update));
-	}
-	,update: function(timestamp) {
+	update: function(timestamp) {
 		this.delta = timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
 		this.keyboard.Update();
 		if(this.updateFunc != null) this.updateFunc();
-		this.rafID = js.Browser.window.requestAnimationFrame($bind(this,this.update));
+		this.rafID = window.requestAnimationFrame($bind(this,this.update));
 		return false;
 	}
+	,start: function() {
+		if(this.isRunning == true) return;
+		this.isRunning = true;
+		this.prevAnimationTime = this.animationStartTimestamp = window.performance.now();
+		this.rafID = window.requestAnimationFrame($bind(this,this.update));
+	}
+	,stop: function() {
+		if(this.isRunning == false) return;
+		this.isRunning = false;
+		window.cancelAnimationFrame(this.rafID);
+	}
 	,__class__: engine.GameLoop
-}
-engine.core = {}
-engine.core.Component = function() { }
+};
+engine.core = {};
+engine.core.Component = function() { };
 engine.core.Component.__name__ = true;
 engine.core.Component.__interfaces__ = [ds.DLLNode];
 engine.core.Component.prototype = {
-	dispose: function() {
-		if(this.owner != null) this.owner.remove(this);
-	}
-	,onUpdate: function(dt) {
+	onAdded: function() {
 	}
 	,onRemoved: function() {
 	}
-	,onAdded: function() {
+	,onUpdate: function(dt) {
+	}
+	,dispose: function() {
+		if(this.owner != null) this.owner.remove(this);
 	}
 	,__class__: engine.core.Component
-}
-engine.components = {}
+};
+engine.components = {};
 engine.components.KeyboardControls = function(input) {
 	this.name = "Keyboard";
 	this.input = input;
@@ -521,15 +510,39 @@ engine.components.KeyboardControls = function(input) {
 engine.components.KeyboardControls.__name__ = true;
 engine.components.KeyboardControls.__super__ = engine.core.Component;
 engine.components.KeyboardControls.prototype = $extend(engine.core.Component.prototype,{
-	onUpdate: function(dt) {
-		var physics = this.owner.componentMap.Physics;
+	onAdded: function() {
+		this.physics = this.owner.componentMap.Physics;
+	}
+	,onUpdate: function(dt) {
 		var cameraDelta = 6;
-		if(this.input.keyMap[65] > 0) physics.position.x -= cameraDelta;
-		if(this.input.keyMap[68] > 0) physics.position.x += cameraDelta;
-		if(this.input.keyMap[87] > 0) physics.position.y -= cameraDelta;
-		if(this.input.keyMap[83] > 0) physics.position.y += cameraDelta;
+		if(this.input.keyMap[65] > 0) this.physics.position.x -= cameraDelta;
+		if(this.input.keyMap[68] > 0) this.physics.position.x += cameraDelta;
+		if(this.input.keyMap[87] > 0) this.physics.position.y -= cameraDelta;
+		if(this.input.keyMap[83] > 0) this.physics.position.y += cameraDelta;
 	}
 	,__class__: engine.components.KeyboardControls
+});
+engine.components.ParticleEmitter = function() {
+	this.name = "Particle";
+};
+engine.components.ParticleEmitter.__name__ = true;
+engine.components.ParticleEmitter.__super__ = engine.core.Component;
+engine.components.ParticleEmitter.prototype = $extend(engine.core.Component.prototype,{
+	onAdded: function() {
+		this.physics = this.owner.componentMap.Physics;
+	}
+	,onUpdate: function(dt) {
+		var _g = 0;
+		while(_g < 5) {
+			var pCount = _g++;
+			var vX = Std.random(100) - 50;
+			var vY = Std.random(100) - 50;
+			var ttl = Std.random(1000) + 500;
+			var type = 1;
+			this.particleEngine.EmitParticle(this.physics.position.x,this.physics.position.y,vX,vY,0,0,ttl,0.99,true,true,null,type,32,-1);
+		}
+	}
+	,__class__: engine.components.ParticleEmitter
 });
 engine.components.Physics = function(x,y,rotation) {
 	this.name = "Physics";
@@ -550,11 +563,17 @@ engine.components.Sprite = function(display) {
 engine.components.Sprite.__name__ = true;
 engine.components.Sprite.__super__ = engine.core.Component;
 engine.components.Sprite.prototype = $extend(engine.core.Component.prototype,{
-	onUpdate: function(dt) {
-		var physics = this.owner.componentMap.Physics;
-		this.display.position.x = physics.position.x;
-		this.display.position.y = physics.position.y;
-		this.display.set_rotation(physics.rotation);
+	onAdded: function() {
+		this.physics = this.owner.componentMap.Physics;
+	}
+	,onUpdate: function(dt) {
+		this.display.position.x = this.physics.position.x;
+		this.display.position.y = this.physics.position.y;
+		var _this = this.display;
+		_this._rotation = this.physics.rotation;
+		_this._rotationComponents.x = Math.cos(_this._rotation);
+		_this._rotationComponents.y = Math.sin(_this._rotation);
+		_this._rotation;
 	}
 	,__class__: engine.components.Sprite
 });
@@ -565,16 +584,48 @@ engine.core.Entity = function() {
 engine.core.Entity.__name__ = true;
 engine.core.Entity.__interfaces__ = [ds.DLLNode];
 engine.core.Entity.prototype = {
-	getComponent: function(name) {
-		return this.componentMap[name];
-	}
-	,onRemovedFromManager: function() {
-		var component = this.components.head;
-		while(component != null) {
-			this.manager.componentRemoved.dispatch(component);
-			component = component.next;
+	add: function(component) {
+		if(component.owner != null) component.owner.remove(component);
+		var name = component.name;
+		var prev = this.componentMap[name];
+		if(prev != null) this.remove(prev);
+		component.owner = this;
+		this.componentMap[name] = component;
+		var _this = this.components;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = component;
+				_this.tail = component;
+				component.prev = null;
+				component.next = null;
+			} else {
+				var node = _this.head;
+				component.prev = node.prev;
+				component.next = node;
+				if(node.prev == null) _this.head = component; else node.prev.next = component;
+				node.prev = component;
+			}
+		} else {
+			var node = _this.tail;
+			component.prev = node;
+			component.next = node.next;
+			if(node.next == null) _this.tail = component; else node.next.prev = component;
+			node.next = component;
 		}
-		this.manager = null;
+		component.onAdded();
+		if(this.manager != null) this.manager.componentAdded.dispatch(component);
+		return this;
+	}
+	,remove: function(component) {
+		var _this = this.components;
+		var next = component.next;
+		if(component.prev == null) _this.head = component.next; else component.prev.next = component.next;
+		if(component.next == null) _this.tail = component.prev; else component.next.prev = component.prev;
+		component.prev = component.next = null;
+		next;
+		component.onRemoved();
+		delete(this.componentMap[component.name]);
+		if(this.manager != null) this.manager.componentRemoved.dispatch(component);
 	}
 	,onAddedToManager: function(manager) {
 		this.manager = manager;
@@ -584,26 +635,19 @@ engine.core.Entity.prototype = {
 			component = component.next;
 		}
 	}
-	,remove: function(component) {
-		this.components.remove(component);
-		component.onRemoved();
-		delete(this.componentMap[component.name]);
-		if(this.manager != null) this.manager.componentRemoved.dispatch(component);
+	,onRemovedFromManager: function() {
+		var component = this.components.head;
+		while(component != null) {
+			this.manager.componentRemoved.dispatch(component);
+			component = component.next;
+		}
+		this.manager = null;
 	}
-	,add: function(component) {
-		if(component.owner != null) component.owner.remove(component);
-		var name = component.name;
-		var prev = this.componentMap[name];
-		if(prev != null) this.remove(prev);
-		component.owner = this;
-		this.componentMap[name] = component;
-		this.components.insertEnd(component);
-		component.onAdded();
-		if(this.manager != null) this.manager.componentAdded.dispatch(component);
-		return this;
+	,getComponent: function(name) {
+		return this.componentMap[name];
 	}
 	,__class__: engine.core.Entity
-}
+};
 engine.core.EntityManager = function() {
 	this.entities = new ds.DLL();
 	this.entityAdded = new engine.core.signals.Signal1();
@@ -618,7 +662,119 @@ engine.core.EntityManager = function() {
 };
 engine.core.EntityManager.__name__ = true;
 engine.core.EntityManager.prototype = {
-	Update: function(dt) {
+	addEntity: function(entity) {
+		var _this = this.entities;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = entity;
+				_this.tail = entity;
+				entity.prev = null;
+				entity.next = null;
+			} else {
+				var node = _this.head;
+				entity.prev = node.prev;
+				entity.next = node;
+				if(node.prev == null) _this.head = entity; else node.prev.next = entity;
+				node.prev = entity;
+			}
+		} else {
+			var node = _this.tail;
+			entity.prev = node;
+			entity.next = node.next;
+			if(node.next == null) _this.tail = entity; else node.next.prev = entity;
+			node.next = entity;
+		}
+		entity.onAddedToManager(this);
+		this.entityAdded.dispatch(entity);
+	}
+	,removeEntity: function(entity) {
+		var _this = this.entities;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = entity;
+				_this.tail = entity;
+				entity.prev = null;
+				entity.next = null;
+			} else {
+				var node = _this.head;
+				entity.prev = node.prev;
+				entity.next = node;
+				if(node.prev == null) _this.head = entity; else node.prev.next = entity;
+				node.prev = entity;
+			}
+		} else {
+			var node = _this.tail;
+			entity.prev = node;
+			entity.next = node.next;
+			if(node.next == null) _this.tail = entity; else node.next.prev = entity;
+			node.next = entity;
+		}
+		entity.onRemovedFromManager();
+		this.entityRemoved.dispatch(entity);
+	}
+	,addSystem: function(system) {
+		var _this = this.systems;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = system;
+				_this.tail = system;
+				system.prev = null;
+				system.next = null;
+			} else {
+				var node = _this.head;
+				system.prev = node.prev;
+				system.next = node;
+				if(node.prev == null) _this.head = system; else node.prev.next = system;
+				node.prev = system;
+			}
+		} else {
+			var node = _this.tail;
+			system.prev = node;
+			system.next = node.next;
+			if(node.next == null) _this.tail = system; else node.next.prev = system;
+			node.next = system;
+		}
+		var signal = this.componentSystemMap[system.componentInterest];
+		if(signal == null) {
+			signal = new engine.core.signals.Signal1();
+			this.componentSystemMap[system.componentInterest] = signal;
+		}
+		signal.add($bind(system,system.onComponentAdded));
+		system.onAddedToManager(this);
+		this.systemAdded.dispatch(system);
+	}
+	,removeSystem: function(system) {
+		var _this = this.systems;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = system;
+				_this.tail = system;
+				system.prev = null;
+				system.next = null;
+			} else {
+				var node = _this.head;
+				system.prev = node.prev;
+				system.next = node;
+				if(node.prev == null) _this.head = system; else node.prev.next = system;
+				node.prev = system;
+			}
+		} else {
+			var node = _this.tail;
+			system.prev = node;
+			system.next = node.next;
+			if(node.next == null) _this.tail = system; else node.next.prev = system;
+			node.next = system;
+		}
+		var signal = this.componentSystemMap[system.componentInterest];
+		if(signal == null) signal.remove($bind(system,system.onComponentAdded));
+		system.onRemovedFromManager();
+		this.systemRemoved.dispatch(system);
+	}
+	,addComponentToSystem: function(component) {
+		var systemSignal = this.componentSystemMap[component.name];
+		if(systemSignal != null) systemSignal.dispatch(component);
+	}
+	,Update: function(dt) {
 		var entity = this.entities.head;
 		while(entity != null) {
 			var component = entity.components.head;
@@ -634,60 +790,28 @@ engine.core.EntityManager.prototype = {
 			system = system.next;
 		}
 	}
-	,addComponentToSystem: function(component) {
-		var systemSignal = this.componentSystemMap[component.name];
-		if(systemSignal != null) systemSignal.dispatch(component);
-	}
-	,removeSystem: function(system) {
-		this.systems.insertEnd(system);
-		var signal = this.componentSystemMap[system.componentInterest];
-		if(signal == null) signal.remove($bind(system,system.onComponentAdded));
-		system.onRemovedFromManager();
-		this.systemRemoved.dispatch(system);
-	}
-	,addSystem: function(system) {
-		this.systems.insertEnd(system);
-		var signal = this.componentSystemMap[system.componentInterest];
-		if(signal == null) {
-			signal = new engine.core.signals.Signal1();
-			this.componentSystemMap[system.componentInterest] = signal;
-		}
-		signal.add($bind(system,system.onComponentAdded));
-		system.onAddedToManager(this);
-		this.systemAdded.dispatch(system);
-	}
-	,removeEntity: function(entity) {
-		this.entities.insertEnd(entity);
-		entity.onRemovedFromManager();
-		this.entityRemoved.dispatch(entity);
-	}
-	,addEntity: function(entity) {
-		this.entities.insertEnd(entity);
-		entity.onAddedToManager(this);
-		this.entityAdded.dispatch(entity);
-	}
 	,__class__: engine.core.EntityManager
-}
+};
 engine.core.System = function() {
 };
 engine.core.System.__name__ = true;
 engine.core.System.__interfaces__ = [ds.DLLNode];
 engine.core.System.prototype = {
-	update: function(dt) {
-	}
-	,onComponentRemoved: function(component) {
-	}
-	,onComponentAdded: function(component) {
+	onAddedToManager: function(manager) {
+		this.maanger = manager;
 	}
 	,onRemovedFromManager: function() {
 		this.maanger = null;
 	}
-	,onAddedToManager: function(manager) {
-		this.maanger = manager;
+	,onComponentAdded: function(component) {
+	}
+	,onComponentRemoved: function(component) {
+	}
+	,update: function(dt) {
 	}
 	,__class__: engine.core.System
-}
-engine.core.signals = {}
+};
+engine.core.signals = {};
 engine.core.signals.Signal = function(listener,once) {
 	if(once == null) once = false;
 	this.slots = new ds.DLL();
@@ -695,7 +819,43 @@ engine.core.signals.Signal = function(listener,once) {
 };
 engine.core.signals.Signal.__name__ = true;
 engine.core.signals.Signal.prototype = {
-	findSlot: function(listener) {
+	add: function(listener,once) {
+		if(once == null) once = false;
+		var slot = new engine.core.signals.Slot(listener,once);
+		var _this = this.slots;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = slot;
+				_this.tail = slot;
+				slot.prev = null;
+				slot.next = null;
+			} else {
+				var node = _this.head;
+				slot.prev = node.prev;
+				slot.next = node;
+				if(node.prev == null) _this.head = slot; else node.prev.next = slot;
+				node.prev = slot;
+			}
+		} else {
+			var node = _this.tail;
+			slot.prev = node;
+			slot.next = node.next;
+			if(node.next == null) _this.tail = slot; else node.next.prev = slot;
+			node.next = slot;
+		}
+	}
+	,remove: function(listener) {
+		var slot = this.findSlot(listener);
+		if(slot != null) {
+			var _this = this.slots;
+			var next = slot.next;
+			if(slot.prev == null) _this.head = slot.next; else slot.prev.next = slot.next;
+			if(slot.next == null) _this.tail = slot.prev; else slot.next.prev = slot.prev;
+			slot.prev = slot.next = null;
+			next;
+		}
+	}
+	,findSlot: function(listener) {
 		var slot = this.slots.head;
 		while(slot != null) {
 			if(slot.listener == listener) return slot;
@@ -703,17 +863,8 @@ engine.core.signals.Signal.prototype = {
 		}
 		return null;
 	}
-	,remove: function(listener) {
-		var slot = this.findSlot(listener);
-		if(slot != null) this.slots.remove(slot);
-	}
-	,add: function(listener,once) {
-		if(once == null) once = false;
-		var slot = new engine.core.signals.Slot(listener,once);
-		this.slots.insertEnd(slot);
-	}
 	,__class__: engine.core.signals.Signal
-}
+};
 engine.core.signals.Signal0 = function(listener) {
 	engine.core.signals.Signal.call(this,listener);
 };
@@ -724,7 +875,14 @@ engine.core.signals.Signal0.prototype = $extend(engine.core.signals.Signal.proto
 		var slot = this.slots.head;
 		while(slot != null) {
 			slot.listener();
-			slot = slot.once?this.slots.remove(slot):slot.next;
+			if(slot.once) {
+				var _this = this.slots;
+				var next = slot.next;
+				if(slot.prev == null) _this.head = slot.next; else slot.prev.next = slot.next;
+				if(slot.next == null) _this.tail = slot.prev; else slot.next.prev = slot.prev;
+				slot.prev = slot.next = null;
+				slot = next;
+			} else slot = slot.next;
 		}
 	}
 	,__class__: engine.core.signals.Signal0
@@ -739,7 +897,14 @@ engine.core.signals.Signal1.prototype = $extend(engine.core.signals.Signal.proto
 		var slot = this.slots.head;
 		while(slot != null) {
 			slot.listener(arg1);
-			slot = slot.once?this.slots.remove(slot):slot.next;
+			if(slot.once) {
+				var _this = this.slots;
+				var next = slot.next;
+				if(slot.prev == null) _this.head = slot.next; else slot.prev.next = slot.next;
+				if(slot.next == null) _this.tail = slot.prev; else slot.next.prev = slot.prev;
+				slot.prev = slot.next = null;
+				slot = next;
+			} else slot = slot.next;
 		}
 	}
 	,__class__: engine.core.signals.Signal1
@@ -752,8 +917,8 @@ engine.core.signals.Slot.__name__ = true;
 engine.core.signals.Slot.__interfaces__ = [ds.DLLNode];
 engine.core.signals.Slot.prototype = {
 	__class__: engine.core.signals.Slot
-}
-engine.input = {}
+};
+engine.input = {};
 engine.input.DigitalInput = function() {
 	this.keyMap = new Array();
 	var _g = 0;
@@ -765,74 +930,81 @@ engine.input.DigitalInput = function() {
 };
 engine.input.DigitalInput.__name__ = true;
 engine.input.DigitalInput.prototype = {
-	Released: function(keyCode) {
-		return this.keyMap[keyCode] == 0;
-	}
-	,PressedDuration: function(keyCode) {
-		var duration = this.keyMap[keyCode];
-		return duration > 0?this.frameRef - duration:0;
-	}
-	,JustPressed: function(keyCode) {
-		return this.keyMap[keyCode] == this.frameRef - 1;
-	}
-	,Pressed: function(keyCode) {
-		return this.keyMap[keyCode] > 0;
-	}
-	,KeyUp: function(event) {
-		this.keyMap[event.keyCode] = 0;
-	}
-	,KeyDown: function(event) {
-		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+	InputTarget: function(target) {
+		this.target = target;
+		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
+		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
 	}
 	,Update: function() {
 		if(this.target == null) return;
 		this.frameRef++;
 	}
-	,InputTarget: function(target) {
-		this.target = target;
-		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
-		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+	,KeyDown: function(event) {
+		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+	}
+	,KeyUp: function(event) {
+		this.keyMap[event.keyCode] = 0;
+	}
+	,Pressed: function(keyCode) {
+		return this.keyMap[keyCode] > 0;
+	}
+	,JustPressed: function(keyCode) {
+		return this.keyMap[keyCode] == this.frameRef - 1;
+	}
+	,PressedDuration: function(keyCode) {
+		var duration = this.keyMap[keyCode];
+		if(duration > 0) return this.frameRef - duration; else return 0;
+	}
+	,Released: function(keyCode) {
+		return this.keyMap[keyCode] == 0;
 	}
 	,__class__: engine.input.DigitalInput
-}
-engine.map = {}
+};
+engine.map = {};
 engine.map.TileMapMap = function(w,h,data) {
 	this.mapData = new ds.Array2D(w,h,data);
 	this.tiles = new haxe.ds.IntMap();
 };
 engine.map.TileMapMap.__name__ = true;
 engine.map.TileMapMap.prototype = {
-	toTexture: function() {
+	addTileType: function(index,x,y) {
+		var v = -16777216 | y << 8 | x;
+		this.tiles.set(index,v);
+	}
+	,toTexture: function() {
 		var textureData = new ds.Array2D(this.mapData.w,this.mapData.h);
-		var _g1 = 0, _g = this.mapData.w;
+		var _g1 = 0;
+		var _g = this.mapData.w;
 		while(_g1 < _g) {
 			var xp = _g1++;
-			var _g3 = 0, _g2 = this.mapData.h;
+			var _g3 = 0;
+			var _g2 = this.mapData.h;
 			while(_g3 < _g2) {
 				var yp = _g3++;
-				var source = this.mapData.get(xp,yp);
-				if(source > 0) textureData.data32[yp * textureData.w + xp] = this.tiles.get(source); else textureData.data32[yp * textureData.w + xp] = -1;
+				var source;
+				var _this = this.mapData;
+				source = _this.data32[yp * _this.w + xp];
+				if(source > 0) {
+					var v = this.tiles.get(source);
+					textureData.data32[yp * textureData.w + xp] = v;
+				} else textureData.data32[yp * textureData.w + xp] = -1;
 			}
 		}
 		return textureData;
 	}
-	,addTileType: function(index,x,y) {
-		var v = -16777216 | y << 8 | x;
-		this.tiles.set(index,v);
-	}
 	,__class__: engine.map.TileMapMap
-}
-engine.map.tmx = {}
+};
+engine.map.tmx = {};
 engine.map.tmx.TmxLayer = function(source,parent) {
 	this.properties = new engine.map.tmx.TmxPropertySet();
 	this.map = parent;
 	this.name = source.att.resolve("name");
-	this.x = source.has.resolve("x")?Std.parseInt(source.att.resolve("x")):0;
-	this.y = source.has.resolve("y")?Std.parseInt(source.att.resolve("y")):0;
+	if(source.has.resolve("x")) this.x = Std.parseInt(source.att.resolve("x")); else this.x = 0;
+	if(source.has.resolve("y")) this.y = Std.parseInt(source.att.resolve("y")); else this.y = 0;
 	this.width = Std.parseInt(source.att.resolve("width"));
 	this.height = Std.parseInt(source.att.resolve("height"));
-	this.visible = source.has.resolve("visible") && source.att.resolve("visible") == "1"?true:false;
-	this.opacity = source.has.resolve("opacity")?Std.parseFloat(source.att.resolve("opacity")):0;
+	if(source.has.resolve("visible") && source.att.resolve("visible") == "1") this.visible = true; else this.visible = false;
+	if(source.has.resolve("opacity")) this.opacity = Std.parseFloat(source.att.resolve("opacity")); else this.opacity = 0;
 	var node;
 	var $it0 = source.nodes.resolve("properties").iterator();
 	while( $it0.hasNext() ) {
@@ -887,17 +1059,21 @@ engine.map.tmx.TmxLayer.csvToArray = function(input) {
 		result.push(resultRow);
 	}
 	return result;
-}
+};
 engine.map.tmx.TmxLayer.layerToCoordTexture = function(layer) {
 	var tileSet = null;
 	var textureData = new ds.Array2D(layer.width,layer.height);
-	var _g1 = 0, _g = layer.width;
+	var _g1 = 0;
+	var _g = layer.width;
 	while(_g1 < _g) {
 		var xp = _g1++;
-		var _g3 = 0, _g2 = layer.height;
+		var _g3 = 0;
+		var _g2 = layer.height;
 		while(_g3 < _g2) {
 			var yp = _g3++;
-			var source = layer.tileGIDs.get(xp,yp);
+			var source;
+			var _this = layer.tileGIDs;
+			source = _this.data32[yp * _this.w + xp];
 			if(source > 0) {
 				if(tileSet == null) tileSet = layer.map.getGidOwner(source);
 				var relativeID = source - tileSet.firstGID;
@@ -909,10 +1085,10 @@ engine.map.tmx.TmxLayer.layerToCoordTexture = function(layer) {
 		}
 	}
 	return textureData;
-}
+};
 engine.map.tmx.TmxLayer.prototype = {
 	__class__: engine.map.tmx.TmxLayer
-}
+};
 engine.map.tmx.TmxMap = function(data) {
 	this.properties = new engine.map.tmx.TmxPropertySet();
 	var source = null;
@@ -945,20 +1121,35 @@ engine.map.tmx.TmxMap = function(data) {
 	var $it2 = source.nodes.resolve("layer").iterator();
 	while( $it2.hasNext() ) {
 		var node1 = $it2.next();
-		this.layers.set(node1.att.resolve("name"),new engine.map.tmx.TmxLayer(node1,this));
+		var _this = this.layers;
+		var key = node1.att.resolve("name");
+		var value = new engine.map.tmx.TmxLayer(node1,this);
+		if(!_this._map.exists(key)) _this._keys.push(key);
+		_this._map.set(key,value);
 	}
 	var $it3 = source.nodes.resolve("objectgroup").iterator();
 	while( $it3.hasNext() ) {
 		var node1 = $it3.next();
-		this.objectGroups.set(node1.att.resolve("name"),new engine.map.tmx.TmxObjectGroup(node1,this));
+		var _this = this.objectGroups;
+		var key = node1.att.resolve("name");
+		var value = new engine.map.tmx.TmxObjectGroup(node1,this);
+		if(!_this._map.exists(key)) _this._keys.push(key);
+		_this._map.set(key,value);
 	}
 };
 engine.map.tmx.TmxMap.__name__ = true;
 engine.map.tmx.TmxMap.prototype = {
-	getGidOwner: function(gid) {
+	getLayer: function(name) {
+		return this.layers._map.get(name);
+	}
+	,getObjectGroup: function(name) {
+		return this.objectGroups._map.get(name);
+	}
+	,getGidOwner: function(gid) {
 		var last = null;
 		var set;
-		var _g = 0, _g1 = this.tilesets;
+		var _g = 0;
+		var _g1 = this.tilesets;
 		while(_g < _g1.length) {
 			var set1 = _g1[_g];
 			++_g;
@@ -966,28 +1157,23 @@ engine.map.tmx.TmxMap.prototype = {
 		}
 		return null;
 	}
-	,getObjectGroup: function(name) {
-		return this.objectGroups._map.get(name);
-	}
-	,getLayer: function(name) {
-		return this.layers._map.get(name);
-	}
 	,__class__: engine.map.tmx.TmxMap
-}
+};
 engine.map.tmx.TmxObject = function(source,parent) {
 	this.group = parent;
-	this.name = source.has.resolve("name")?source.att.resolve("name"):"[object]";
-	this.type = source.has.resolve("type")?source.att.resolve("type"):"";
+	if(source.has.resolve("name")) this.name = source.att.resolve("name"); else this.name = "[object]";
+	if(source.has.resolve("type")) this.type = source.att.resolve("type"); else this.type = "";
 	this.x = Std.parseInt(source.att.resolve("x"));
 	this.y = Std.parseInt(source.att.resolve("y"));
-	this.width = source.has.resolve("width")?Std.parseInt(source.att.resolve("width")):0;
-	this.height = source.has.resolve("height")?Std.parseInt(source.att.resolve("height")):0;
+	if(source.has.resolve("width")) this.width = Std.parseInt(source.att.resolve("width")); else this.width = 0;
+	if(source.has.resolve("height")) this.height = Std.parseInt(source.att.resolve("height")); else this.height = 0;
 	this.shared = null;
 	this.gid = -1;
 	if(source.has.resolve("gid") && source.att.resolve("gid").length != 0) {
 		this.gid = Std.parseInt(source.att.resolve("gid"));
 		var set;
-		var _g = 0, _g1 = this.group.map.tilesets;
+		var _g = 0;
+		var _g1 = this.group.map.tilesets;
 		while(_g < _g1.length) {
 			var set1 = _g1[_g];
 			++_g;
@@ -1006,18 +1192,18 @@ engine.map.tmx.TmxObject = function(source,parent) {
 engine.map.tmx.TmxObject.__name__ = true;
 engine.map.tmx.TmxObject.prototype = {
 	__class__: engine.map.tmx.TmxObject
-}
+};
 engine.map.tmx.TmxObjectGroup = function(source,parent) {
 	this.properties = new engine.map.tmx.TmxPropertySet();
 	this.objects = new Array();
 	this.map = parent;
 	this.name = source.att.resolve("name");
-	this.x = source.has.resolve("x")?Std.parseInt(source.att.resolve("x")):0;
-	this.y = source.has.resolve("y")?Std.parseInt(source.att.resolve("y")):0;
+	if(source.has.resolve("x")) this.x = Std.parseInt(source.att.resolve("x")); else this.x = 0;
+	if(source.has.resolve("y")) this.y = Std.parseInt(source.att.resolve("y")); else this.y = 0;
 	this.width = Std.parseInt(source.att.resolve("width"));
 	this.height = Std.parseInt(source.att.resolve("height"));
-	this.visible = source.has.resolve("visible") && source.att.resolve("visible") == "1"?true:false;
-	this.opacity = source.has.resolve("opacity")?Std.parseFloat(source.att.resolve("opacity")):0;
+	if(source.has.resolve("visible") && source.att.resolve("visible") == "1") this.visible = true; else this.visible = false;
+	if(source.has.resolve("opacity")) this.opacity = Std.parseFloat(source.att.resolve("opacity")); else this.opacity = 0;
 	var node;
 	var $it0 = source.nodes.resolve("properties").iterator();
 	while( $it0.hasNext() ) {
@@ -1033,70 +1219,74 @@ engine.map.tmx.TmxObjectGroup = function(source,parent) {
 engine.map.tmx.TmxObjectGroup.__name__ = true;
 engine.map.tmx.TmxObjectGroup.prototype = {
 	__class__: engine.map.tmx.TmxObjectGroup
-}
+};
 engine.map.tmx.TmxOrderedHash = function() {
 	this._keys = new Array();
 	this._map = new haxe.ds.StringMap();
 };
 engine.map.tmx.TmxOrderedHash.__name__ = true;
 engine.map.tmx.TmxOrderedHash.prototype = {
-	toString: function() {
+	set: function(key,value) {
+		if(!this._map.exists(key)) this._keys.push(key);
+		this._map.set(key,value);
+	}
+	,remove: function(key) {
+		HxOverrides.remove(this._keys,key);
+		return this._map.remove(key);
+	}
+	,exists: function(key) {
+		return this._map.exists(key);
+	}
+	,get: function(key) {
+		return this._map.get(key);
+	}
+	,iterator: function() {
+		var _keys_itr = HxOverrides.iter(this._keys);
+		var __map = this._map;
+		return { next : function() {
+			var key = _keys_itr.next();
+			return __map.get(key);
+		}, hasNext : $bind(_keys_itr,_keys_itr.hasNext)};
+	}
+	,keys: function() {
+		return HxOverrides.iter(this._keys);
+	}
+	,toString: function() {
 		var __map = this._map;
 		var pairs = Lambda.map(this._keys,function(x) {
 			return x + " => " + Std.string(__map.get(x));
 		});
 		return "{" + pairs.join(", ") + "}";
 	}
-	,keys: function() {
-		return HxOverrides.iter(this._keys);
-	}
-	,iterator: function() {
-		var _keys_itr = HxOverrides.iter(this._keys);
-		var __map = this._map;
-		return { next : function() {
-			return __map.get(_keys_itr.next());
-		}, hasNext : $bind(_keys_itr,_keys_itr.hasNext)};
-	}
-	,get: function(key) {
-		return this._map.get(key);
-	}
-	,exists: function(key) {
-		return this._map.exists(key);
-	}
-	,remove: function(key) {
-		HxOverrides.remove(this._keys,key);
-		return this._map.remove(key);
-	}
-	,set: function(key,value) {
-		if(!this._map.exists(key)) this._keys.push(key);
-		this._map.set(key,value);
-	}
 	,__class__: engine.map.tmx.TmxOrderedHash
-}
+};
 engine.map.tmx.TmxPropertySet = function() {
 	this.keys = new haxe.ds.StringMap();
 };
 engine.map.tmx.TmxPropertySet.__name__ = true;
 engine.map.tmx.TmxPropertySet.prototype = {
-	extend: function(source) {
+	resolve: function(name) {
+		return this.keys.get(name);
+	}
+	,extend: function(source) {
 		var prop;
 		var $it0 = source.nodes.resolve("property").iterator();
 		while( $it0.hasNext() ) {
 			var prop1 = $it0.next();
-			this.keys.set(prop1.att.resolve("name"),prop1.att.resolve("value"));
+			var key = prop1.att.resolve("name");
+			var value = prop1.att.resolve("value");
+			this.keys.set(key,value);
 		}
 	}
-	,resolve: function(name) {
-		return this.keys.get(name);
-	}
 	,__class__: engine.map.tmx.TmxPropertySet
-}
+};
 engine.map.tmx.TmxTileSet = function(data) {
-	var node, source;
+	var node;
+	var source;
 	this.numTiles = 16777215;
 	this.numRows = this.numCols = 1;
 	if(js.Boot.__instanceof(data,haxe.xml.Fast)) source = data; else throw "Unknown TMX tileset format";
-	this.firstGID = source.has.resolve("firstgid")?Std.parseInt(source.att.resolve("firstgid")):1;
+	if(source.has.resolve("firstgid")) this.firstGID = Std.parseInt(source.att.resolve("firstgid")); else this.firstGID = 1;
 	if(source.has.resolve("source")) {
 	} else {
 		var node1 = source.node.resolve("image");
@@ -1124,24 +1314,8 @@ engine.map.tmx.TmxTileSet = function(data) {
 };
 engine.map.tmx.TmxTileSet.__name__ = true;
 engine.map.tmx.TmxTileSet.prototype = {
-	getRect: function(id) {
-		return new wgr.geom.Rectangle(0,0,id % this.numCols * this.tileWidth,id / this.numCols * this.tileHeight);
-	}
-	,getProperties: function(id) {
-		return this._tileProps[id];
-	}
-	,getPropertiesByGid: function(gid) {
-		if(this._tileProps != null) return this._tileProps[gid - this.firstGID];
-		return null;
-	}
-	,toGid: function(id) {
-		return this.firstGID + id;
-	}
-	,fromGid: function(gid) {
-		return gid - this.firstGID;
-	}
-	,hasGid: function(gid) {
-		return gid >= this.firstGID && gid < this.firstGID + this.numTiles;
+	get_image: function() {
+		return this._image;
 	}
 	,set_image: function(v) {
 		this._image = v;
@@ -1150,12 +1324,46 @@ engine.map.tmx.TmxTileSet.prototype = {
 		this.numTiles = this.numRows * this.numCols;
 		return this._image;
 	}
-	,get_image: function() {
-		return this._image;
+	,hasGid: function(gid) {
+		return gid >= this.firstGID && gid < this.firstGID + this.numTiles;
+	}
+	,fromGid: function(gid) {
+		return gid - this.firstGID;
+	}
+	,toGid: function(id) {
+		return this.firstGID + id;
+	}
+	,getPropertiesByGid: function(gid) {
+		if(this._tileProps != null) return this._tileProps[gid - this.firstGID];
+		return null;
+	}
+	,getProperties: function(id) {
+		return this._tileProps[id];
+	}
+	,getRect: function(id) {
+		return new wgr.geom.Rectangle(0,0,id % this.numCols * this.tileWidth,id / this.numCols * this.tileHeight);
 	}
 	,__class__: engine.map.tmx.TmxTileSet
-}
-engine.systems = {}
+};
+engine.systems = {};
+engine.systems.ParticleSystem = function(particleEngine) {
+	engine.core.System.call(this);
+	this.particleEngine = particleEngine;
+	this.componentInterest = "Particle";
+};
+engine.systems.ParticleSystem.__name__ = true;
+engine.systems.ParticleSystem.__super__ = engine.core.System;
+engine.systems.ParticleSystem.prototype = $extend(engine.core.System.prototype,{
+	onComponentAdded: function(component) {
+		(js.Boot.__cast(component , engine.components.ParticleEmitter)).particleEngine = this.particleEngine;
+	}
+	,onComponentRemoved: function(component) {
+	}
+	,update: function(dt) {
+		this.particleEngine.Update();
+	}
+	,__class__: engine.systems.ParticleSystem
+});
 engine.systems.RenderSystem = function(container) {
 	engine.core.System.call(this);
 	this.container = container;
@@ -1164,55 +1372,73 @@ engine.systems.RenderSystem = function(container) {
 engine.systems.RenderSystem.__name__ = true;
 engine.systems.RenderSystem.__super__ = engine.core.System;
 engine.systems.RenderSystem.prototype = $extend(engine.core.System.prototype,{
-	onComponentRemoved: function(component) {
+	onComponentAdded: function(component) {
+		this.container.addChild((js.Boot.__cast(component , engine.components.Sprite)).display);
+	}
+	,onComponentRemoved: function(component) {
 		this.container.removeChild((js.Boot.__cast(component , engine.components.Sprite)).display);
 	}
-	,onComponentAdded: function(component) {
-		this.container.addChild((js.Boot.__cast(component , engine.components.Sprite)).display);
+	,update: function(dt) {
 	}
 	,__class__: engine.systems.RenderSystem
 });
-var haxe = {}
-haxe.ds = {}
+engine.view = {};
+engine.view.View = function(width,height,debug) {
+	this.stage = new wgr.display.Stage();
+	this.camera = new wgr.display.Camera();
+	this.stage.addChild(this.camera);
+	this.canvasView = js.Boot.__cast(window.document.getElementById("view") , HTMLCanvasElement);
+	this.renderer = new wgr.renderers.webgl.WebGLRenderer(this.stage,this.camera,this.canvasView,width,height);
+	this.debugView = js.Boot.__cast(window.document.getElementById("viewDebug") , HTMLCanvasElement);
+	var debug1 = new wgr.renderers.canvas.CanvasDebugView(this.debugView,width,height);
+	this.camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
+	this.camera.Resize(this.renderer.width,this.renderer.height);
+};
+engine.view.View.__name__ = true;
+engine.view.View.prototype = {
+	__class__: engine.view.View
+};
+var haxe = {};
+haxe.ds = {};
 haxe.ds.IntMap = function() {
 	this.h = { };
 };
 haxe.ds.IntMap.__name__ = true;
 haxe.ds.IntMap.__interfaces__ = [IMap];
 haxe.ds.IntMap.prototype = {
-	get: function(key) {
-		return this.h[key];
-	}
-	,set: function(key,value) {
+	set: function(key,value) {
 		this.h[key] = value;
 	}
+	,get: function(key) {
+		return this.h[key];
+	}
 	,__class__: haxe.ds.IntMap
-}
+};
 haxe.ds.StringMap = function() {
 	this.h = { };
 };
 haxe.ds.StringMap.__name__ = true;
 haxe.ds.StringMap.__interfaces__ = [IMap];
 haxe.ds.StringMap.prototype = {
-	remove: function(key) {
+	set: function(key,value) {
+		this.h["$" + key] = value;
+	}
+	,get: function(key) {
+		return this.h["$" + key];
+	}
+	,exists: function(key) {
+		return this.h.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
 		key = "$" + key;
 		if(!this.h.hasOwnProperty(key)) return false;
 		delete(this.h[key]);
 		return true;
 	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty("$" + key);
-	}
-	,get: function(key) {
-		return this.h["$" + key];
-	}
-	,set: function(key,value) {
-		this.h["$" + key] = value;
-	}
 	,__class__: haxe.ds.StringMap
-}
-haxe.xml = {}
-haxe.xml._Fast = {}
+};
+haxe.xml = {};
+haxe.xml._Fast = {};
 haxe.xml._Fast.NodeAccess = function(x) {
 	this.__x = x;
 };
@@ -1221,13 +1447,14 @@ haxe.xml._Fast.NodeAccess.prototype = {
 	resolve: function(name) {
 		var x = this.__x.elementsNamed(name).next();
 		if(x == null) {
-			var xname = this.__x.nodeType == Xml.Document?"Document":this.__x.get_nodeName();
+			var xname;
+			if(this.__x.nodeType == Xml.Document) xname = "Document"; else xname = this.__x.get_nodeName();
 			throw xname + " is missing element " + name;
 		}
 		return new haxe.xml.Fast(x);
 	}
 	,__class__: haxe.xml._Fast.NodeAccess
-}
+};
 haxe.xml._Fast.AttribAccess = function(x) {
 	this.__x = x;
 };
@@ -1240,7 +1467,7 @@ haxe.xml._Fast.AttribAccess.prototype = {
 		return v;
 	}
 	,__class__: haxe.xml._Fast.AttribAccess
-}
+};
 haxe.xml._Fast.HasAttribAccess = function(x) {
 	this.__x = x;
 };
@@ -1251,14 +1478,14 @@ haxe.xml._Fast.HasAttribAccess.prototype = {
 		return this.__x.exists(name);
 	}
 	,__class__: haxe.xml._Fast.HasAttribAccess
-}
+};
 haxe.xml._Fast.HasNodeAccess = function(x) {
 	this.__x = x;
 };
 haxe.xml._Fast.HasNodeAccess.__name__ = true;
 haxe.xml._Fast.HasNodeAccess.prototype = {
 	__class__: haxe.xml._Fast.HasNodeAccess
-}
+};
 haxe.xml._Fast.NodeListAccess = function(x) {
 	this.__x = x;
 };
@@ -1274,7 +1501,7 @@ haxe.xml._Fast.NodeListAccess.prototype = {
 		return l;
 	}
 	,__class__: haxe.xml._Fast.NodeListAccess
-}
+};
 haxe.xml.Fast = function(x) {
 	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) throw "Invalid nodeType " + Std.string(x.nodeType);
 	this.x = x;
@@ -1286,7 +1513,10 @@ haxe.xml.Fast = function(x) {
 };
 haxe.xml.Fast.__name__ = true;
 haxe.xml.Fast.prototype = {
-	get_innerData: function() {
+	get_name: function() {
+		if(this.x.nodeType == Xml.Document) return "Document"; else return this.x.get_nodeName();
+	}
+	,get_innerData: function() {
 		var it = this.x.iterator();
 		if(!it.hasNext()) throw this.get_name() + " does not have data";
 		var v = it.next();
@@ -1301,18 +1531,15 @@ haxe.xml.Fast.prototype = {
 		if(v.nodeType != Xml.PCData && v.nodeType != Xml.CData) throw this.get_name() + " does not have data";
 		return v.get_nodeValue();
 	}
-	,get_name: function() {
-		return this.x.nodeType == Xml.Document?"Document":this.x.get_nodeName();
-	}
 	,__class__: haxe.xml.Fast
-}
-haxe.xml.Parser = function() { }
+};
+haxe.xml.Parser = function() { };
 haxe.xml.Parser.__name__ = true;
 haxe.xml.Parser.parse = function(str) {
 	var doc = Xml.createDocument();
 	haxe.xml.Parser.doParse(str,0,doc);
 	return doc;
-}
+};
 haxe.xml.Parser.doParse = function(str,p,parent) {
 	if(p == null) p = 0;
 	var xml = null;
@@ -1328,7 +1555,13 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		switch(state) {
 		case 0:
 			switch(c) {
-			case 10:case 13:case 9:case 32:
+			case 10:
+				break;
+			case 13:
+				break;
+			case 9:
+				break;
+			case 32:
 				break;
 			default:
 				state = next;
@@ -1356,7 +1589,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				state = 0;
 				next = 2;
 			} else if(c == 38) {
-				buf.addSub(str,start,p - start);
+				var len = p - start;
+				buf.b += len == null?HxOverrides.substr(str,start,null):HxOverrides.substr(str,start,len);
 				state = 18;
 				next = 13;
 				start = p + 1;
@@ -1457,7 +1691,11 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 7:
 			switch(c) {
-			case 34:case 39:
+			case 34:
+				state = 8;
+				start = p;
+				break;
+			case 39:
 				state = 8;
 				start = p;
 				break;
@@ -1531,15 +1769,21 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 59) {
 				var s = HxOverrides.substr(str,start,p - start);
 				if(s.charCodeAt(0) == 35) {
-					var i = s.charCodeAt(1) == 120?Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)):Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
-					buf.b += Std.string(String.fromCharCode(i));
-				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.b += Std.string(haxe.xml.Parser.escapes.get(s));
+					var i;
+					if(s.charCodeAt(1) == 120) i = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else i = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					var x = String.fromCharCode(i);
+					buf.b += Std.string(x);
+				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else {
+					var x = haxe.xml.Parser.escapes.get(s);
+					buf.b += Std.string(x);
+				}
 				start = p + 1;
 				state = next;
 			}
 			break;
 		}
-		c = str.charCodeAt(++p);
+		var index = ++p;
+		c = str.charCodeAt(index);
 	}
 	if(state == 1) {
 		start = p;
@@ -1550,9 +1794,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		return p;
 	}
 	throw "Unexpected end";
-}
-var js = {}
-js.Boot = function() { }
+};
+var js = {};
+js.Boot = function() { };
 js.Boot.__name__ = true;
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
@@ -1566,7 +1810,8 @@ js.Boot.__string_rec = function(o,s) {
 				if(o.length == 2) return o[0];
 				var str = o[0] + "(";
 				s += "\t";
-				var _g1 = 2, _g = o.length;
+				var _g1 = 2;
+				var _g = o.length;
 				while(_g1 < _g) {
 					var i = _g1++;
 					if(i != 2) str += "," + js.Boot.__string_rec(o[i],s); else str += js.Boot.__string_rec(o[i],s);
@@ -1599,7 +1844,7 @@ js.Boot.__string_rec = function(o,s) {
 		var str = "{\n";
 		s += "\t";
 		var hasp = o.hasOwnProperty != null;
-		for( var k in o ) { ;
+		for( var k in o ) {
 		if(hasp && !o.hasOwnProperty(k)) {
 			continue;
 		}
@@ -1619,13 +1864,14 @@ js.Boot.__string_rec = function(o,s) {
 	default:
 		return String(o);
 	}
-}
+};
 js.Boot.__interfLoop = function(cc,cl) {
 	if(cc == null) return false;
 	if(cc == cl) return true;
 	var intf = cc.__interfaces__;
 	if(intf != null) {
-		var _g1 = 0, _g = intf.length;
+		var _g1 = 0;
+		var _g = intf.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			var i1 = intf[i];
@@ -1633,7 +1879,7 @@ js.Boot.__interfLoop = function(cc,cl) {
 		}
 	}
 	return js.Boot.__interfLoop(cc.__super__,cl);
-}
+};
 js.Boot.__instanceof = function(o,cl) {
 	if(cl == null) return false;
 	switch(cl) {
@@ -1661,23 +1907,22 @@ js.Boot.__instanceof = function(o,cl) {
 		if(cl == Enum && o.__ename__ != null) return true;
 		return o.__enum__ == cl;
 	}
-}
+};
 js.Boot.__cast = function(o,t) {
 	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
-}
-js.Browser = function() { }
-js.Browser.__name__ = true;
-js.Lib = function() { }
+};
+js.Lib = function() { };
 js.Lib.__name__ = true;
 js.Lib.alert = function(v) {
 	alert(js.Boot.__string_rec(v,""));
-}
-js.html = {}
-js.html._CanvasElement = {}
-js.html._CanvasElement.CanvasUtil = function() { }
+};
+js.html = {};
+js.html._CanvasElement = {};
+js.html._CanvasElement.CanvasUtil = function() { };
 js.html._CanvasElement.CanvasUtil.__name__ = true;
 js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
-	var _g = 0, _g1 = ["webgl","experimental-webgl"];
+	var _g = 0;
+	var _g1 = ["webgl","experimental-webgl"];
 	while(_g < _g1.length) {
 		var name = _g1[_g];
 		++_g;
@@ -1685,9 +1930,9 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 		if(ctx != null) return ctx;
 	}
 	return null;
-}
-var physics = {}
-physics.geometry = {}
+};
+var physics = {};
+physics.geometry = {};
 physics.geometry.Vector2D = function(x,y) {
 	if(y == null) y = .0;
 	if(x == null) x = .0;
@@ -1703,19 +1948,154 @@ physics.geometry.Vector2D.fromString = function(str) {
 	var yVal = Std.parseFloat(vectorParts[1]);
 	if(Math.isNaN(xVal) || Math.isNaN(yVal)) return null;
 	return new physics.geometry.Vector2D(xVal,yVal);
-}
+};
 physics.geometry.Vector2D.prototype = {
-	toString: function() {
-		return this.x + ":" + this.y;
+	setTo: function(x,y) {
+		this.x = x;
+		this.y = y;
+		return this;
 	}
-	,clone: function() {
-		return new physics.geometry.Vector2D(this.x,this.y);
+	,copy: function(v) {
+		this.x = v.x;
+		this.y = v.y;
 	}
-	,equalsZero: function() {
-		return this.x == 0 && this.y == 0;
+	,dot: function(v) {
+		return this.x * v.x + this.y * v.y;
 	}
-	,isEquals: function(v) {
-		return this.x == v.x && this.y == v.y;
+	,cross: function(v) {
+		return this.x * v.y - this.y * v.x;
+	}
+	,plus: function(v) {
+		return new physics.geometry.Vector2D(this.x + v.x,this.y + v.y);
+	}
+	,plus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x + x,this.y + y);
+	}
+	,plusEquals: function(v) {
+		this.x += v.x;
+		this.y += v.y;
+		return this;
+	}
+	,plusEquals2: function(x,y) {
+		this.x += x;
+		this.y += y;
+		return this;
+	}
+	,minus: function(v) {
+		return new physics.geometry.Vector2D(this.x - v.x,this.y - v.y);
+	}
+	,minus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x - x,this.y - y);
+	}
+	,minusEquals: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
+		return this;
+	}
+	,minusEquals2: function(x,y) {
+		this.x -= x;
+		this.y -= y;
+		return this;
+	}
+	,mult: function(s) {
+		return new physics.geometry.Vector2D(this.x * s,this.y * s);
+	}
+	,multEquals: function(s) {
+		this.x *= s;
+		this.y *= s;
+		return this;
+	}
+	,times: function(v) {
+		return new physics.geometry.Vector2D(this.x * v.x,this.y * v.y);
+	}
+	,times2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x * x,this.y * y);
+	}
+	,timesEquals: function(v) {
+		this.x *= v.x;
+		this.y *= v.y;
+		return this;
+	}
+	,timesEquals2: function(x,y) {
+		this.x *= x;
+		this.y *= y;
+		return this;
+	}
+	,div: function(s) {
+		if(s == 0) s = 0.0001;
+		return new physics.geometry.Vector2D(this.x / s,this.y / s);
+	}
+	,divEquals: function(s) {
+		if(s == 0) s = 0.0001;
+		this.x /= s;
+		this.y /= s;
+		return this;
+	}
+	,length: function() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	,lengthSqr: function() {
+		return this.x * this.x + this.y * this.y;
+	}
+	,unit: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		return new physics.geometry.Vector2D(this.x / t,this.y / t);
+	}
+	,unitEquals: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		this.x /= t;
+		this.y /= t;
+		return this;
+	}
+	,leftHandNormal: function() {
+		return new physics.geometry.Vector2D(this.y,-this.x);
+	}
+	,leftHandNormalEquals: function() {
+		var t = this.x;
+		this.x = this.y;
+		this.y = -t;
+		return this;
+	}
+	,rightHandNormal: function() {
+		return new physics.geometry.Vector2D(-this.y,this.x);
+	}
+	,rightHandNormalEquals: function() {
+		var t = this.x;
+		this.x = -this.y;
+		this.y = this.x;
+		return this;
+	}
+	,distance: function(v) {
+		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
+		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+	}
+	,distanceSqrd: function(v) {
+		var dX = this.x - v.x;
+		var dY = this.y - v.y;
+		return dX * dX + dY * dY;
+	}
+	,clampMax: function(max) {
+		var l = Math.sqrt(this.x * this.x + this.y * this.y);
+		if(l > max) {
+			var s = max / l;
+			this.x *= s;
+			this.y *= s;
+			this;
+		}
+		return this;
+	}
+	,interpolate: function(v,t) {
+		var _this;
+		var s = 1 - t;
+		_this = new physics.geometry.Vector2D(this.x * s,this.y * s);
+		var v1 = new physics.geometry.Vector2D(v.x * t,v.y * t);
+		return new physics.geometry.Vector2D(_this.x + v1.x,_this.y + v1.y);
+	}
+	,rotate: function(angle) {
+		var a = angle * Math.PI / 180;
+		var cos = Math.cos(a);
+		var sin = Math.sin(a);
+		return new physics.geometry.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
 	}
 	,rotateEquals: function(angle) {
 		var a = angle * Math.PI / 180;
@@ -1727,153 +2107,36 @@ physics.geometry.Vector2D.prototype = {
 		this.y = ry;
 		return this;
 	}
-	,rotate: function(angle) {
-		var a = angle * Math.PI / 180;
-		var cos = Math.cos(a);
-		var sin = Math.sin(a);
-		return new physics.geometry.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
+	,reverse: function() {
+		return new physics.geometry.Vector2D(-this.x,-this.y);
 	}
-	,interpolate: function(v,t) {
-		return this.mult(1 - t).plus(new physics.geometry.Vector2D(v.x * t,v.y * t));
+	,majorAxis: function() {
+		if(Math.abs(this.x) > Math.abs(this.y)) return new physics.geometry.Vector2D(this.x >= 0?1:-1,0); else return new physics.geometry.Vector2D(0,this.y >= 0?1:-1);
 	}
-	,clampMax: function(max) {
-		var l = Math.sqrt(this.x * this.x + this.y * this.y);
-		if(l > max) this.multEquals(max / l);
-		return this;
+	,isEquals: function(v) {
+		return this.x == v.x && this.y == v.y;
 	}
-	,distanceSqrd: function(v) {
-		var dX = this.x - v.x;
-		var dY = this.y - v.y;
-		return dX * dX + dY * dY;
+	,equalsZero: function() {
+		return this.x == 0 && this.y == 0;
 	}
-	,distance: function(v) {
-		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
-		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+	,clone: function() {
+		return new physics.geometry.Vector2D(this.x,this.y);
 	}
-	,rightHandNormalEquals: function() {
-		var t = this.x;
-		this.x = -this.y;
-		this.y = this.x;
-		return this;
-	}
-	,rightHandNormal: function() {
-		return new physics.geometry.Vector2D(-this.y,this.x);
-	}
-	,leftHandNormalEquals: function() {
-		var t = this.x;
-		this.x = this.y;
-		this.y = -t;
-		return this;
-	}
-	,leftHandNormal: function() {
-		return new physics.geometry.Vector2D(this.y,-this.x);
-	}
-	,unitEquals: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		this.x /= t;
-		this.y /= t;
-		return this;
-	}
-	,unit: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		return new physics.geometry.Vector2D(this.x / t,this.y / t);
-	}
-	,lengthSqr: function() {
-		return this.x * this.x + this.y * this.y;
-	}
-	,length: function() {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-	,divEquals: function(s) {
-		if(s == 0) s = 0.0001;
-		this.x /= s;
-		this.y /= s;
-		return this;
-	}
-	,div: function(s) {
-		if(s == 0) s = 0.0001;
-		return new physics.geometry.Vector2D(this.x / s,this.y / s);
-	}
-	,timesEquals2: function(x,y) {
-		this.x *= x;
-		this.y *= y;
-		return this;
-	}
-	,timesEquals: function(v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		return this;
-	}
-	,times2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x * x,this.y * y);
-	}
-	,times: function(v) {
-		return new physics.geometry.Vector2D(this.x * v.x,this.y * v.y);
-	}
-	,multEquals: function(s) {
-		this.x *= s;
-		this.y *= s;
-		return this;
-	}
-	,mult: function(s) {
-		return new physics.geometry.Vector2D(this.x * s,this.y * s);
-	}
-	,minusEquals2: function(x,y) {
-		this.x -= x;
-		this.y -= y;
-		return this;
-	}
-	,minusEquals: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-		return this;
-	}
-	,minus2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x - x,this.y - y);
-	}
-	,minus: function(v) {
-		return new physics.geometry.Vector2D(this.x - v.x,this.y - v.y);
-	}
-	,plusEquals2: function(x,y) {
-		this.x += x;
-		this.y += y;
-		return this;
-	}
-	,plusEquals: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-		return this;
-	}
-	,plus2: function(x,y) {
-		return new physics.geometry.Vector2D(this.x + x,this.y + y);
-	}
-	,plus: function(v) {
-		return new physics.geometry.Vector2D(this.x + v.x,this.y + v.y);
-	}
-	,cross: function(v) {
-		return this.x * v.y - this.y * v.x;
-	}
-	,dot: function(v) {
-		return this.x * v.x + this.y * v.y;
-	}
-	,copy: function(v) {
-		this.x = v.x;
-		this.y = v.y;
-	}
-	,setTo: function(x,y) {
-		this.x = x;
-		this.y = y;
-		return this;
+	,toString: function() {
+		return this.x + ":" + this.y;
 	}
 	,__class__: physics.geometry.Vector2D
-}
-var utils = {}
+};
+var utils = {};
 utils.EventTarget = function() {
 	this.listeners = new haxe.ds.StringMap();
 };
 utils.EventTarget.__name__ = true;
 utils.EventTarget.prototype = {
-	removeEventListener: function(type,listener) {
+	addEventListener: function(type,listener) {
+		if(!this.listeners.exists(type)) this.listeners.set(type,new Array());
+		var listenerTypes = this.listeners.get(type);
+		if(Lambda.indexOf(listenerTypes,listener) < 0) listenerTypes.push(listener);
 	}
 	,dispatchEvent: function(event) {
 		var listenerTypes = this.listeners.get(event.type);
@@ -1885,13 +2148,10 @@ utils.EventTarget.prototype = {
 			listener(event);
 		}
 	}
-	,addEventListener: function(type,listener) {
-		if(!this.listeners.exists(type)) this.listeners.set(type,new Array());
-		var listenerTypes = this.listeners.get(type);
-		if(Lambda.indexOf(listenerTypes,listener) < 0) listenerTypes.push(listener);
+	,removeEventListener: function(type,listener) {
 	}
 	,__class__: utils.EventTarget
-}
+};
 utils.AssetLoader = function() {
 	utils.EventTarget.call(this);
 	this.assets = new haxe.ds.StringMap();
@@ -1900,36 +2160,9 @@ utils.AssetLoader = function() {
 utils.AssetLoader.__name__ = true;
 utils.AssetLoader.__super__ = utils.EventTarget;
 utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
-	onLoad: function(item) {
-		this.completeCount--;
-		this.assets.set(item.getKey(),item.getValue());
-		if(this.completeCount == 0) {
-			utils.EventTarget.prototype.dispatchEvent.call(this,{ type : "loaded", count : this.completeCount});
-			this.running = false;
-		}
-	}
-	,Load: function() {
-		if(this.running == true || this.loaders.length == 0) return;
-		this.completeCount = this.loaders.length;
-		this.running = true;
-		var _g = 0, _g1 = this.loaders;
-		while(_g < _g1.length) {
-			var loader = _g1[_g];
-			++_g;
-			loader.Load();
-		}
-	}
-	,LoaderFactory: function(url) {
-		var extention = url.substring(url.length - 3,url.length);
-		if(extention == "png") return new utils.ImageAsset(this);
-		if(extention == "tmx" || extention == "xml") return new utils.BlobAsset(this);
-		return null;
-	}
-	,AddAsset: function(url) {
-		if(this.running == true) return;
-		var loader = this.LoaderFactory(url);
-		loader.Init(url);
-		this.loaders.push(loader);
+	Reset: function() {
+		this.running = false;
+		this.loaders = new Array();
 	}
 	,SetImagesToLoad: function(urls) {
 		var _g = 0;
@@ -1939,72 +2172,100 @@ utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
 			this.AddAsset(url);
 		}
 	}
-	,Reset: function() {
-		this.running = false;
-		this.loaders = new Array();
+	,AddAsset: function(url) {
+		if(this.running == true) return;
+		var loader = this.LoaderFactory(url);
+		loader.Init(url);
+		this.loaders.push(loader);
+	}
+	,LoaderFactory: function(url) {
+		var extention = url.substring(url.length - 3,url.length);
+		if(extention == "png") return new utils.ImageAsset(this);
+		if(extention == "tmx" || extention == "xml") return new utils.BlobAsset(this);
+		return null;
+	}
+	,Load: function() {
+		if(this.running == true || this.loaders.length == 0) return;
+		this.completeCount = this.loaders.length;
+		this.running = true;
+		var _g = 0;
+		var _g1 = this.loaders;
+		while(_g < _g1.length) {
+			var loader = _g1[_g];
+			++_g;
+			loader.Load();
+		}
+	}
+	,onLoad: function(item) {
+		this.completeCount--;
+		this.assets.set(item.getKey(),item.getValue());
+		if(this.completeCount == 0) {
+			utils.EventTarget.prototype.dispatchEvent.call(this,{ type : "loaded", count : this.completeCount});
+			this.running = false;
+		}
 	}
 	,__class__: utils.AssetLoader
 });
-utils.ILoader = function() { }
+utils.ILoader = function() { };
 utils.ILoader.__name__ = true;
 utils.ILoader.prototype = {
 	__class__: utils.ILoader
-}
+};
 utils.ImageAsset = function(mgr) {
 	this.mgr = mgr;
 };
 utils.ImageAsset.__name__ = true;
 utils.ImageAsset.__interfaces__ = [utils.ILoader];
 utils.ImageAsset.prototype = {
-	getValue: function() {
-		return this.image;
-	}
-	,getKey: function() {
-		return this.url;
-	}
-	,onLoad: function(event) {
-		if(this.mgr != null) this.mgr.onLoad(this);
-	}
-	,Load: function() {
-		this.image.src = this.url;
-		if(this.image.complete == true) this.onLoad(null);
-	}
-	,Init: function(url) {
+	Init: function(url) {
 		this.url = url;
 		this.image = new Image();
 		this.image.onload = $bind(this,this.onLoad);
 		this.image.crossOrigin = "anonymous";
 	}
+	,Load: function() {
+		this.image.src = this.url;
+		if(this.image.complete == true) this.onLoad(null);
+	}
+	,onLoad: function(event) {
+		if(this.mgr != null) this.mgr.onLoad(this);
+	}
+	,getKey: function() {
+		return this.url;
+	}
+	,getValue: function() {
+		return this.image;
+	}
 	,__class__: utils.ImageAsset
-}
+};
 utils.BlobAsset = function(mgr) {
 	this.mgr = mgr;
 };
 utils.BlobAsset.__name__ = true;
 utils.BlobAsset.__interfaces__ = [utils.ILoader];
 utils.BlobAsset.prototype = {
-	getValue: function() {
-		return this.xhr.response;
-	}
-	,getKey: function() {
-		return this.url;
-	}
-	,onLoad: function(event) {
-		if(this.mgr != null) this.mgr.onLoad(this);
-	}
-	,Load: function() {
-		this.xhr.send();
-	}
-	,Init: function(url) {
+	Init: function(url) {
 		this.url = url;
 		this.xhr = new XMLHttpRequest();
 		this.xhr.open("GET",url,true);
 		this.xhr.responseType = "text";
 		this.xhr.onload = $bind(this,this.onLoad);
 	}
+	,Load: function() {
+		this.xhr.send();
+	}
+	,onLoad: function(event) {
+		if(this.mgr != null) this.mgr.onLoad(this);
+	}
+	,getKey: function() {
+		return this.url;
+	}
+	,getValue: function() {
+		return this.xhr.response;
+	}
 	,__class__: utils.BlobAsset
-}
-utils.Base64 = function() { }
+};
+utils.Base64 = function() { };
 utils.Base64.__name__ = true;
 utils.Base64.Decode = function(input) {
 	var len = input.length / 4 * 3;
@@ -2016,7 +2277,8 @@ utils.Base64.Decode = function(input) {
 	var uarray = new Uint8Array(ab);
 	var r = new EReg("[^A-Za-z0-9\\+/=]","g");
 	input = r.replace(input,"");
-	var i = 0, j = 0;
+	var i = 0;
+	var j = 0;
 	while(i < len) {
 		var enc1 = utils.Base64.keyStr.indexOf(input.charAt(j++));
 		var enc2 = utils.Base64.keyStr.indexOf(input.charAt(j++));
@@ -2031,27 +2293,27 @@ utils.Base64.Decode = function(input) {
 		i += 3;
 	}
 	return ab;
-}
-utils.Maths = function() { }
+};
+utils.Maths = function() { };
 utils.Maths.__name__ = true;
 utils.Maths.toRad = function(deg) {
-	return deg * (3.141592653589793 / 180);
-}
+	return deg * 0.0174532925199432955;
+};
 utils.Maths.toDeg = function(rad) {
-	return rad * (180 / 3.141592653589793);
-}
+	return rad * 57.2957795130823229;
+};
 utils.Maths.Clamp = function(input,min,max) {
 	if(input > max) return max; else if(input < min) return min; else return input;
-}
+};
 utils.Maths.ScaleRectangleWithRatio = function(containerRect,itemRect) {
 	var sX = containerRect.x / itemRect.x;
 	var sY = containerRect.y / itemRect.y;
 	var rD = containerRect.x / containerRect.y;
 	var rR = itemRect.x / itemRect.y;
-	return rD < rR?sX:sY;
-}
-var wgr = {}
-wgr.display = {}
+	if(rD < rR) return sX; else return sY;
+};
+var wgr = {};
+wgr.display = {};
 wgr.display.DisplayObject = function() {
 	this.position = new wgr.geom.Point();
 	this.scale = new wgr.geom.Point(1,1);
@@ -2073,10 +2335,25 @@ wgr.display.DisplayObject = function() {
 };
 wgr.display.DisplayObject.__name__ = true;
 wgr.display.DisplayObject.prototype = {
-	applySlot: function(slot,p) {
-		return slot(this,p);
+	get_rotation: function() {
+		return this._rotation;
 	}
-	,calcExtents: function() {
+	,set_rotation: function(v) {
+		this._rotation = v;
+		this._rotationComponents.x = Math.cos(this._rotation);
+		this._rotationComponents.y = Math.sin(this._rotation);
+		return this._rotation;
+	}
+	,get_visible: function() {
+		return this._visible;
+	}
+	,set_visible: function(v) {
+		this._visible = v;
+		if(this.stage != null) this.stage.dirty = true;
+		return this._visible;
+	}
+	,RoundFunction: function(v) {
+		return Math.round(v * 10) / 10;
 	}
 	,updateTransform: function() {
 		var positionx = Math.floor(this.position.x + 0.5);
@@ -2112,28 +2389,13 @@ wgr.display.DisplayObject.prototype = {
 		this.worldTransform[5] = b10 * a02 + b11 * a12 + b12;
 		this.worldAlpha = this.alpha * this.parent.worldAlpha;
 	}
-	,RoundFunction: function(v) {
-		return Math.round(v * 10) / 10;
+	,calcExtents: function() {
 	}
-	,set_visible: function(v) {
-		this._visible = v;
-		if(this.stage != null) this.stage.dirty = true;
-		return this._visible;
-	}
-	,get_visible: function() {
-		return this._visible;
-	}
-	,set_rotation: function(v) {
-		this._rotation = v;
-		this._rotationComponents.x = Math.cos(this._rotation);
-		this._rotationComponents.y = Math.sin(this._rotation);
-		return this._rotation;
-	}
-	,get_rotation: function() {
-		return this._rotation;
+	,applySlot: function(slot,p) {
+		return slot(this,p);
 	}
 	,__class__: wgr.display.DisplayObject
-}
+};
 wgr.display.DisplayObjectContainer = function() {
 	wgr.display.DisplayObject.call(this);
 	this.subTreeAABB = new wgr.geom.AABB();
@@ -2142,106 +2404,28 @@ wgr.display.DisplayObjectContainer = function() {
 wgr.display.DisplayObjectContainer.__name__ = true;
 wgr.display.DisplayObjectContainer.__super__ = wgr.display.DisplayObject;
 wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject.prototype,{
-	debug: function() {
-		var child = this.head;
-		while(child != null) {
-			console.log(child.id);
-			child = child.next;
-		}
-	}
-	,remove: function(node) {
-		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
-		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
-		node.prev = node.next = null;
-	}
-	,insertEnd: function(newNode) {
+	addChild: function(child) {
+		if(child.parent != null) child.parent.removeChild(child);
 		if(this.tail == null) {
 			if(this.head == null) {
-				this.head = newNode;
-				this.tail = newNode;
-				newNode.prev = null;
-				newNode.next = null;
-			} else this.insertBefore(this.head,newNode);
-		} else this.insertAfter(this.tail,newNode);
-	}
-	,insertBeginning: function(newNode) {
-		if(this.head == null) {
-			this.head = newNode;
-			this.tail = newNode;
-			newNode.prev = null;
-			newNode.next = null;
-		} else this.insertBefore(this.head,newNode);
-	}
-	,insertBefore: function(node,newNode) {
-		newNode.prev = node.prev;
-		newNode.next = node;
-		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
-		node.prev = newNode;
-	}
-	,insertAfter: function(node,newNode) {
-		newNode.prev = node;
-		newNode.next = node.next;
-		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
-		node.next = newNode;
-	}
-	,applySlot: function(slot,p) {
-		if(!wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p)) return false;
-		var child = this.head;
-		while(child != null) {
-			child.applySlot(slot,p);
-			child = child.next;
+				this.head = child;
+				this.tail = child;
+				child.prev = null;
+				child.next = null;
+			} else {
+				var node = this.head;
+				child.prev = node.prev;
+				child.next = node;
+				if(node.prev == null) this.head = child; else node.prev.next = child;
+				node.prev = child;
+			}
+		} else {
+			var node = this.tail;
+			child.prev = node;
+			child.next = node.next;
+			if(node.next == null) this.tail = child; else node.next.prev = child;
+			node.next = child;
 		}
-		return true;
-	}
-	,apply: function(slot,p) {
-	}
-	,updateTransform: function() {
-		this.aabb.reset();
-		wgr.display.DisplayObject.prototype.updateTransform.call(this);
-		this.calcExtents();
-		this.subTreeAABB.reset();
-		this.subTreeAABB.addAABB(this.aabb);
-		var child = this.head;
-		while(child != null) {
-			child.updateTransform();
-			this.subTreeAABB.addAABB(child.aabb);
-			child = child.next;
-		}
-	}
-	,childRemoved: function(child) {
-		this.childCount--;
-		if(this.stage != null) this.stage.dirty = true;
-		child.parent = null;
-		child.applySlot(function(target,p) {
-			target.stage = null;
-			return true;
-		},null);
-	}
-	,removeChildAt: function(index) {
-		var child = this.findChildByIndex(index);
-		console.log(child);
-		this.removeChild(child);
-		this.debug();
-		return child;
-	}
-	,removeChild: function(child) {
-		if(child.parent == this) {
-			if(child.prev == null) this.head = child.next; else child.prev.next = child.next;
-			if(child.next == null) this.tail = child.prev; else child.next.prev = child.prev;
-			child.prev = child.next = null;
-			this.childRemoved(child);
-		}
-	}
-	,findChildByIndex: function(index) {
-		var child = this.head;
-		var count = 0;
-		while(child != null) {
-			if(count++ == index) return child;
-			child = child.next;
-		}
-		return this.tail;
-	}
-	,childAdded: function(child) {
 		this.childCount++;
 		child.parent = this;
 		child.applySlot(function(target,p) {
@@ -2261,21 +2445,173 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 				this.tail = child;
 				child.prev = null;
 				child.next = null;
-			} else this.insertBefore(this.head,child);
-		} else this.insertBefore(this.findChildByIndex(index),child);
-		this.childAdded(child);
+			} else {
+				var node = this.head;
+				child.prev = node.prev;
+				child.next = node;
+				if(node.prev == null) this.head = child; else node.prev.next = child;
+				node.prev = child;
+			}
+		} else {
+			var node = this.findChildByIndex(index);
+			child.prev = node.prev;
+			child.next = node;
+			if(node.prev == null) this.head = child; else node.prev.next = child;
+			node.prev = child;
+		}
+		this.childCount++;
+		child.parent = this;
+		child.applySlot(function(target,p) {
+			target.stage = p;
+			return true;
+		},this.stage);
+		if(this.stage != null) this.stage.dirty = true;
 	}
-	,addChild: function(child) {
-		if(child.parent != null) child.parent.removeChild(child);
+	,childAdded: function(child) {
+		this.childCount++;
+		child.parent = this;
+		child.applySlot(function(target,p) {
+			target.stage = p;
+			return true;
+		},this.stage);
+		if(this.stage != null) this.stage.dirty = true;
+	}
+	,findChildByIndex: function(index) {
+		var child = this.head;
+		var count = 0;
+		while(child != null) {
+			if(count++ == index) return child;
+			child = child.next;
+		}
+		return this.tail;
+	}
+	,removeChild: function(child) {
+		if(child.parent == this) {
+			if(child.prev == null) this.head = child.next; else child.prev.next = child.next;
+			if(child.next == null) this.tail = child.prev; else child.next.prev = child.prev;
+			child.prev = child.next = null;
+			this.childCount--;
+			if(this.stage != null) this.stage.dirty = true;
+			child.parent = null;
+			child.applySlot(function(target,p) {
+				target.stage = null;
+				return true;
+			},null);
+		}
+	}
+	,removeChildAt: function(index) {
+		var child = this.findChildByIndex(index);
+		console.log(child);
+		this.removeChild(child);
+		this.debug();
+		return child;
+	}
+	,childRemoved: function(child) {
+		this.childCount--;
+		if(this.stage != null) this.stage.dirty = true;
+		child.parent = null;
+		child.applySlot(function(target,p) {
+			target.stage = null;
+			return true;
+		},null);
+	}
+	,updateTransform: function() {
+		var _this = this.aabb;
+		_this.t = _this.l = Math.POSITIVE_INFINITY;
+		_this.r = _this.b = Math.NEGATIVE_INFINITY;
+		wgr.display.DisplayObject.prototype.updateTransform.call(this);
+		this.calcExtents();
+		var _this = this.subTreeAABB;
+		_this.t = _this.l = Math.POSITIVE_INFINITY;
+		_this.r = _this.b = Math.NEGATIVE_INFINITY;
+		var _this = this.subTreeAABB;
+		var aabb = this.aabb;
+		if(aabb.t < _this.t) _this.t = aabb.t;
+		if(aabb.r > _this.r) _this.r = aabb.r;
+		if(aabb.b > _this.b) _this.b = aabb.b;
+		if(aabb.l < _this.l) _this.l = aabb.l;
+		var child = this.head;
+		while(child != null) {
+			child.updateTransform();
+			var _this = this.subTreeAABB;
+			var aabb = child.aabb;
+			if(aabb.t < _this.t) _this.t = aabb.t;
+			if(aabb.r > _this.r) _this.r = aabb.r;
+			if(aabb.b > _this.b) _this.b = aabb.b;
+			if(aabb.l < _this.l) _this.l = aabb.l;
+			child = child.next;
+		}
+	}
+	,apply: function(slot,p) {
+	}
+	,applySlot: function(slot,p) {
+		if(!wgr.display.DisplayObject.prototype.applySlot.call(this,slot,p)) return false;
+		var child = this.head;
+		while(child != null) {
+			child.applySlot(slot,p);
+			child = child.next;
+		}
+		return true;
+	}
+	,insertAfter: function(node,newNode) {
+		newNode.prev = node;
+		newNode.next = node.next;
+		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+		node.next = newNode;
+	}
+	,insertBefore: function(node,newNode) {
+		newNode.prev = node.prev;
+		newNode.next = node;
+		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+		node.prev = newNode;
+	}
+	,insertBeginning: function(newNode) {
+		if(this.head == null) {
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.prev = null;
+			newNode.next = null;
+		} else {
+			var node = this.head;
+			newNode.prev = node.prev;
+			newNode.next = node;
+			if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+			node.prev = newNode;
+		}
+	}
+	,insertEnd: function(newNode) {
 		if(this.tail == null) {
 			if(this.head == null) {
-				this.head = child;
-				this.tail = child;
-				child.prev = null;
-				child.next = null;
-			} else this.insertBefore(this.head,child);
-		} else this.insertAfter(this.tail,child);
-		this.childAdded(child);
+				this.head = newNode;
+				this.tail = newNode;
+				newNode.prev = null;
+				newNode.next = null;
+			} else {
+				var node = this.head;
+				newNode.prev = node.prev;
+				newNode.next = node;
+				if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+				node.prev = newNode;
+			}
+		} else {
+			var node = this.tail;
+			newNode.prev = node;
+			newNode.next = node.next;
+			if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+			node.next = newNode;
+		}
+	}
+	,remove: function(node) {
+		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
+		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
+		node.prev = node.next = null;
+	}
+	,debug: function() {
+		var child = this.head;
+		while(child != null) {
+			console.log(child.id);
+			child = child.next;
+		}
 	}
 	,__class__: wgr.display.DisplayObjectContainer
 });
@@ -2291,7 +2627,19 @@ wgr.display.Camera = function() {
 wgr.display.Camera.__name__ = true;
 wgr.display.Camera.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
-	Resize: function(width,height) {
+	Focus: function(x,y) {
+		this.realPosition.x = x;
+		this.realPosition.y = y;
+		var _this = this.cameraExtentsAABB;
+		var point = this.realPosition;
+		if(point.x < _this.l) point.x = _this.l;
+		if(point.x > _this.r) point.x = _this.r;
+		if(point.y < _this.t) point.y = _this.t;
+		if(point.y > _this.b) point.y = _this.b;
+		this.position.x = -this.realPosition.x + this.halfViewportSize.x;
+		this.position.y = -this.realPosition.y + this.halfViewportSize.y;
+	}
+	,Resize: function(width,height) {
 		this.viewportSize.x = width;
 		this.viewportSize.y = height;
 		this.halfViewportSize.x = width / 2;
@@ -2300,14 +2648,11 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 		this.viewPortAABB.r = this.viewportSize.x;
 		this.viewPortAABB.b = this.viewportSize.y;
 		this.cameraExtentsAABB = this.worldExtentsAABB.clone();
-		this.cameraExtentsAABB.shrinkAroundCenter(width,height);
-	}
-	,Focus: function(x,y) {
-		this.realPosition.x = x;
-		this.realPosition.y = y;
-		this.cameraExtentsAABB.fitPoint(this.realPosition);
-		this.position.x = -this.realPosition.x + this.halfViewportSize.x;
-		this.position.y = -this.realPosition.y + this.halfViewportSize.y;
+		var _this = this.cameraExtentsAABB;
+		_this.l += width / 2;
+		_this.r -= width / 2;
+		_this.t += height / 2;
+		_this.b -= height / 2;
 	}
 	,__class__: wgr.display.Camera
 });
@@ -2318,21 +2663,21 @@ wgr.display.DisplayListIter = function(root) {
 };
 wgr.display.DisplayListIter.__name__ = true;
 wgr.display.DisplayListIter.prototype = {
-	next: function() {
+	reset: function() {
+		this.stack[0] = this.node;
+		this.top = 1;
+	}
+	,hasNext: function() {
+		return this.top > 0;
+	}
+	,next: function() {
 		var thisNode = this.stack[--this.top];
 		if(thisNode.next != null) this.stack[this.top++] = thisNode.next;
 		if(thisNode.head != null) this.stack[this.top++] = thisNode.head;
 		return thisNode;
 	}
-	,hasNext: function() {
-		return this.top > 0;
-	}
-	,reset: function() {
-		this.stack[0] = this.node;
-		this.top = 1;
-	}
 	,__class__: wgr.display.DisplayListIter
-}
+};
 wgr.display.Sprite = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.renderable = true;
@@ -2368,7 +2713,13 @@ wgr.display.Sprite.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 		var _g = 0;
 		while(_g < 4) {
 			var i = _g++;
-			this.aabb.addPoint(this.transformedVerts[i * 2],this.transformedVerts[i * 2 + 1]);
+			var _this = this.aabb;
+			var x = this.transformedVerts[i * 2];
+			var y = this.transformedVerts[i * 2 + 1];
+			if(y < _this.t) _this.t = y;
+			if(x > _this.r) _this.r = x;
+			if(y > _this.b) _this.b = y;
+			if(x < _this.l) _this.l = x;
 		}
 	}
 	,__class__: wgr.display.Sprite
@@ -2382,7 +2733,26 @@ wgr.display.Stage = function() {
 wgr.display.Stage.__name__ = true;
 wgr.display.Stage.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
-	Traverse: function(node) {
+	updateTransform: function() {
+		var child = this.head;
+		while(child != null) {
+			child.updateTransform();
+			child = child.next;
+		}
+	}
+	,PreRender: function() {
+		if(this.dirty == true) {
+			this.Flatten();
+			this.dirty = false;
+		}
+	}
+	,Flatten: function() {
+		console.log("Flatten");
+		this.renderHead = null;
+		this.renderTail = null;
+		this.renderCount = 0;
+	}
+	,Traverse: function(node) {
 		if(node._visible == false) return;
 		if(js.Boot.__instanceof(node,wgr.display.Sprite)) {
 			if(this.renderHead == null) {
@@ -2412,28 +2782,9 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 			}
 		}
 	}
-	,Flatten: function() {
-		console.log("Flatten");
-		this.renderHead = null;
-		this.renderTail = null;
-		this.renderCount = 0;
-	}
-	,PreRender: function() {
-		if(this.dirty == true) {
-			this.Flatten();
-			this.dirty = false;
-		}
-	}
-	,updateTransform: function() {
-		var child = this.head;
-		while(child != null) {
-			child.updateTransform();
-			child = child.next;
-		}
-	}
 	,__class__: wgr.display.Stage
 });
-wgr.geom = {}
+wgr.geom = {};
 wgr.geom.AABB = function(t,r,b,l) {
 	if(l == null) l = .0;
 	if(b == null) b = .0;
@@ -2446,23 +2797,21 @@ wgr.geom.AABB = function(t,r,b,l) {
 };
 wgr.geom.AABB.__name__ = true;
 wgr.geom.AABB.prototype = {
-	shrinkAroundCenter: function(deltaWidth,delatHeight) {
-		this.l += deltaWidth / 2;
-		this.r -= deltaWidth / 2;
-		this.t += delatHeight / 2;
-		this.b -= delatHeight / 2;
+	clone: function() {
+		return new wgr.geom.AABB(this.t,this.r,this.b,this.l);
 	}
-	,fitPoint: function(point) {
-		if(point.x < this.l) point.x = this.l;
-		if(point.x > this.r) point.x = this.r;
-		if(point.y < this.t) point.y = this.t;
-		if(point.y > this.b) point.y = this.b;
+	,reset: function() {
+		this.t = this.l = Math.POSITIVE_INFINITY;
+		this.r = this.b = Math.NEGATIVE_INFINITY;
 	}
-	,addPoint: function(x,y) {
-		if(y < this.t) this.t = y;
-		if(x > this.r) this.r = x;
-		if(y > this.b) this.b = y;
-		if(x < this.l) this.l = x;
+	,get_width: function() {
+		return this.r - this.l;
+	}
+	,get_height: function() {
+		return this.b - this.t;
+	}
+	,intersect: function(aabb) {
+		if(this.l > aabb.r) return false; else if(this.r < aabb.l) return false; else if(this.t > aabb.b) return false; else if(this.b < aabb.t) return false; else return true;
 	}
 	,addAABB: function(aabb) {
 		if(aabb.t < this.t) this.t = aabb.t;
@@ -2470,29 +2819,31 @@ wgr.geom.AABB.prototype = {
 		if(aabb.b > this.b) this.b = aabb.b;
 		if(aabb.l < this.l) this.l = aabb.l;
 	}
-	,intersect: function(aabb) {
-		if(this.l > aabb.r) return false; else if(this.r < aabb.l) return false; else if(this.t > aabb.b) return false; else if(this.b < aabb.t) return false; else return true;
+	,addPoint: function(x,y) {
+		if(y < this.t) this.t = y;
+		if(x > this.r) this.r = x;
+		if(y > this.b) this.b = y;
+		if(x < this.l) this.l = x;
 	}
-	,get_height: function() {
-		return this.b - this.t;
+	,fitPoint: function(point) {
+		if(point.x < this.l) point.x = this.l;
+		if(point.x > this.r) point.x = this.r;
+		if(point.y < this.t) point.y = this.t;
+		if(point.y > this.b) point.y = this.b;
 	}
-	,get_width: function() {
-		return this.r - this.l;
-	}
-	,reset: function() {
-		this.t = this.l = Math.POSITIVE_INFINITY;
-		this.r = this.b = Math.NEGATIVE_INFINITY;
-	}
-	,clone: function() {
-		return new wgr.geom.AABB(this.t,this.r,this.b,this.l);
+	,shrinkAroundCenter: function(deltaWidth,delatHeight) {
+		this.l += deltaWidth / 2;
+		this.r -= deltaWidth / 2;
+		this.t += delatHeight / 2;
+		this.b -= delatHeight / 2;
 	}
 	,__class__: wgr.geom.AABB
-}
-wgr.geom.Matrix3 = function() { }
+};
+wgr.geom.Matrix3 = function() { };
 wgr.geom.Matrix3.__name__ = true;
 wgr.geom.Matrix3.Create = function() {
 	return wgr.geom.Matrix3.Identity(new Float32Array(9));
-}
+};
 wgr.geom.Matrix3.Identity = function(matrix) {
 	matrix[0] = 1;
 	matrix[1] = 0;
@@ -2504,10 +2855,27 @@ wgr.geom.Matrix3.Identity = function(matrix) {
 	matrix[7] = 0;
 	matrix[8] = 1;
 	return matrix;
-}
+};
 wgr.geom.Matrix3.Multiply = function(mat,mat2,dest) {
 	if(dest != null) dest = mat;
-	var a00 = mat[0], a01 = mat[1], a02 = mat[2], a10 = mat[3], a11 = mat[4], a12 = mat[5], a20 = mat[6], a21 = mat[7], a22 = mat[8], b00 = mat2[0], b01 = mat2[1], b02 = mat2[2], b10 = mat2[3], b11 = mat2[4], b12 = mat2[5], b20 = mat2[6], b21 = mat2[7], b22 = mat2[8];
+	var a00 = mat[0];
+	var a01 = mat[1];
+	var a02 = mat[2];
+	var a10 = mat[3];
+	var a11 = mat[4];
+	var a12 = mat[5];
+	var a20 = mat[6];
+	var a21 = mat[7];
+	var a22 = mat[8];
+	var b00 = mat2[0];
+	var b01 = mat2[1];
+	var b02 = mat2[2];
+	var b10 = mat2[3];
+	var b11 = mat2[4];
+	var b12 = mat2[5];
+	var b20 = mat2[6];
+	var b21 = mat2[7];
+	var b22 = mat2[8];
 	dest[0] = b00 * a00 + b01 * a10 + b02 * a20;
 	dest[1] = b00 * a01 + b01 * a11 + b02 * a21;
 	dest[2] = b00 * a02 + b01 * a12 + b02 * a22;
@@ -2518,7 +2886,7 @@ wgr.geom.Matrix3.Multiply = function(mat,mat2,dest) {
 	dest[7] = b20 * a01 + b21 * a11 + b22 * a21;
 	dest[8] = b20 * a02 + b21 * a12 + b22 * a22;
 	return dest;
-}
+};
 wgr.geom.Matrix3.Clone = function(mat) {
 	var matrix = new Float32Array(9);
 	matrix[0] = mat[0];
@@ -2531,10 +2899,12 @@ wgr.geom.Matrix3.Clone = function(mat) {
 	matrix[7] = mat[7];
 	matrix[8] = mat[8];
 	return matrix;
-}
+};
 wgr.geom.Matrix3.Transpose = function(mat,dest) {
 	if(dest != null || mat == dest) {
-		var a01 = mat[1], a02 = mat[2], a12 = mat[5];
+		var a01 = mat[1];
+		var a02 = mat[2];
+		var a12 = mat[5];
 		mat[1] = mat[3];
 		mat[2] = mat[6];
 		mat[3] = a01;
@@ -2553,7 +2923,7 @@ wgr.geom.Matrix3.Transpose = function(mat,dest) {
 	dest[7] = mat[5];
 	dest[8] = mat[8];
 	return dest;
-}
+};
 wgr.geom.Matrix3.ToMatrix4 = function(mat,dest) {
 	if(dest == null) dest = wgr.geom.Matrix4.Create();
 	dest[15] = 1;
@@ -2573,12 +2943,12 @@ wgr.geom.Matrix3.ToMatrix4 = function(mat,dest) {
 	dest[1] = mat[1];
 	dest[0] = mat[0];
 	return dest;
-}
-wgr.geom.Matrix4 = function() { }
+};
+wgr.geom.Matrix4 = function() { };
 wgr.geom.Matrix4.__name__ = true;
 wgr.geom.Matrix4.Create = function() {
 	return wgr.geom.Matrix4.Identity(new Float32Array(16));
-}
+};
 wgr.geom.Matrix4.Identity = function(matrix) {
 	matrix[0] = 1;
 	matrix[1] = 0;
@@ -2597,10 +2967,15 @@ wgr.geom.Matrix4.Identity = function(matrix) {
 	matrix[14] = 0;
 	matrix[15] = 1;
 	return matrix;
-}
+};
 wgr.geom.Matrix4.Transpose = function(mat,dest) {
 	if(dest != null || mat == dest) {
-		var a01 = mat[1], a02 = mat[2], a03 = mat[3], a12 = mat[6], a13 = mat[7], a23 = mat[11];
+		var a01 = mat[1];
+		var a02 = mat[2];
+		var a03 = mat[3];
+		var a12 = mat[6];
+		var a13 = mat[7];
+		var a23 = mat[11];
 		mat[1] = mat[4];
 		mat[2] = mat[8];
 		mat[3] = mat[12];
@@ -2632,14 +3007,29 @@ wgr.geom.Matrix4.Transpose = function(mat,dest) {
 	dest[14] = mat[11];
 	dest[15] = mat[15];
 	return dest;
-}
+};
 wgr.geom.Matrix4.Multiply = function(mat,mat2,dest) {
 	if(dest != null) dest = mat;
-	var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
-	var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
-	var a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11];
-	var a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15];
-	var b0 = mat2[0], b1 = mat2[1], b2 = mat2[2], b3 = mat2[3];
+	var a00 = mat[0];
+	var a01 = mat[1];
+	var a02 = mat[2];
+	var a03 = mat[3];
+	var a10 = mat[4];
+	var a11 = mat[5];
+	var a12 = mat[6];
+	var a13 = mat[7];
+	var a20 = mat[8];
+	var a21 = mat[9];
+	var a22 = mat[10];
+	var a23 = mat[11];
+	var a30 = mat[12];
+	var a31 = mat[13];
+	var a32 = mat[14];
+	var a33 = mat[15];
+	var b0 = mat2[0];
+	var b1 = mat2[1];
+	var b2 = mat2[2];
+	var b3 = mat2[3];
 	dest[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
 	dest[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
 	dest[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
@@ -2669,7 +3059,7 @@ wgr.geom.Matrix4.Multiply = function(mat,mat2,dest) {
 	dest[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
 	dest[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 	return dest;
-}
+};
 wgr.geom.Point = function(x,y) {
 	if(y == null) y = 0.;
 	if(x == null) x = 0.;
@@ -2679,7 +3069,7 @@ wgr.geom.Point = function(x,y) {
 wgr.geom.Point.__name__ = true;
 wgr.geom.Point.prototype = {
 	__class__: wgr.geom.Point
-}
+};
 wgr.geom.Rectangle = function(x,y,width,height) {
 	if(height == null) height = 0.;
 	if(width == null) width = 0.;
@@ -2693,24 +3083,18 @@ wgr.geom.Rectangle = function(x,y,width,height) {
 wgr.geom.Rectangle.__name__ = true;
 wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
-}
-wgr.particle = {}
+};
+wgr.particle = {};
+wgr.particle.IParticleEngine = function() { };
+wgr.particle.IParticleEngine.__name__ = true;
+wgr.particle.IParticleEngine.prototype = {
+	__class__: wgr.particle.IParticleEngine
+};
 wgr.particle.PointSpriteParticle = function() {
 };
 wgr.particle.PointSpriteParticle.__name__ = true;
 wgr.particle.PointSpriteParticle.prototype = {
-	Update: function(deltaTime,invDeltaTime) {
-		this.vX += this.fX + this.externalForce.x;
-		this.vY += this.fY + this.externalForce.y;
-		this.vX *= this.damping;
-		this.vY *= this.damping;
-		this.pX += this.vX * invDeltaTime;
-		this.pY += this.vY * invDeltaTime;
-		this.age -= deltaTime;
-		this.alpha -= this.decay;
-		return this.age > 0;
-	}
-	,Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,type,data1,data2) {
+	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,type,data1,data2) {
 		this.pX = x;
 		this.pY = y;
 		this.vX = vX;
@@ -2725,10 +3109,21 @@ wgr.particle.PointSpriteParticle.prototype = {
 		this.type = type;
 		this.size = data1;
 		this.colour = data2;
-		this.alpha = (this.colour & 255) * (1 / 255);
+		this.alpha = (this.colour & 255) * 0.00392156862745098;
+	}
+	,Update: function(deltaTime,invDeltaTime) {
+		this.vX += this.fX + this.externalForce.x;
+		this.vY += this.fY + this.externalForce.y;
+		this.vX *= this.damping;
+		this.vY *= this.damping;
+		this.pX += this.vX * invDeltaTime;
+		this.pY += this.vY * invDeltaTime;
+		this.age -= deltaTime;
+		this.alpha -= this.decay;
+		return this.age > 0;
 	}
 	,__class__: wgr.particle.PointSpriteParticle
-}
+};
 wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.particleCount = particleCount;
 	this.deltaTime = deltaTime;
@@ -2745,23 +3140,9 @@ wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.renderer.ResizeBatch(particleCount);
 };
 wgr.particle.PointSpriteParticleEngine.__name__ = true;
+wgr.particle.PointSpriteParticleEngine.__interfaces__ = [wgr.particle.IParticleEngine];
 wgr.particle.PointSpriteParticleEngine.prototype = {
-	Update: function() {
-		this.renderer.ResetBatch();
-		var particle = this.activeParticles;
-		while(particle != null) if(!particle.Update(this.deltaTime,this.invDeltaTime)) {
-			var next = particle.next;
-			if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
-			if(particle.next != null) particle.next.prev = particle.prev;
-			particle.next = this.cachedParticles;
-			this.cachedParticles = particle;
-			particle = next;
-		} else {
-			this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size,particle.alpha * 255 | 0,255,255,255);
-			particle = particle.next;
-		}
-	}
-	,EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,type,data1,data2) {
+	EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,type,data1,data2) {
 		if(this.cachedParticles == null) return false;
 		var particle = this.cachedParticles;
 		this.cachedParticles = this.cachedParticles.next;
@@ -2783,18 +3164,46 @@ wgr.particle.PointSpriteParticleEngine.prototype = {
 		particle.ttl = ttl;
 		particle.age = ttl;
 		particle.damping = damping;
-		particle.decay = decayable?this.deltaTime / ttl:0;
-		particle.externalForce = externalForce != null?externalForce:this.ZERO_FORCE;
+		if(decayable) particle.decay = this.deltaTime / ttl; else particle.decay = 0;
+		if(externalForce != null) particle.externalForce = externalForce; else particle.externalForce = this.ZERO_FORCE;
 		particle.type = type;
 		particle.size = data1;
 		particle.colour = data2;
-		particle.alpha = (particle.colour & 255) * (1 / 255);
+		particle.alpha = (particle.colour & 255) * 0.00392156862745098;
 		return true;
 	}
+	,Update: function() {
+		this.renderer.ResetBatch();
+		var particle = this.activeParticles;
+		while(particle != null) if(!(function($this) {
+			var $r;
+			var invDeltaTime = $this.invDeltaTime;
+			particle.vX += particle.fX + particle.externalForce.x;
+			particle.vY += particle.fY + particle.externalForce.y;
+			particle.vX *= particle.damping;
+			particle.vY *= particle.damping;
+			particle.pX += particle.vX * invDeltaTime;
+			particle.pY += particle.vY * invDeltaTime;
+			particle.age -= $this.deltaTime;
+			particle.alpha -= particle.decay;
+			$r = particle.age > 0;
+			return $r;
+		}(this))) {
+			var next = particle.next;
+			if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
+			if(particle.next != null) particle.next.prev = particle.prev;
+			particle.next = this.cachedParticles;
+			this.cachedParticles = particle;
+			particle = next;
+		} else {
+			this.renderer.AddSpriteToBatch(particle.type | 0,particle.pX,particle.pY,particle.size,particle.alpha * 255 | 0,255,255,255);
+			particle = particle.next;
+		}
+	}
 	,__class__: wgr.particle.PointSpriteParticleEngine
-}
-wgr.renderers = {}
-wgr.renderers.canvas = {}
+};
+wgr.renderers = {};
+wgr.renderers.canvas = {};
 wgr.renderers.canvas.CanvasDebugView = function(view,width,height) {
 	if(height == null) height = 600;
 	if(width == null) width = 800;
@@ -2804,37 +3213,81 @@ wgr.renderers.canvas.CanvasDebugView = function(view,width,height) {
 };
 wgr.renderers.canvas.CanvasDebugView.__name__ = true;
 wgr.renderers.canvas.CanvasDebugView.prototype = {
-	DrawAABB: function(aabb) {
-		this.ctx.strokeRect(aabb.l,aabb.t,aabb.r - aabb.l,aabb.b - aabb.t);
-	}
-	,DrawRect: function(x,y,w,h) {
-		this.ctx.strokeRect(x,y,w,h);
+	Resize: function(width,height) {
+		this.width = width;
+		this.height = height;
+		this.view.width = width;
+		this.view.height = height;
 	}
 	,Clear: function(camera) {
 		this.ctx.setTransform(1,0,0,1,0,0);
 		this.ctx.clearRect(0,0,this.width,this.height);
 		this.ctx.strokeStyle = "rgba(255,255,255,1)";
 	}
-	,Resize: function(width,height) {
-		this.width = width;
-		this.height = height;
-		this.view.width = width;
-		this.view.height = height;
+	,DrawRect: function(x,y,w,h) {
+		this.ctx.strokeRect(x,y,w,h);
+	}
+	,DrawAABB: function(aabb) {
+		this.ctx.strokeRect(aabb.l,aabb.t,aabb.r - aabb.l,aabb.b - aabb.t);
 	}
 	,__class__: wgr.renderers.canvas.CanvasDebugView
-}
-wgr.renderers.webgl = {}
-wgr.renderers.webgl.IRenderer = function() { }
+};
+wgr.renderers.webgl = {};
+wgr.renderers.webgl.IRenderer = function() { };
 wgr.renderers.webgl.IRenderer.__name__ = true;
 wgr.renderers.webgl.IRenderer.prototype = {
 	__class__: wgr.renderers.webgl.IRenderer
-}
+};
 wgr.renderers.webgl.PointSpriteRenderer = function() {
 };
 wgr.renderers.webgl.PointSpriteRenderer.__name__ = true;
 wgr.renderers.webgl.PointSpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.PointSpriteRenderer.prototype = {
-	Render: function(clip) {
+	Init: function(gl,camera) {
+		this.gl = gl;
+		this.camera = camera;
+		this.projection = new wgr.geom.Point();
+		this.pointSpriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER));
+		this.dataBuffer = gl.createBuffer();
+	}
+	,ResizeBatch: function(size) {
+		this.arrayBuffer = new ArrayBuffer(80 * size);
+		this.data = new Float32Array(this.arrayBuffer);
+		this.data8 = new Uint8ClampedArray(this.arrayBuffer);
+		this.ResetBatch();
+	}
+	,SetSpriteSheet: function(texture,spriteSize,spritesWide,spritesHigh) {
+		this.texture = texture;
+		this.tileSize = spriteSize;
+		this.texTilesWide = spritesWide;
+		this.texTilesHigh = spritesHigh;
+		this.invTexTilesWide = 1 / this.texTilesWide;
+		this.invTexTilesHigh = 1 / this.texTilesHigh;
+	}
+	,Resize: function(width,height) {
+		this.projection.x = width / 2;
+		this.projection.y = height / 2;
+	}
+	,AddStage: function(stage) {
+		this.stage = stage;
+	}
+	,ResetBatch: function() {
+		this.indexRun = 0;
+	}
+	,AddSpriteToBatch: function(spriteID,x,y,size,alpha,red,green,blue) {
+		var index = this.indexRun * 5;
+		this.data[index] = x + this.camera.position.x | 0;
+		this.data[index + 1] = y + this.camera.position.y | 0;
+		this.data[index + 2] = size;
+		this.data[index + 3] = spriteID;
+		index *= 4;
+		this.data8[index + 16] = red;
+		this.data8[index + 17] = blue;
+		this.data8[index + 18] = green;
+		this.data8[index + 19] = alpha;
+		this.indexRun++;
+	}
+	,Render: function(clip) {
 		this.gl.enable(3042);
 		this.gl.blendFunc(770,771);
 		this.gl.useProgram(this.pointSpriteShader.program);
@@ -2858,52 +3311,8 @@ wgr.renderers.webgl.PointSpriteRenderer.prototype = {
 		this.gl.bindTexture(3553,this.texture);
 		this.gl.drawArrays(0,0,this.indexRun);
 	}
-	,AddSpriteToBatch: function(spriteID,x,y,size,alpha,red,green,blue) {
-		var index = this.indexRun * 5;
-		this.data[index] = x + this.camera.position.x | 0;
-		this.data[index + 1] = y + this.camera.position.y | 0;
-		this.data[index + 2] = size;
-		this.data[index + 3] = spriteID;
-		index *= 4;
-		this.data8[index + 16] = red;
-		this.data8[index + 17] = blue;
-		this.data8[index + 18] = green;
-		this.data8[index + 19] = alpha;
-		this.indexRun++;
-	}
-	,ResetBatch: function() {
-		this.indexRun = 0;
-	}
-	,AddStage: function(stage) {
-		this.stage = stage;
-	}
-	,Resize: function(width,height) {
-		this.projection.x = width / 2;
-		this.projection.y = height / 2;
-	}
-	,SetSpriteSheet: function(texture,spriteSize,spritesWide,spritesHigh) {
-		this.texture = texture;
-		this.tileSize = spriteSize;
-		this.texTilesWide = spritesWide;
-		this.texTilesHigh = spritesHigh;
-		this.invTexTilesWide = 1 / this.texTilesWide;
-		this.invTexTilesHigh = 1 / this.texTilesHigh;
-	}
-	,ResizeBatch: function(size) {
-		this.arrayBuffer = new ArrayBuffer(80 * size);
-		this.data = new Float32Array(this.arrayBuffer);
-		this.data8 = new Uint8ClampedArray(this.arrayBuffer);
-		this.ResetBatch();
-	}
-	,Init: function(gl,camera) {
-		this.gl = gl;
-		this.camera = camera;
-		this.projection = new wgr.geom.Point();
-		this.pointSpriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER));
-		this.dataBuffer = gl.createBuffer();
-	}
 	,__class__: wgr.renderers.webgl.PointSpriteRenderer
-}
+};
 wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 	this.program = program;
 	gl.useProgram(this.program);
@@ -2927,13 +3336,28 @@ wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 wgr.renderers.webgl.ShaderWrapper.__name__ = true;
 wgr.renderers.webgl.ShaderWrapper.prototype = {
 	__class__: wgr.renderers.webgl.ShaderWrapper
-}
+};
 wgr.renderers.webgl.SpriteRenderer = function() {
 };
 wgr.renderers.webgl.SpriteRenderer.__name__ = true;
 wgr.renderers.webgl.SpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.SpriteRenderer.prototype = {
-	Render: function(clip) {
+	Init: function(gl,camera) {
+		this.gl = gl;
+		this.camera = camera;
+		this.projection = new wgr.geom.Point();
+		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER));
+		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
+		this.spriteBatch.ResizeBatch(1000);
+	}
+	,Resize: function(width,height) {
+		this.projection.x = width / 2;
+		this.projection.y = height / 2;
+	}
+	,AddStage: function(stage) {
+		this.stage = stage;
+	}
+	,Render: function(clip) {
 		this.gl.useProgram(this.spriteShader.program);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aVertexPosition);
 		this.gl.enableVertexAttribArray(this.spriteShader.attribute.aTextureCoord);
@@ -2944,30 +3368,26 @@ wgr.renderers.webgl.SpriteRenderer.prototype = {
 		this.gl.uniform2f(this.spriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
 		this.spriteBatch.Render(this.spriteShader,this.stage,this.camera.viewPortAABB);
 	}
-	,AddStage: function(stage) {
-		this.stage = stage;
-	}
-	,Resize: function(width,height) {
-		this.projection.x = width / 2;
-		this.projection.y = height / 2;
-	}
-	,Init: function(gl,camera) {
-		this.gl = gl;
-		this.camera = camera;
-		this.projection = new wgr.geom.Point();
-		this.spriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER));
-		this.spriteBatch = new wgr.renderers.webgl.WebGLBatch(gl);
-		this.spriteBatch.ResizeBatch(1000);
-	}
 	,__class__: wgr.renderers.webgl.SpriteRenderer
-}
+};
 wgr.renderers.webgl.TileLayer = function() {
 	this.scrollScale = new wgr.geom.Point(1,1);
 	this.inverseTextureSize = new Float32Array(2);
 };
 wgr.renderers.webgl.TileLayer.__name__ = true;
 wgr.renderers.webgl.TileLayer.prototype = {
-	setTexture: function(gl,image,repeat) {
+	setTextureFromMap: function(gl,data) {
+		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
+		gl.bindTexture(3553,this.tileTexture);
+		gl.texImage2D(3553,0,6408,data.w,data.h,0,6408,5121,data.data8);
+		gl.texParameteri(3553,10240,9728);
+		gl.texParameteri(3553,10241,9728);
+		gl.texParameteri(3553,10242,33071);
+		gl.texParameteri(3553,10243,33071);
+		this.inverseTextureSize[0] = 1 / data.w;
+		this.inverseTextureSize[1] = 1 / data.h;
+	}
+	,setTexture: function(gl,image,repeat) {
 		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
 		gl.bindTexture(3553,this.tileTexture);
 		gl.texImage2D(3553,0,6408,6408,5121,image);
@@ -2983,25 +3403,85 @@ wgr.renderers.webgl.TileLayer.prototype = {
 		this.inverseTextureSize[0] = 1 / image.width;
 		this.inverseTextureSize[1] = 1 / image.height;
 	}
-	,setTextureFromMap: function(gl,data) {
-		if(this.tileTexture == null) this.tileTexture = gl.createTexture();
-		gl.bindTexture(3553,this.tileTexture);
-		gl.texImage2D(3553,0,6408,data.w,data.h,0,6408,5121,data.data8);
-		gl.texParameteri(3553,10240,9728);
-		gl.texParameteri(3553,10241,9728);
-		gl.texParameteri(3553,10242,33071);
-		gl.texParameteri(3553,10243,33071);
-		this.inverseTextureSize[0] = 1 / data.w;
-		this.inverseTextureSize[1] = 1 / data.h;
-	}
 	,__class__: wgr.renderers.webgl.TileLayer
-}
+};
 wgr.renderers.webgl.TileMap = function() {
 };
 wgr.renderers.webgl.TileMap.__name__ = true;
 wgr.renderers.webgl.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.TileMap.prototype = {
-	Render: function(clip) {
+	Init: function(gl,camera) {
+		this.gl = gl;
+		this.camera = camera;
+		this.tileScale = 1.0;
+		this.tileSize = 16;
+		this.filtered = false;
+		this.spriteSheet = gl.createTexture();
+		this.layers = new Array();
+		this.viewportSize = new wgr.geom.Point();
+		this.scaledViewportSize = new Float32Array(2);
+		this.inverseTileTextureSize = new Float32Array(2);
+		this.inverseSpriteTextureSize = new Float32Array(2);
+		this.quadVertBuffer = gl.createBuffer();
+		gl.bindBuffer(34962,this.quadVertBuffer);
+		var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
+		gl.bufferData(34962,quadVerts,35044);
+		this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER,wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER));
+	}
+	,Resize: function(width,height) {
+		this.viewportSize.x = width;
+		this.viewportSize.y = height;
+		this.scaledViewportSize[0] = width / this.tileScale;
+		this.scaledViewportSize[1] = height / this.tileScale;
+	}
+	,TileScale: function(scale) {
+		this.tileScale = scale;
+		this.scaledViewportSize[0] = this.viewportSize.x / scale;
+		this.scaledViewportSize[1] = this.viewportSize.y / scale;
+	}
+	,Filtered: function(filtered) {
+		this.filtered = filtered;
+		this.gl.bindTexture(3553,this.spriteSheet);
+		if(filtered) {
+			this.gl.texParameteri(3553,10240,9728);
+			this.gl.texParameteri(3553,10241,9728);
+		} else {
+			this.gl.texParameteri(3553,10240,9729);
+			this.gl.texParameteri(3553,10241,9729);
+		}
+	}
+	,SetSpriteSheet: function(image) {
+		this.gl.bindTexture(3553,this.spriteSheet);
+		this.gl.texImage2D(3553,0,6408,6408,5121,image);
+		if(!this.filtered) {
+			this.gl.texParameteri(3553,10240,9728);
+			this.gl.texParameteri(3553,10241,9728);
+		} else {
+			this.gl.texParameteri(3553,10240,9729);
+			this.gl.texParameteri(3553,10241,9729);
+		}
+		this.inverseSpriteTextureSize[0] = 1 / image.width;
+		this.inverseSpriteTextureSize[1] = 1 / image.height;
+	}
+	,SetTileLayer: function(image,layerId,scrollScaleX,scrollScaleY) {
+		var layer = new wgr.renderers.webgl.TileLayer();
+		layer.setTexture(this.gl,image,false);
+		layer.scrollScale.x = scrollScaleX;
+		layer.scrollScale.y = scrollScaleY;
+		this.layers.push(layer);
+	}
+	,SetTileLayerFromData: function(data,layerId,scrollScaleX,scrollScaleY) {
+		var layer = new wgr.renderers.webgl.TileLayer();
+		layer.setTextureFromMap(this.gl,data);
+		layer.scrollScale.x = scrollScaleX;
+		layer.scrollScale.y = scrollScaleY;
+		this.layers.push(layer);
+	}
+	,RoundFunction: function(v) {
+		return v;
+		return Math.round(v * 10) / 10;
+	}
+	,Render: function(clip) {
 		var x = -this.camera.position.x / (this.tileScale * 2);
 		var y = -this.camera.position.y / (this.tileScale * 2);
 		this.gl.enable(3042);
@@ -3033,79 +3513,8 @@ wgr.renderers.webgl.TileMap.prototype = {
 			this.gl.drawArrays(4,0,6);
 		}
 	}
-	,RoundFunction: function(v) {
-		return v;
-		return Math.round(v * 10) / 10;
-	}
-	,SetTileLayerFromData: function(data,layerId,scrollScaleX,scrollScaleY) {
-		var layer = new wgr.renderers.webgl.TileLayer();
-		layer.setTextureFromMap(this.gl,data);
-		layer.scrollScale.x = scrollScaleX;
-		layer.scrollScale.y = scrollScaleY;
-		this.layers.push(layer);
-	}
-	,SetTileLayer: function(image,layerId,scrollScaleX,scrollScaleY) {
-		var layer = new wgr.renderers.webgl.TileLayer();
-		layer.setTexture(this.gl,image,false);
-		layer.scrollScale.x = scrollScaleX;
-		layer.scrollScale.y = scrollScaleY;
-		this.layers.push(layer);
-	}
-	,SetSpriteSheet: function(image) {
-		this.gl.bindTexture(3553,this.spriteSheet);
-		this.gl.texImage2D(3553,0,6408,6408,5121,image);
-		if(!this.filtered) {
-			this.gl.texParameteri(3553,10240,9728);
-			this.gl.texParameteri(3553,10241,9728);
-		} else {
-			this.gl.texParameteri(3553,10240,9729);
-			this.gl.texParameteri(3553,10241,9729);
-		}
-		this.inverseSpriteTextureSize[0] = 1 / image.width;
-		this.inverseSpriteTextureSize[1] = 1 / image.height;
-	}
-	,Filtered: function(filtered) {
-		this.filtered = filtered;
-		this.gl.bindTexture(3553,this.spriteSheet);
-		if(filtered) {
-			this.gl.texParameteri(3553,10240,9728);
-			this.gl.texParameteri(3553,10241,9728);
-		} else {
-			this.gl.texParameteri(3553,10240,9729);
-			this.gl.texParameteri(3553,10241,9729);
-		}
-	}
-	,TileScale: function(scale) {
-		this.tileScale = scale;
-		this.scaledViewportSize[0] = this.viewportSize.x / scale;
-		this.scaledViewportSize[1] = this.viewportSize.y / scale;
-	}
-	,Resize: function(width,height) {
-		this.viewportSize.x = width;
-		this.viewportSize.y = height;
-		this.scaledViewportSize[0] = width / this.tileScale;
-		this.scaledViewportSize[1] = height / this.tileScale;
-	}
-	,Init: function(gl,camera) {
-		this.gl = gl;
-		this.camera = camera;
-		this.tileScale = 1.0;
-		this.tileSize = 16;
-		this.filtered = false;
-		this.spriteSheet = gl.createTexture();
-		this.layers = new Array();
-		this.viewportSize = new wgr.geom.Point();
-		this.scaledViewportSize = new Float32Array(2);
-		this.inverseTileTextureSize = new Float32Array(2);
-		this.inverseSpriteTextureSize = new Float32Array(2);
-		this.quadVertBuffer = gl.createBuffer();
-		gl.bindBuffer(34962,this.quadVertBuffer);
-		var quadVerts = new Float32Array([-1,-1,0,1,1,-1,1,1,1,1,1,0,-1,-1,0,1,1,1,1,0,-1,1,0,0]);
-		gl.bufferData(34962,quadVerts,35044);
-		this.tilemapShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER,wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER));
-	}
 	,__class__: wgr.renderers.webgl.TileMap
-}
+};
 wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.gl = gl;
 	this.size = 1;
@@ -3116,78 +3525,40 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 };
 wgr.renderers.webgl.WebGLBatch.__name__ = true;
 wgr.renderers.webgl.WebGLBatch.prototype = {
-	Render1: function(shader,spriteHead,clip) {
-		if(spriteHead == null) return;
-		this.gl.useProgram(shader.program);
-		var indexRun = 0;
-		var sprite = spriteHead;
-		var currentTexture = sprite.texture.baseTexture.texture;
-		while(sprite != null) {
-			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
-				this.Flush(shader,currentTexture,indexRun);
-				indexRun = 0;
-				currentTexture = sprite.texture.baseTexture.texture;
-			}
-			if(clip == null || sprite.aabb.intersect(clip)) {
-				this.AddSpriteToBatch(sprite,indexRun);
-				indexRun++;
-			}
-			sprite = sprite.nextSprite;
-		}
-		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+	Clean: function() {
 	}
-	,Render2: function(shader,stage,clip) {
-		var _g = this;
-		this.gl.useProgram(shader.program);
-		var indexRun = 0;
-		var currentTexture = null;
-		var renderDisplayObject = function(target,p) {
-			if(!target._visible) return false;
-			if(!target.renderable) return true;
-			var sprite = target;
-			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == _g.size) {
-				_g.Flush(shader,currentTexture,indexRun);
-				indexRun = 0;
-				currentTexture = sprite.texture.baseTexture.texture;
-			}
-			if(clip == null || sprite.aabb.intersect(clip)) {
-				_g.AddSpriteToBatch(sprite,indexRun);
-				indexRun++;
-			}
-			return true;
-		};
-		stage.applySlot(renderDisplayObject);
-		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
-	}
-	,Render: function(shader,stage,clip) {
-		this.gl.useProgram(shader.program);
-		var node;
-		var stack;
-		var top;
-		node = stage;
-		stack = new Array();
-		stack[0] = node;
-		top = 1;
-		var indexRun = 0;
-		var currentTexture = null;
-		while(top > 0) {
-			var thisNode = stack[--top];
-			if(thisNode.next != null) stack[top++] = thisNode.next;
-			if(thisNode.head != null) stack[top++] = thisNode.head;
-			if(thisNode._visible && thisNode.renderable) {
-				var sprite = thisNode;
-				if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
-					this.Flush(shader,currentTexture,indexRun);
-					indexRun = 0;
-					currentTexture = sprite.texture.baseTexture.texture;
-				}
-				if(clip == null || sprite.aabb.intersect(clip)) {
-					this.AddSpriteToBatch(sprite,indexRun);
-					indexRun++;
-				}
-			}
+	,ResizeBatch: function(size) {
+		this.size = size;
+		this.dynamicSize = size;
+		this.data = new Float32Array(this.dynamicSize * 20);
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35048);
+		this.indices = new Uint16Array(this.dynamicSize * 6);
+		var _g1 = 0;
+		var _g = this.dynamicSize;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var index2 = i * 6;
+			var index3 = i * 4;
+			this.indices[index2] = index3;
+			this.indices[index2 + 1] = index3 + 1;
+			this.indices[index2 + 2] = index3 + 2;
+			this.indices[index2 + 3] = index3;
+			this.indices[index2 + 4] = index3 + 2;
+			this.indices[index2 + 5] = index3 + 3;
 		}
-		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+		this.gl.bindBuffer(34963,this.indexBuffer);
+		this.gl.bufferData(34963,this.indices,35044);
+	}
+	,Flush: function(shader,texture,size) {
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35044);
+		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,20,0);
+		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,20,8);
+		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,20,16);
+		this.gl.activeTexture(33984);
+		this.gl.bindTexture(3553,texture);
+		this.gl.drawElements(4,size * 6,5123,0);
 	}
 	,AddSpriteToBatch: function(sprite,indexRun) {
 		var index = indexRun * 20;
@@ -3215,42 +3586,165 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		this.data[index + 18] = (frame.y + frame.height) / th;
 		this.data[index + 19] = sprite.worldAlpha;
 	}
-	,Flush: function(shader,texture,size) {
-		this.gl.bindBuffer(34962,this.dataBuffer);
-		this.gl.bufferData(34962,this.data,35044);
-		this.gl.vertexAttribPointer(shader.attribute.aVertexPosition,2,5126,false,20,0);
-		this.gl.vertexAttribPointer(shader.attribute.aTextureCoord,2,5126,false,20,8);
-		this.gl.vertexAttribPointer(shader.attribute.aColor,1,5126,false,20,16);
-		this.gl.activeTexture(33984);
-		this.gl.bindTexture(3553,texture);
-		this.gl.drawElements(4,size * 6,5123,0);
-	}
-	,ResizeBatch: function(size) {
-		this.size = size;
-		this.dynamicSize = size;
-		this.data = new Float32Array(this.dynamicSize * 20);
-		this.gl.bindBuffer(34962,this.dataBuffer);
-		this.gl.bufferData(34962,this.data,35048);
-		this.indices = new Uint16Array(this.dynamicSize * 6);
-		var _g1 = 0, _g = this.dynamicSize;
-		while(_g1 < _g) {
-			var i = _g1++;
-			var index2 = i * 6;
-			var index3 = i * 4;
-			this.indices[index2] = index3;
-			this.indices[index2 + 1] = index3 + 1;
-			this.indices[index2 + 2] = index3 + 2;
-			this.indices[index2 + 3] = index3;
-			this.indices[index2 + 4] = index3 + 2;
-			this.indices[index2 + 5] = index3 + 3;
+	,Render: function(shader,stage,clip) {
+		this.gl.useProgram(shader.program);
+		var node;
+		var stack;
+		var top;
+		node = stage;
+		stack = new Array();
+		stack[0] = node;
+		top = 1;
+		var indexRun = 0;
+		var currentTexture = null;
+		while(top > 0) {
+			var thisNode = stack[--top];
+			if(thisNode.next != null) stack[top++] = thisNode.next;
+			if(thisNode.head != null) stack[top++] = thisNode.head;
+			if(thisNode._visible && thisNode.renderable) {
+				var sprite = thisNode;
+				if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
+					this.Flush(shader,currentTexture,indexRun);
+					indexRun = 0;
+					currentTexture = sprite.texture.baseTexture.texture;
+				}
+				if(clip == null || (function($this) {
+					var $r;
+					var _this = sprite.aabb;
+					$r = _this.l > clip.r?false:_this.r < clip.l?false:_this.t > clip.b?false:_this.b < clip.t?false:true;
+					return $r;
+				}(this))) {
+					var index = indexRun * 20;
+					var frame = sprite.texture.frame;
+					var tw = sprite.texture.baseTexture.width;
+					var th = sprite.texture.baseTexture.height;
+					this.data[index] = sprite.transformedVerts[0];
+					this.data[index + 1] = sprite.transformedVerts[1];
+					this.data[index + 2] = frame.x / tw;
+					this.data[index + 3] = frame.y / th;
+					this.data[index + 4] = sprite.worldAlpha;
+					this.data[index + 5] = sprite.transformedVerts[2];
+					this.data[index + 6] = sprite.transformedVerts[3];
+					this.data[index + 7] = (frame.x + frame.width) / tw;
+					this.data[index + 8] = frame.y / th;
+					this.data[index + 9] = sprite.worldAlpha;
+					this.data[index + 10] = sprite.transformedVerts[4];
+					this.data[index + 11] = sprite.transformedVerts[5];
+					this.data[index + 12] = (frame.x + frame.width) / tw;
+					this.data[index + 13] = (frame.y + frame.height) / th;
+					this.data[index + 14] = sprite.worldAlpha;
+					this.data[index + 15] = sprite.transformedVerts[6];
+					this.data[index + 16] = sprite.transformedVerts[7];
+					this.data[index + 17] = frame.x / tw;
+					this.data[index + 18] = (frame.y + frame.height) / th;
+					this.data[index + 19] = sprite.worldAlpha;
+					indexRun++;
+				}
+			}
 		}
-		this.gl.bindBuffer(34963,this.indexBuffer);
-		this.gl.bufferData(34963,this.indices,35044);
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
-	,Clean: function() {
+	,Render2: function(shader,stage,clip) {
+		var _g = this;
+		this.gl.useProgram(shader.program);
+		var indexRun = 0;
+		var currentTexture = null;
+		var renderDisplayObject = function(target,p) {
+			if(!target._visible) return false;
+			if(!target.renderable) return true;
+			var sprite = target;
+			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == _g.size) {
+				_g.Flush(shader,currentTexture,indexRun);
+				indexRun = 0;
+				currentTexture = sprite.texture.baseTexture.texture;
+			}
+			if(clip == null || (function($this) {
+				var $r;
+				var _this = sprite.aabb;
+				$r = _this.l > clip.r?false:_this.r < clip.l?false:_this.t > clip.b?false:_this.b < clip.t?false:true;
+				return $r;
+			}(this))) {
+				var index = indexRun * 20;
+				var frame = sprite.texture.frame;
+				var tw = sprite.texture.baseTexture.width;
+				var th = sprite.texture.baseTexture.height;
+				_g.data[index] = sprite.transformedVerts[0];
+				_g.data[index + 1] = sprite.transformedVerts[1];
+				_g.data[index + 2] = frame.x / tw;
+				_g.data[index + 3] = frame.y / th;
+				_g.data[index + 4] = sprite.worldAlpha;
+				_g.data[index + 5] = sprite.transformedVerts[2];
+				_g.data[index + 6] = sprite.transformedVerts[3];
+				_g.data[index + 7] = (frame.x + frame.width) / tw;
+				_g.data[index + 8] = frame.y / th;
+				_g.data[index + 9] = sprite.worldAlpha;
+				_g.data[index + 10] = sprite.transformedVerts[4];
+				_g.data[index + 11] = sprite.transformedVerts[5];
+				_g.data[index + 12] = (frame.x + frame.width) / tw;
+				_g.data[index + 13] = (frame.y + frame.height) / th;
+				_g.data[index + 14] = sprite.worldAlpha;
+				_g.data[index + 15] = sprite.transformedVerts[6];
+				_g.data[index + 16] = sprite.transformedVerts[7];
+				_g.data[index + 17] = frame.x / tw;
+				_g.data[index + 18] = (frame.y + frame.height) / th;
+				_g.data[index + 19] = sprite.worldAlpha;
+				indexRun++;
+			}
+			return true;
+		};
+		stage.applySlot(renderDisplayObject);
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
+	}
+	,Render1: function(shader,spriteHead,clip) {
+		if(spriteHead == null) return;
+		this.gl.useProgram(shader.program);
+		var indexRun = 0;
+		var sprite = spriteHead;
+		var currentTexture = sprite.texture.baseTexture.texture;
+		while(sprite != null) {
+			if(sprite.texture.baseTexture.texture != currentTexture || indexRun == this.size) {
+				this.Flush(shader,currentTexture,indexRun);
+				indexRun = 0;
+				currentTexture = sprite.texture.baseTexture.texture;
+			}
+			if(clip == null || (function($this) {
+				var $r;
+				var _this = sprite.aabb;
+				$r = _this.l > clip.r?false:_this.r < clip.l?false:_this.t > clip.b?false:_this.b < clip.t?false:true;
+				return $r;
+			}(this))) {
+				var index = indexRun * 20;
+				var frame = sprite.texture.frame;
+				var tw = sprite.texture.baseTexture.width;
+				var th = sprite.texture.baseTexture.height;
+				this.data[index] = sprite.transformedVerts[0];
+				this.data[index + 1] = sprite.transformedVerts[1];
+				this.data[index + 2] = frame.x / tw;
+				this.data[index + 3] = frame.y / th;
+				this.data[index + 4] = sprite.worldAlpha;
+				this.data[index + 5] = sprite.transformedVerts[2];
+				this.data[index + 6] = sprite.transformedVerts[3];
+				this.data[index + 7] = (frame.x + frame.width) / tw;
+				this.data[index + 8] = frame.y / th;
+				this.data[index + 9] = sprite.worldAlpha;
+				this.data[index + 10] = sprite.transformedVerts[4];
+				this.data[index + 11] = sprite.transformedVerts[5];
+				this.data[index + 12] = (frame.x + frame.width) / tw;
+				this.data[index + 13] = (frame.y + frame.height) / th;
+				this.data[index + 14] = sprite.worldAlpha;
+				this.data[index + 15] = sprite.transformedVerts[6];
+				this.data[index + 16] = sprite.transformedVerts[7];
+				this.data[index + 17] = frame.x / tw;
+				this.data[index + 18] = (frame.y + frame.height) / th;
+				this.data[index + 19] = sprite.worldAlpha;
+				indexRun++;
+			}
+			sprite = sprite.nextSprite;
+		}
+		if(indexRun > 0) this.Flush(shader,currentTexture,indexRun);
 	}
 	,__class__: wgr.renderers.webgl.WebGLBatch
-}
+};
 wgr.renderers.webgl.WebGLRenderer = function(stage,camera,view,width,height,transparent,antialias) {
 	if(antialias == null) antialias = true;
 	if(transparent == null) transparent = false;
@@ -3271,38 +3765,7 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,camera,view,width,height,tran
 };
 wgr.renderers.webgl.WebGLRenderer.__name__ = true;
 wgr.renderers.webgl.WebGLRenderer.prototype = {
-	onContextRestored: function(event) {
-		this.contextLost = false;
-		console.log("webGL Context Restored");
-	}
-	,onContextLost: function(event) {
-		this.contextLost = true;
-		console.log("webGL Context Lost");
-	}
-	,Render: function(clip) {
-		if(this.contextLost) return;
-		this.stage.updateTransform();
-		this.stage.PreRender();
-		var _g = 0, _g1 = this.renderers;
-		while(_g < _g1.length) {
-			var renderer = _g1[_g];
-			++_g;
-			renderer.Render(clip);
-		}
-	}
-	,AddRenderer: function(renderer) {
-		renderer.Init(this.gl,this.camera);
-		renderer.Resize(this.width,this.height);
-		this.renderers.push(renderer);
-	}
-	,Resize: function(width,height) {
-		this.width = width;
-		this.height = height;
-		this.view.width = width;
-		this.view.height = height;
-		this.gl.viewport(0,0,width,height);
-	}
-	,InitalizeWebGlContext: function() {
+	InitalizeWebGlContext: function() {
 		this.view.addEventListener("webglcontextlost",$bind(this,this.onContextLost),false);
 		this.view.addEventListener("webglcontextrestored",$bind(this,this.onContextRestored),false);
 		this.gl = js.html._CanvasElement.CanvasUtil.getContextWebGL(this.view,this.contextAttributes);
@@ -3312,16 +3775,48 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 		this.gl.colorMask(true,true,true,this.contextAttributes.alpha);
 		this.gl.clearColor(0,0,0,1);
 	}
+	,Resize: function(width,height) {
+		this.width = width;
+		this.height = height;
+		this.view.width = width;
+		this.view.height = height;
+		this.gl.viewport(0,0,width,height);
+	}
+	,AddRenderer: function(renderer) {
+		renderer.Init(this.gl,this.camera);
+		renderer.Resize(this.width,this.height);
+		this.renderers.push(renderer);
+	}
+	,Render: function(clip) {
+		if(this.contextLost) return;
+		this.stage.updateTransform();
+		this.stage.PreRender();
+		var _g = 0;
+		var _g1 = this.renderers;
+		while(_g < _g1.length) {
+			var renderer = _g1[_g];
+			++_g;
+			renderer.Render(clip);
+		}
+	}
+	,onContextLost: function(event) {
+		this.contextLost = true;
+		console.log("webGL Context Lost");
+	}
+	,onContextRestored: function(event) {
+		this.contextLost = false;
+		console.log("webGL Context Restored");
+	}
 	,__class__: wgr.renderers.webgl.WebGLRenderer
-}
-wgr.renderers.webgl.WebGLShaders = function() { }
+};
+wgr.renderers.webgl.WebGLShaders = function() { };
 wgr.renderers.webgl.WebGLShaders.__name__ = true;
 wgr.renderers.webgl.WebGLShaders.CompileVertexShader = function(gl,shaderSrc) {
 	return wgr.renderers.webgl.WebGLShaders.CompileShader(gl,shaderSrc,35633);
-}
+};
 wgr.renderers.webgl.WebGLShaders.CompileFragmentShader = function(gl,shaderSrc) {
 	return wgr.renderers.webgl.WebGLShaders.CompileShader(gl,shaderSrc,35632);
-}
+};
 wgr.renderers.webgl.WebGLShaders.CompileShader = function(gl,shaderSrc,shaderType) {
 	var src = shaderSrc.join("\n");
 	var shader = gl.createShader(shaderType);
@@ -3332,7 +3827,7 @@ wgr.renderers.webgl.WebGLShaders.CompileShader = function(gl,shaderSrc,shaderTyp
 		return null;
 	}
 	return shader;
-}
+};
 wgr.renderers.webgl.WebGLShaders.CompileProgram = function(gl,vertexSrc,fragmentSrc) {
 	var vertexShader = wgr.renderers.webgl.WebGLShaders.CompileVertexShader(gl,vertexSrc);
 	var fragmentShader = wgr.renderers.webgl.WebGLShaders.CompileFragmentShader(gl,fragmentSrc);
@@ -3347,8 +3842,8 @@ wgr.renderers.webgl.WebGLShaders.CompileProgram = function(gl,vertexSrc,fragment
 		console.log(gl.getProgramInfoLog(shaderProgram));
 	}
 	return shaderProgram;
-}
-wgr.texture = {}
+};
+wgr.texture = {};
 wgr.texture.BaseTexture = function(source) {
 	this.source = source;
 	this.powerOfTwo = false;
@@ -3357,11 +3852,7 @@ wgr.texture.BaseTexture = function(source) {
 };
 wgr.texture.BaseTexture.__name__ = true;
 wgr.texture.BaseTexture.prototype = {
-	UnregisterTexture: function(gl) {
-		if(this.texture != null) {
-		}
-	}
-	,RegisterTexture: function(gl) {
+	RegisterTexture: function(gl) {
 		if(this.texture == null) this.texture = gl.createTexture();
 		gl.bindTexture(3553,this.texture);
 		gl.pixelStorei(37441,1);
@@ -3377,8 +3868,12 @@ wgr.texture.BaseTexture.prototype = {
 		}
 		gl.bindTexture(3553,null);
 	}
+	,UnregisterTexture: function(gl) {
+		if(this.texture != null) {
+		}
+	}
 	,__class__: wgr.texture.BaseTexture
-}
+};
 wgr.texture.Texture = function(baseTexture,frame) {
 	this.noFrame = false;
 	this.baseTexture = baseTexture;
@@ -3391,7 +3886,7 @@ wgr.texture.Texture = function(baseTexture,frame) {
 wgr.texture.Texture.__name__ = true;
 wgr.texture.Texture.prototype = {
 	__class__: wgr.texture.Texture
-}
+};
 wgr.texture.TextureManager = function(gl) {
 	this.gl = gl;
 	this.baseTextures = new haxe.ds.StringMap();
@@ -3399,7 +3894,13 @@ wgr.texture.TextureManager = function(gl) {
 };
 wgr.texture.TextureManager.__name__ = true;
 wgr.texture.TextureManager.prototype = {
-	AddTexturesFromConfig: function(textureConfig,assets) {
+	AddTexture: function(id,image) {
+		var baseTexture = new wgr.texture.BaseTexture(image);
+		baseTexture.RegisterTexture(this.gl);
+		this.baseTextures.set(id,baseTexture);
+		return baseTexture;
+	}
+	,AddTexturesFromConfig: function(textureConfig,assets) {
 		if(!js.Boot.__instanceof(textureConfig,String)) return;
 		var source = new haxe.xml.Fast(Xml.parse(textureConfig));
 		source = source.node.resolve("textureconfig");
@@ -3421,24 +3922,17 @@ wgr.texture.TextureManager.prototype = {
 			}
 		}
 	}
-	,AddTexture: function(id,image) {
-		var baseTexture = new wgr.texture.BaseTexture(image);
-		baseTexture.RegisterTexture(this.gl);
-		this.baseTextures.set(id,baseTexture);
-		return baseTexture;
-	}
 	,__class__: wgr.texture.TextureManager
-}
-function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
+};
+function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
-function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
+function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
 if(Array.prototype.indexOf) HxOverrides.remove = function(a,o) {
 	var i = a.indexOf(o);
 	if(i == -1) return false;
 	a.splice(i,1);
 	return true;
 };
-Math.__name__ = ["Math"];
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
 Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
@@ -3452,8 +3946,6 @@ String.prototype.__class__ = String;
 String.__name__ = true;
 Array.prototype.__class__ = Array;
 Array.__name__ = true;
-Date.prototype.__class__ = Date;
-Date.__name__ = ["Date"];
 var Int = { __name__ : ["Int"]};
 var Dynamic = { __name__ : ["Dynamic"]};
 var Float = Number;
@@ -3470,6 +3962,7 @@ Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
 engine.components.KeyboardControls.NAME = "Keyboard";
+engine.components.ParticleEmitter.NAME = "Particle";
 engine.components.Physics.NAME = "Physics";
 engine.components.Sprite.NAME = "Sprite";
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -3485,12 +3978,10 @@ haxe.xml.Parser.escapes = (function($this) {
 	$r = h;
 	return $r;
 }(this));
-js.Browser.window = typeof window != "undefined" ? window : null;
-js.Browser.document = typeof window != "undefined" ? window.document : null;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 utils.Maths.ZERO_TOLERANCE = 1e-08;
-utils.Maths.RAD_DEG = 180 / 3.141592653589793;
-utils.Maths.DEG_RAD = 3.141592653589793 / 180;
+utils.Maths.RAD_DEG = 57.2957795130823229;
+utils.Maths.DEG_RAD = 0.0174532925199432955;
 utils.Maths.LN2 = 0.6931471805599453;
 utils.Maths.LN10 = 2.302585092994046;
 utils.Maths.PIHALF = 1.5707963267948966;
@@ -3498,7 +3989,7 @@ utils.Maths.PI = 3.141592653589793;
 utils.Maths.PI2 = 6.283185307179586;
 utils.Maths.EPS = 1e-6;
 utils.Maths.SQRT2 = 1.414213562373095;
-wgr.particle.PointSpriteParticle.INV_ALPHA = 1 / 255;
+wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
@@ -3508,4 +3999,4 @@ wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;
 Main.main();
 })();
 
-//@ sourceMappingURL=script.js.map
+//# sourceMappingURL=script.js.map
