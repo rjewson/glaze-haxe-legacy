@@ -21,10 +21,10 @@ class ParticleEmitter extends Component
     }
 
     override public function onUpdate(dt:Float) {
-        for (pCount in 0...5) {
+        for (pCount in 0...100) {
             var vX = Std.random(100)-50;
             var vY = Std.random(100)-50;
-            var ttl = Std.random(1000)+500;
+            var ttl = Std.random(5000)+500;
             var type = 1;//validTiles[Std.random(validTiles.length)];
             particleEngine.EmitParticle(physics.position.x,physics.position.y,vX,vY,0,0,ttl,0.99,true,true,null,type,32,0xFFFFFFFF);
         }

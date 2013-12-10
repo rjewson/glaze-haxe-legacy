@@ -31,10 +31,10 @@ import wgr.renderers.webgl.WebGLRenderer;
 import wgr.texture.Texture;
 import wgr.renderers.webgl.TileMap;
 
-class Main 
+class Main2
 {
 
-	public static function main() {
+    public static function main() {
 
         var assets = new utils.AssetLoader();
 
@@ -156,6 +156,6 @@ class Main
 trace(pengine);
         // var m = physics.dynamics.Material.DEFAULTMATERIAL();
 
-    }	
+    }   
     
 }
