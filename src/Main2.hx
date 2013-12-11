@@ -51,21 +51,13 @@ class Main2
             var tm  = new wgr.texture.TextureManager(view.renderer.gl);
             tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
 
-            var tileMap = new TileMap();
-                view.renderer.AddRenderer(tileMap);
-                tileMap.SetSpriteSheet(assets.assets.get("data/spelunky-tiles.png"));
-                tileMap.SetTileLayerFromData(mapData,"base",1,1);
-                tileMap.SetTileLayer(assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
-                tileMap.tileSize = 16;
-                tileMap.TileScale(2);
+            var tileMapRenderer = new test.ParticleTileMap();
+                tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
+                view.renderer.AddRenderer(tileMapRenderer.renderer);
 
-            var spriteRender = new SpriteRenderer();
-                spriteRender.AddStage(view.stage);
-                view.renderer.AddRenderer(spriteRender);
-
-            var pointParticleEngine = new PointSpriteParticleEngine(14000,1000/60);
-                pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
-                view.renderer.AddRenderer(pointParticleEngine.renderer);
+            // var spriteRender = new SpriteRenderer();
+            //     spriteRender.AddStage(view.stage);
+            //     view.renderer.AddRenderer(spriteRender);
 
             function createSprite(id:String,x:Float,y:Float,px:Float,py:Float,tid:String) {
                 var s = new Sprite();
@@ -84,7 +76,6 @@ class Main2
 
             var entityManager = new engine.core.EntityManager();
                 entityManager.addSystem(new RenderSystem(itemContainer));
-                entityManager.addSystem(new ParticleSystem(pointParticleEngine));
 
                 entityManager.componentAdded.add(function(component:Component){
                     trace(component.name);
@@ -98,33 +89,13 @@ class Main2
 
             e1.add(new engine.components.Physics(400,380,0))
               .add(new engine.components.Sprite(spr3))
-              .add(new engine.components.KeyboardControls(gameLoop.keyboard))
-              .add(new engine.components.ParticleEmitter());
+              .add(new engine.components.KeyboardControls(gameLoop.keyboard));
             entityManager.addEntity(e1);
-
-            var xpos = 0, ypos = 0;
-            for (i in 0...100) {
-                var newSpr = new Sprite();
-                newSpr.id="newSpr"+i;
-                newSpr.texture = tm.textures.get("texturechar1");
-                xpos++;
-                if (xpos>99) {
-                    xpos=0;
-                    ypos++;
-                }
-                newSpr.pivot.x = 50/2;
-                newSpr.pivot.y = 75/2;
-
-                var e = new engine.core.Entity();
-                e.add(new engine.components.Physics(100 + xpos*20,100 + ypos*20,0))
-                 .add(new engine.components.Sprite(newSpr));
-                entityManager.addEntity(e);
-
-            }
 
             function tick() {
                 entityManager.Update(1000/60);
                 view.camera.Focus(spr3.position.x,spr3.position.y);
+                tileMapRenderer.draw();
                 view.renderer.Render(view.camera.viewPortAABB);
             }
 
@@ -149,11 +120,8 @@ class Main2
 
         } );
 
-        assets.SetImagesToLoad( ["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"] );
+        assets.SetImagesToLoad( ["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"] );
         assets.Load();
-        // var pengine = new physics.PhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT());
-        var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
-trace(pengine);
         // var m = physics.dynamics.Material.DEFAULTMATERIAL();
 
     }   

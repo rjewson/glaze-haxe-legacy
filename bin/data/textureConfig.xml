@@ -6,4 +6,7 @@
     <basetexture id="char" asset="data/characters.png">
         <texture id="texturechar1" top="0" left="0" width="50" height="75"/>
     </basetexture>
+    <basetexture id="tiles" asset="data/tilescompressed.png">
+        <texture id="texturechar1" top="0" left="0" width="50" height="75"/>
+    </basetexture>    
 </textureconfig>
