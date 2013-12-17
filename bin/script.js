@@ -138,7 +138,7 @@ Main2.main = function() {
 		var entityManager = new engine.core.EntityManager();
 		entityManager.addSystem(new engine.systems.RenderSystem(itemContainer));
 		entityManager.componentAdded.add(function(component) {
-			console.log(component.name);
+			haxe.Log.trace(component.name,{ fileName : "Main2.hx", lineNumber : 81, className : "Main2", methodName : "main"});
 		});
 		var e1 = new engine.core.Entity();
 		var spr3 = createSprite("character",400,380,0,0,"texturechar1");
@@ -150,6 +150,10 @@ Main2.main = function() {
 		var tick = function() {
 			entityManager.Update(16.6666666666666679);
 			view.camera.Focus(spr3.position.x,spr3.position.y);
+			var _this = tileMapRenderer.test;
+			_this.x = spr3.position.x;
+			_this.y = spr3.position.y;
+			_this;
 			tileMapRenderer.draw();
 			view.renderer.Render(view.camera.viewPortAABB);
 		};
@@ -1370,6 +1374,11 @@ engine.view.View.prototype = {
 	__class__: engine.view.View
 };
 var haxe = {};
+haxe.Log = function() { };
+haxe.Log.__name__ = true;
+haxe.Log.trace = function(v,infos) {
+	js.Boot.__trace(v,infos);
+};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
 	this.h = { };
@@ -1769,6 +1778,25 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 var js = {};
 js.Boot = function() { };
 js.Boot.__name__ = true;
+js.Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+};
+js.Boot.__trace = function(v,i) {
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	msg += js.Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js.Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
+};
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
@@ -2103,10 +2131,29 @@ test.Light = function(x,y,intensity) {
 	this.x = x;
 	this.y = y;
 	this.intensity = intensity;
+	this.preRenderedLight = new ds.Array2D(20,20);
+	this.calc();
 };
 test.Light.__name__ = true;
 test.Light.prototype = {
-	__class__: test.Light
+	calc: function() {
+		var _g = 0;
+		while(_g < 20) {
+			var ypos = _g++;
+			var _g1 = 0;
+			while(_g1 < 20) {
+				var xpos = _g1++;
+				var ydist = ypos - 10;
+				var xdist = xpos - 10;
+				var light = Math.sqrt(ydist * ydist + xdist * xdist);
+				light = 1 / light * 1000;
+				haxe.Log.trace(xpos,{ fileName : "Light.hx", lineNumber : 32, className : "test.Light", methodName : "calc", customParams : [ypos,light]});
+				var _this = this.preRenderedLight;
+				_this.data32[ypos * _this.w + xpos] = light;
+			}
+		}
+	}
+	,__class__: test.Light
 };
 test.ParticleTileMap = function() {
 	this.width = 50;
@@ -2114,6 +2161,7 @@ test.ParticleTileMap = function() {
 	this.map = new ds.Array2D(this.width,this.height);
 	this.lightMap = new ds.Array2D(this.width,this.height);
 	this.tileSize = 16;
+	this.test = new physics.geometry.Vector2D();
 	this.renderer = new wgr.renderers.webgl.PointSpriteRenderer();
 	this.renderer.ResizeBatch(this.width * this.height);
 	this.lights = new Array();
@@ -2122,6 +2170,8 @@ test.ParticleTileMap = function() {
 	this.lights.push(new test.Light(30,30,255));
 	this.lights.push(new test.Light(60,18,255));
 	this.lights.push(new test.Light(5,40,255));
+	this.shadowCaster = new test.ShadowCast(this);
+	this.count = 0;
 	this.InitMap();
 };
 test.ParticleTileMap.__name__ = true;
@@ -2137,13 +2187,24 @@ test.ParticleTileMap.prototype = {
 				var x = _g3++;
 				var tileType = 77;
 				if(x == 20 || x == 30) tileType = 80;
+				if(x > 20 && x < 30) tileType = 0;
 				var _this = this.map;
 				_this.data32[y * _this.w + x] = tileType;
 			}
 		}
+		var _this = this.map;
+		_this.data32[10 * _this.w + 25] = 80;
+		var _this = this.map;
+		_this.data32[10 * _this.w + 26] = 80;
+		var _this = this.map;
+		_this.data32[11 * _this.w + 25] = 80;
+		var _this = this.map;
+		_this.data32[11 * _this.w + 26] = 80;
 	}
 	,draw: function() {
-		this.count = 0;
+		this.count++;
+		this.lights[0].x = this.test.x / 16 | 0;
+		this.lights[0].y = this.test.y / 16 | 0;
 		this.reset();
 		this.drawLights();
 		this.drawTiles();
@@ -2164,18 +2225,127 @@ test.ParticleTileMap.prototype = {
 		}
 	}
 	,drawLights: function() {
+		this.count = 0;
 		var _g = 0;
 		var _g1 = this.lights;
 		while(_g < _g1.length) {
 			var light = _g1[_g];
 			++_g;
-			this.applyLight(light.x,light.y,light.intensity);
+			this.visited = { };
+			this.AddShadowLight(light.x,light.y,10,0);
 		}
+	}
+	,applyLight2: function(light) {
+		var _this = this.lightMap;
+		_this.data32[light.y * _this.w + light.x] = 256;
+		var _g = 1;
+		while(_g < 10) {
+			var i = _g++;
+			var sideCount = i * 2 + 1;
+			var xpos = -i;
+			var ypos = -i;
+			var count = 0;
+			var prl = 0;
+			while(count < sideCount) {
+				var _this = light.preRenderedLight;
+				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
+				var _this = this.lightMap;
+				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
+				xpos++;
+				count++;
+			}
+			count = 1;
+			xpos--;
+			while(count < sideCount) {
+				ypos++;
+				var tileOpacity;
+				var id;
+				var _this = this.map;
+				id = _this.data32[(light.y + ypos) * _this.w + (light.x + xpos)];
+				if(id == 80) tileOpacity = 100; else if(id == 77) tileOpacity = 15; else tileOpacity = 5;
+				var prevTileOpacity;
+				prevTileOpacity = (function($this) {
+					var $r;
+					var _this = $this.lightMap;
+					$r = _this.data32[(light.y + ypos) * _this.w + (light.x + xpos - 1)];
+					return $r;
+				}(this)) >> 16;
+				var newOpacity = prevTileOpacity + tileOpacity;
+				var _this = light.preRenderedLight;
+				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
+				prl -= newOpacity;
+				if(prl < 0) prl = 0;
+				var _this = this.lightMap;
+				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = newOpacity << 16 | prl;
+				count++;
+			}
+			count = 1;
+			while(count < sideCount) {
+				xpos--;
+				var _this = light.preRenderedLight;
+				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
+				var _this = this.lightMap;
+				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
+				count++;
+			}
+			count = 1;
+			while(count < sideCount) {
+				ypos--;
+				var _this = light.preRenderedLight;
+				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
+				var _this = this.lightMap;
+				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
+				count++;
+			}
+		}
+	}
+	,applyLight2x: function(x,y,light,encounteredWallness) {
+		if(x < 0 || x == this.width || y < 0 || y == this.height) return;
+		if(light.x - x < 0 || light.x - x == 20 || light.y - y < 0 || light.y - y == 20) return;
+		encounteredWallness += (function($this) {
+			var $r;
+			var id;
+			{
+				var _this = $this.map;
+				id = _this.data32[y * _this.w + x];
+			}
+			$r = id == 80?100:id == 77?15:5;
+			return $r;
+		}(this));
+		var newLight;
+		newLight = (function($this) {
+			var $r;
+			var _this = light.preRenderedLight;
+			$r = _this.data32[(light.y - y) * _this.w + (light.x - x)];
+			return $r;
+		}(this)) - encounteredWallness;
+		var currentLight;
+		var _this = this.lightMap;
+		currentLight = _this.data32[y * _this.w + x];
+		if(newLight <= currentLight) return;
+		var _this = this.lightMap;
+		_this.data32[y * _this.w + x] = 256;
+		this.applyLight2x(x + 1,y,light,encounteredWallness);
+		this.applyLight2x(x,y + 1,light,encounteredWallness);
+		this.applyLight2x(x - 1,y,light,encounteredWallness);
+		this.applyLight2x(x,y - 1,light,encounteredWallness);
 	}
 	,applyLight: function(x,y,lastLight) {
 		this.count++;
 		if(x < 0 || x == this.width || y < 0 || y == this.height) return;
-		var newLight = lastLight - 25;
+		if(this.visited[x << 8 | y] != null) return;
+		this.visited[x << 8 | y] = true;
+		var newLight;
+		newLight = lastLight - (function($this) {
+			var $r;
+			var id;
+			{
+				var _this = $this.map;
+				id = _this.data32[y * _this.w + x];
+			}
+			$r = id == 80?100:id == 77?15:5;
+			return $r;
+		}(this));
 		var currentLight;
 		var _this = this.lightMap;
 		currentLight = _this.data32[y * _this.w + x];
@@ -2186,6 +2356,129 @@ test.ParticleTileMap.prototype = {
 		this.applyLight(x,y + 1,newLight);
 		this.applyLight(x - 1,y,newLight);
 		this.applyLight(x,y - 1,newLight);
+	}
+	,AddShadowLight: function(x,y,range,colour) {
+		var minx = Math.max(0,x - range);
+		var maxx = Math.min(this.width - 1,x + range);
+		var miny = Math.max(0,y - range);
+		var maxy = Math.min(this.height - 1,y + range);
+		var px = Math.ceil(x) - 1;
+		var py = Math.ceil(y) - 1;
+		var maxi = Math.ceil(range * 1.41421356237);
+		var _g = 0;
+		while(_g < maxi) {
+			var i = _g++;
+			var j = Math.max(0,i - range);
+			while(j <= i && j <= range) {
+				this.updateOcclusion(px - i + j,py - j,x,y,true);
+				this.updateOcclusion(px - i + j,py + j,x,y,true);
+				j++;
+			}
+		}
+		var _g = 0;
+		while(_g < maxi) {
+			var i = _g++;
+			var j = Math.max(0,i - range);
+			while(j <= i && j <= range) {
+				this.updateOcclusion(px + j,py - i + j,x,y,false);
+				this.updateOcclusion(px - j + i,py + j,x,y,false);
+				j++;
+			}
+		}
+	}
+	,updateOcclusion: function(x,y,lightX,lightY,normalize) {
+		if(x >= 0 && x < this.width && y >= 0 && y < this.height) {
+			var dX = x - lightX;
+			var dY = y - lightY;
+			var dSQR = dX * dX + dY * dY;
+			var intensity = Math.max(0,1 - dSQR / 100);
+			var currentLight;
+			var _this = this.lightMap;
+			currentLight = _this.data32[y * _this.w + x];
+			var newLight = 256 * intensity;
+			if(newLight <= currentLight) return;
+			var _this = this.lightMap;
+			_this.data32[y * _this.w + x] = 256 * intensity;
+			this.calcOcclusion(x,y,false);
+		}
+	}
+	,calcOcclusion: function(x,y,normalize) {
+		var dx = Math.ceil(x) - x - 1;
+		var dy = Math.ceil(y) - y - 1;
+		var sx;
+		if(dx == 0) sx = 0; else if(dx < 0) sx = -1; else sx = 1;
+		var sy;
+		if(dy == 0) sy = 0; else if(dy < 0) sy = -1; else sy = 1;
+		var ox;
+		if(sy == 0) ox = sx; else ox = 0;
+		var oy;
+		if(sx == 0) oy = sy; else oy = 0;
+		var x1 = x + 0.5 * (1 - sy + ox);
+		var y1 = y + 0.5 * (1 + sx + oy);
+		var x2 = x + 0.5 * (1 + sy + ox);
+		var y2 = y + 0.5 * (1 - sx + oy);
+	}
+	,castRays: function(x,y,range,allowDiagonalSteps) {
+		var rCeil = Math.ceil(range);
+		var dx = -rCeil;
+		var dy = -rCeil;
+		while(dx < rCeil) this.castRay(x,y,range,dx++,dy,allowDiagonalSteps);
+		while(dy < rCeil) this.castRay(x,y,range,dx,dy++,allowDiagonalSteps);
+		while(dx > -rCeil) this.castRay(x,y,range,dx--,dy,allowDiagonalSteps);
+		while(dy > -rCeil) this.castRay(x,y,range,dx,dy--,allowDiagonalSteps);
+	}
+	,castRay: function(x,y,range,dirX,dirY,allowDiagonalSteps) {
+		var rCeil = Math.ceil(range);
+		var dx = Math.abs(dirX);
+		var dy = Math.abs(dirY);
+		var sx;
+		if(dirX > 0) sx = 1; else sx = -1;
+		var sy;
+		if(dirY > 0) sy = 1; else sy = -1;
+		var err = dx - dy;
+		var xSum = 0;
+		var ySum = 0;
+		var light = 256;
+		while(true) {
+			if(xSum * xSum + ySum * ySum >= range * range) break;
+			var _this = this.lightMap;
+			_this.data32[y * _this.w + x] = light;
+			if((function($this) {
+				var $r;
+				var id;
+				{
+					var _this = $this.map;
+					id = _this.data32[y * _this.w + x];
+				}
+				$r = id == 80?100:id == 77?15:5;
+				return $r;
+			}(this)) > 99) return false;
+			light -= 15;
+			var e2 = 2 * err;
+			if(allowDiagonalSteps == false) {
+				if(e2 > -dy && Math.abs(e2 + dy) > Math.abs(e2 - dx)) {
+					xSum++;
+					err -= dy;
+					x += sx;
+				} else if(e2 < dx) {
+					ySum++;
+					err += dx;
+					y += sy;
+				}
+			} else {
+				if(e2 > -dy) {
+					xSum++;
+					err -= dy;
+					x += sx;
+				}
+				if(e2 < dx) {
+					ySum++;
+					err += dx;
+					y += sy;
+				}
+			}
+		}
+		return true;
 	}
 	,drawTiles: function() {
 		var _g1 = 0;
@@ -2199,18 +2492,178 @@ test.ParticleTileMap.prototype = {
 				var tile;
 				var _this = this.map;
 				tile = _this.data32[y * _this.w + x];
-				var light;
-				var _this = this.lightMap;
-				light = _this.data32[y * _this.w + x];
-				this.renderer.AddSpriteToBatch(tile,x * this.tileSize,y * this.tileSize,16,255,light,light,light);
+				if(tile > 0) {
+					var light;
+					light = (function($this) {
+						var $r;
+						var _this = $this.lightMap;
+						$r = _this.data32[y * _this.w + x];
+						return $r;
+					}(this)) & 65535;
+					this.renderer.AddSpriteToBatch(tile,x * this.tileSize,y * this.tileSize,16,255,light,light,light);
+				}
 			}
 		}
 	}
 	,tileOpacity: function(id) {
-		if(id == 80) return 256;
-		return 10;
+		if(id == 80) return 100;
+		if(id == 77) return 15;
+		return 5;
 	}
 	,__class__: test.ParticleTileMap
+};
+test.Sector = function() { };
+test.Sector.__name__ = true;
+test.Sector.normalizeRad2 = function(angle) {
+	while(angle < 0) angle += Math.PI * 2;
+	while(angle > Math.PI * 2) angle -= Math.PI * 2;
+	return angle;
+};
+test.Sector.prototype = {
+	beta: function() {
+		return this.alpha + this.theta;
+	}
+	,Sector: function(alphaRadian,betaRadian) {
+		if(betaRadian == null) betaRadian = 0;
+		if(alphaRadian == null) alphaRadian = 0;
+		this.alpha = alphaRadian;
+		this.theta = betaRadian - alphaRadian;
+	}
+	,clear: function() {
+		this.alpha = this.theta = 0;
+	}
+	,setFullCircle: function() {
+		this.alpha = 0;
+		this.theta = Math.PI * 2;
+	}
+	,setCone: function(x,y,coneAngle,normalize) {
+		if(normalize == null) normalize = false;
+		this.alpha = Math.atan2(y,x) - 0.5 * coneAngle;
+		if(normalize) this.alpha = test.Sector.normalizeRad2(this.alpha);
+		this.theta = coneAngle;
+	}
+	,setFromCoords: function(cx,cy,ax,ay,bx,by,normalize) {
+		if(normalize == null) normalize = false;
+		this.alpha = Math.atan2(ay - cy,ax - cx);
+		var newBeta = Math.atan2(by - cy,bx - cx);
+		if(normalize) {
+			this.alpha = test.Sector.normalizeRad2(this.alpha);
+			newBeta = test.Sector.normalizeRad2(newBeta);
+		}
+		if(this.alpha >= newBeta) this.alpha = this.theta = 0; else this.theta = newBeta - this.alpha;
+	}
+	,copy: function(a) {
+		this.alpha = a.alpha;
+		this.theta = a.theta;
+	}
+	,setIntersection: function(a,b) {
+		if(a.theta == 0 || b.theta == 0) this.alpha = this.theta = 0; else {
+			this.alpha = Math.max(a.alpha,b.alpha);
+			var newBeta = Math.min(a.alpha + a.theta,b.alpha + b.theta);
+			if(newBeta <= this.alpha) this.alpha = this.theta = 0; else this.theta = newBeta - this.alpha;
+		}
+	}
+	,setUnion: function(a,b) {
+		if(a.theta == 0) {
+			this.alpha = b.alpha;
+			this.theta = b.theta;
+		} else if(b.theta == 0) {
+			this.alpha = a.alpha;
+			this.theta = a.theta;
+		} else {
+			this.alpha = Math.min(a.alpha,b.alpha);
+			var newBeta = Math.max(a.beta(),b.beta());
+			if(newBeta <= this.alpha) this.alpha = this.theta = 0; else this.theta = newBeta - this.alpha;
+		}
+	}
+	,__class__: test.Sector
+};
+test.ShadowCast = function(map) {
+	this.map = map;
+	this.mult = new Array();
+	this.position = new physics.geometry.Vector2D();
+	this.mult.push([1,0,0,-1,-1,0,0,1]);
+	this.mult.push([0,1,-1,0,0,-1,1,0]);
+	this.mult.push([0,1,1,0,0,-1,-1,0]);
+	this.mult.push([1,0,0,1,-1,0,0,-1]);
+	this.gradient = true;
+};
+test.ShadowCast.__name__ = true;
+test.ShadowCast.prototype = {
+	calculateOctant: function(cx,cy,row,start,end,radius,xx,xy,yx,yy,id) {
+		this.count++;
+		this.setTileLight(cx,cy,0);
+		var new_start = 0;
+		if(start < end) return;
+		var radius_squared = radius * radius | 0;
+		var _g1 = row;
+		var _g = radius + 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var dx = -i - 1;
+			var dy = -i;
+			var blocked = false;
+			while(dx <= 0) {
+				dx += 1;
+				var X = cx + dx * xx + dy * xy;
+				var Y = cy + dx * yx + dy * yy;
+				if(X < this.map.width && X >= 0 && Y < this.map.height && Y >= 0) {
+					var l_slope = (dx - 0.5) / (dy + 0.5);
+					var r_slope = (dx + 0.5) / (dy - 0.5);
+					if(start < r_slope) continue; else if(end > l_slope) break; else {
+						if(dx * dx + dy * dy < radius_squared) {
+							var pos1 = new physics.geometry.Vector2D(X,Y);
+							var pos2 = this.position;
+							var d = (pos1.x - pos2.x) * (pos1.x - pos2.x) + (pos1.y - pos2.y) * (pos1.y - pos2.y);
+							this.setTileLight(X,Y,this.gradient == false?1:1 - d / (radius * radius));
+						}
+						if(blocked) {
+							if(this.doesTileBlock(X,Y)) {
+								new_start = r_slope;
+								continue;
+							} else {
+								blocked = false;
+								start = new_start;
+							}
+						} else if(this.doesTileBlock(X,Y) && i < radius) {
+							blocked = true;
+							this.calculateOctant(cx,cy,i + 1,start,l_slope,radius,xx,xy,yx,yy,id + 1);
+							new_start = r_slope;
+						}
+					}
+				}
+			}
+			if(blocked) break;
+		}
+	}
+	,calculate: function() {
+		var _g = 0;
+		while(_g < 8) {
+			var i = _g++;
+			this.calculateOctant(this.position.x,this.position.y,1,1.0,0.0,10,this.mult[0][i],this.mult[1][i],this.mult[2][i],this.mult[3][i],0);
+			this.setTileLight(this.position.x,this.position.y,1);
+		}
+	}
+	,setTileLight: function(x,y,intensity) {
+		var _this = this.map.lightMap;
+		_this.data32[(y | 0) * _this.w + (x | 0)] = intensity * 256 | 0;
+	}
+	,doesTileBlock: function(x,y) {
+		return (function($this) {
+			var $r;
+			var _this = $this.map.map;
+			$r = _this.data32[(y | 0) * _this.w + (x | 0)];
+			return $r;
+		}(this)) == 80;
+	}
+	,drawLight: function(light) {
+		this.count = 0;
+		this.position.x = light.x;
+		this.position.y = light.y;
+		this.calculate();
+		haxe.Log.trace(this.count,{ fileName : "ShadowCast.hx", lineNumber : 112, className : "test.ShadowCast", methodName : "drawLight"});
+	}
+	,__class__: test.ShadowCast
 };
 var utils = {};
 utils.EventTarget = function() {
@@ -2586,7 +3039,7 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 	}
 	,removeChildAt: function(index) {
 		var child = this.findChildByIndex(index);
-		console.log(child);
+		haxe.Log.trace(child,{ fileName : "DisplayObjectContainer.hx", lineNumber : 69, className : "wgr.display.DisplayObjectContainer", methodName : "removeChildAt"});
 		this.removeChild(child);
 		this.debug();
 		return child;
@@ -2694,7 +3147,7 @@ wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject
 	,debug: function() {
 		var child = this.head;
 		while(child != null) {
-			console.log(child.id);
+			haxe.Log.trace(child.id,{ fileName : "DisplayObjectContainer.hx", lineNumber : 169, className : "wgr.display.DisplayObjectContainer", methodName : "debug"});
 			child = child.next;
 		}
 	}
@@ -2832,7 +3285,7 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		}
 	}
 	,Flatten: function() {
-		console.log("Flatten");
+		haxe.Log.trace("Flatten",{ fileName : "Stage.hx", lineNumber : 42, className : "wgr.display.Stage", methodName : "Flatten"});
 		this.renderHead = null;
 		this.renderTail = null;
 		this.renderCount = 0;
@@ -3886,11 +4339,11 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 	}
 	,onContextLost: function(event) {
 		this.contextLost = true;
-		console.log("webGL Context Lost");
+		haxe.Log.trace("webGL Context Lost",{ fileName : "WebGLRenderer.hx", lineNumber : 95, className : "wgr.renderers.webgl.WebGLRenderer", methodName : "onContextLost"});
 	}
 	,onContextRestored: function(event) {
 		this.contextLost = false;
-		console.log("webGL Context Restored");
+		haxe.Log.trace("webGL Context Restored",{ fileName : "WebGLRenderer.hx", lineNumber : 100, className : "wgr.renderers.webgl.WebGLRenderer", methodName : "onContextRestored"});
 	}
 	,__class__: wgr.renderers.webgl.WebGLRenderer
 };
@@ -3922,9 +4375,9 @@ wgr.renderers.webgl.WebGLShaders.CompileProgram = function(gl,vertexSrc,fragment
 	gl.linkProgram(shaderProgram);
 	if(!gl.getProgramParameter(shaderProgram,35714)) {
 		js.Lib.alert("Could not initialize program");
-		console.log(vertexSrc);
-		console.log(fragmentSrc);
-		console.log(gl.getProgramInfoLog(shaderProgram));
+		haxe.Log.trace(vertexSrc,{ fileName : "WebGLShaders.hx", lineNumber : 42, className : "wgr.renderers.webgl.WebGLShaders", methodName : "CompileProgram"});
+		haxe.Log.trace(fragmentSrc,{ fileName : "WebGLShaders.hx", lineNumber : 43, className : "wgr.renderers.webgl.WebGLShaders", methodName : "CompileProgram"});
+		haxe.Log.trace(gl.getProgramInfoLog(shaderProgram),{ fileName : "WebGLShaders.hx", lineNumber : 44, className : "wgr.renderers.webgl.WebGLShaders", methodName : "CompileProgram"});
 	}
 	return shaderProgram;
 };

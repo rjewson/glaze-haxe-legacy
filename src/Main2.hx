@@ -95,6 +95,7 @@ class Main2
             function tick() {
                 entityManager.Update(1000/60);
                 view.camera.Focus(spr3.position.x,spr3.position.y);
+                tileMapRenderer.test.setTo(spr3.position.x,spr3.position.y);
                 tileMapRenderer.draw();
                 view.renderer.Render(view.camera.viewPortAABB);
             }
