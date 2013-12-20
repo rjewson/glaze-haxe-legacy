@@ -2127,31 +2127,46 @@ physics.geometry.Vector2D.prototype = {
 	,__class__: physics.geometry.Vector2D
 };
 var test = {};
-test.Light = function(x,y,intensity) {
+test.Light = function(x,y,range,intensity) {
+	if(intensity == null) intensity = 255;
+	if(range == null) range = 255;
 	this.x = x;
 	this.y = y;
-	this.intensity = intensity;
-	this.preRenderedLight = new ds.Array2D(20,20);
+	this.range = Math.min(255,range);
+	this.range2 = range * 2;
+	this.intensity = Math.min(255,intensity);
+	this.preRenderedLight = new Uint8Array(this.range2 * this.range2);
+	this.colour = 16777215;
 	this.calc();
 };
 test.Light.__name__ = true;
 test.Light.prototype = {
 	calc: function() {
-		var _g = 0;
-		while(_g < 20) {
-			var ypos = _g++;
-			var _g1 = 0;
-			while(_g1 < 20) {
-				var xpos = _g1++;
-				var ydist = ypos - 10;
-				var xdist = xpos - 10;
-				var light = Math.sqrt(ydist * ydist + xdist * xdist);
-				light = 1 / light * 1000;
-				haxe.Log.trace(xpos,{ fileName : "Light.hx", lineNumber : 32, className : "test.Light", methodName : "calc", customParams : [ypos,light]});
-				var _this = this.preRenderedLight;
-				_this.data32[ypos * _this.w + xpos] = light;
+		var _g1 = 0;
+		var _g = this.range2;
+		while(_g1 < _g) {
+			var ypos = _g1++;
+			var _g3 = 0;
+			var _g2 = this.range2;
+			while(_g3 < _g2) {
+				var xpos = _g3++;
+				var dX = ypos - this.range;
+				var dY = xpos - this.range;
+				var dSQR = dX * dX + dY * dY;
+				var cellIntensity = this.intensity * Math.max(0,1 - dSQR / (this.range * this.range));
+				this.preRenderedLight[ypos * this.range2 + xpos] = cellIntensity;
+				haxe.Log.trace(this.preRenderedLight[ypos * this.range2 + xpos],{ fileName : "Light.hx", lineNumber : 40, className : "test.Light", methodName : "calc"});
 			}
 		}
+	}
+	,getRelativeLight: function(rx,ry) {
+		rx += this.range;
+		ry += this.range;
+		if(rx < 0 || rx > this.range2 - 1 || ry < 0 || ry > this.range2 - 1) return 0;
+		return this.preRenderedLight[ry * this.range2 + rx];
+	}
+	,getIndex: function(x,y) {
+		return y * this.range2 + x;
 	}
 	,__class__: test.Light
 };
@@ -2165,12 +2180,9 @@ test.ParticleTileMap = function() {
 	this.renderer = new wgr.renderers.webgl.PointSpriteRenderer();
 	this.renderer.ResizeBatch(this.width * this.height);
 	this.lights = new Array();
-	this.lights.push(new test.Light(25,5,400));
-	this.lights.push(new test.Light(20,9,200));
-	this.lights.push(new test.Light(30,30,255));
-	this.lights.push(new test.Light(60,18,255));
-	this.lights.push(new test.Light(5,40,255));
+	this.lights.push(new test.Light(25,5,20,255));
 	this.shadowCaster = new test.ShadowCast(this);
+	this.workingCells = new Uint32Array(new ArrayBuffer(40000));
 	this.count = 0;
 	this.InitMap();
 };
@@ -2187,7 +2199,7 @@ test.ParticleTileMap.prototype = {
 				var x = _g3++;
 				var tileType = 77;
 				if(x == 20 || x == 30) tileType = 80;
-				if(x > 20 && x < 30) tileType = 0;
+				if(x > 20 && x < 30) tileType = 31;
 				var _this = this.map;
 				_this.data32[y * _this.w + x] = tileType;
 			}
@@ -2232,146 +2244,65 @@ test.ParticleTileMap.prototype = {
 			var light = _g1[_g];
 			++_g;
 			this.visited = { };
-			this.AddShadowLight(light.x,light.y,10,0);
+			this.applyLight(light);
 		}
 	}
-	,applyLight2: function(light) {
-		var _this = this.lightMap;
-		_this.data32[light.y * _this.w + light.x] = 256;
-		var _g = 1;
-		while(_g < 10) {
-			var i = _g++;
-			var sideCount = i * 2 + 1;
-			var xpos = -i;
-			var ypos = -i;
-			var count = 0;
-			var prl = 0;
-			while(count < sideCount) {
-				var _this = light.preRenderedLight;
-				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
-				var _this = this.lightMap;
-				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
-				xpos++;
-				count++;
-			}
-			count = 1;
-			xpos--;
-			while(count < sideCount) {
-				ypos++;
-				var tileOpacity;
-				var id;
-				var _this = this.map;
-				id = _this.data32[(light.y + ypos) * _this.w + (light.x + xpos)];
-				if(id == 80) tileOpacity = 100; else if(id == 77) tileOpacity = 15; else tileOpacity = 5;
-				var prevTileOpacity;
-				prevTileOpacity = (function($this) {
+	,applyLight: function(light) {
+		var x = light.x;
+		var y = light.y;
+		var encounteredWallness = 0;
+		var cellCount = 0;
+		this.workingCells[cellCount++] = 0 | x << 8 | y;
+		while(cellCount > 0) {
+			this.count++;
+			var cellValue = this.workingCells[--cellCount];
+			encounteredWallness = cellValue >> 16 & 255;
+			x = cellValue >> 8 & 255;
+			y = cellValue & 255;
+			if(x >= 0 && x < this.width && y >= 0 && y < this.height) {
+				encounteredWallness += (function($this) {
 					var $r;
-					var _this = $this.lightMap;
-					$r = _this.data32[(light.y + ypos) * _this.w + (light.x + xpos - 1)];
+					var id;
+					{
+						var _this = $this.map;
+						id = _this.data32[y * _this.w + x];
+					}
+					$r = id == 80?40:id == 77?30:5;
 					return $r;
-				}(this)) >> 16;
-				var newOpacity = prevTileOpacity + tileOpacity;
-				var _this = light.preRenderedLight;
-				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
-				prl -= newOpacity;
-				if(prl < 0) prl = 0;
+				}(this));
+				var newLight = light.getRelativeLight(light.x - x,light.y - y) - encounteredWallness;
+				var currentLight;
 				var _this = this.lightMap;
-				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = newOpacity << 16 | prl;
-				count++;
-			}
-			count = 1;
-			while(count < sideCount) {
-				xpos--;
-				var _this = light.preRenderedLight;
-				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
-				var _this = this.lightMap;
-				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
-				count++;
-			}
-			count = 1;
-			while(count < sideCount) {
-				ypos--;
-				var _this = light.preRenderedLight;
-				prl = _this.data32[(10 + ypos) * _this.w + (10 + xpos)];
-				var _this = this.lightMap;
-				_this.data32[(light.y + ypos) * _this.w + (light.x + xpos)] = prl;
-				count++;
+				currentLight = _this.data32[y * _this.w + x];
+				if(newLight > currentLight && newLight >= 0 && encounteredWallness >= 0) {
+					var _this = this.lightMap;
+					_this.data32[y * _this.w + x] = newLight;
+					this.workingCells[cellCount++] = encounteredWallness << 16 | x + 1 << 8 | y;
+					this.workingCells[cellCount++] = encounteredWallness << 16 | x << 8 | y + 1;
+					this.workingCells[cellCount++] = encounteredWallness << 16 | x - 1 << 8 | y;
+					this.workingCells[cellCount++] = encounteredWallness << 16 | x << 8 | y - 1;
+				}
 			}
 		}
-	}
-	,applyLight2x: function(x,y,light,encounteredWallness) {
-		if(x < 0 || x == this.width || y < 0 || y == this.height) return;
-		if(light.x - x < 0 || light.x - x == 20 || light.y - y < 0 || light.y - y == 20) return;
-		encounteredWallness += (function($this) {
-			var $r;
-			var id;
-			{
-				var _this = $this.map;
-				id = _this.data32[y * _this.w + x];
-			}
-			$r = id == 80?100:id == 77?15:5;
-			return $r;
-		}(this));
-		var newLight;
-		newLight = (function($this) {
-			var $r;
-			var _this = light.preRenderedLight;
-			$r = _this.data32[(light.y - y) * _this.w + (light.x - x)];
-			return $r;
-		}(this)) - encounteredWallness;
-		var currentLight;
-		var _this = this.lightMap;
-		currentLight = _this.data32[y * _this.w + x];
-		if(newLight <= currentLight) return;
-		var _this = this.lightMap;
-		_this.data32[y * _this.w + x] = 256;
-		this.applyLight2x(x + 1,y,light,encounteredWallness);
-		this.applyLight2x(x,y + 1,light,encounteredWallness);
-		this.applyLight2x(x - 1,y,light,encounteredWallness);
-		this.applyLight2x(x,y - 1,light,encounteredWallness);
-	}
-	,applyLight: function(x,y,lastLight) {
-		this.count++;
-		if(x < 0 || x == this.width || y < 0 || y == this.height) return;
-		if(this.visited[x << 8 | y] != null) return;
-		this.visited[x << 8 | y] = true;
-		var newLight;
-		newLight = lastLight - (function($this) {
-			var $r;
-			var id;
-			{
-				var _this = $this.map;
-				id = _this.data32[y * _this.w + x];
-			}
-			$r = id == 80?100:id == 77?15:5;
-			return $r;
-		}(this));
-		var currentLight;
-		var _this = this.lightMap;
-		currentLight = _this.data32[y * _this.w + x];
-		if(newLight <= currentLight) return;
-		var _this = this.lightMap;
-		_this.data32[y * _this.w + x] = newLight;
-		this.applyLight(x + 1,y,newLight);
-		this.applyLight(x,y + 1,newLight);
-		this.applyLight(x - 1,y,newLight);
-		this.applyLight(x,y - 1,newLight);
 	}
 	,AddShadowLight: function(x,y,range,colour) {
 		var minx = Math.max(0,x - range);
 		var maxx = Math.min(this.width - 1,x + range);
 		var miny = Math.max(0,y - range);
 		var maxy = Math.min(this.height - 1,y + range);
-		var px = Math.ceil(x) - 1;
-		var py = Math.ceil(y) - 1;
-		var maxi = Math.ceil(range * 1.41421356237);
+		var px = Math.ceil(x);
+		var py = Math.ceil(y);
+		var maxi = range * 1.41421356237 | 0;
+		haxe.Log.trace("light=",{ fileName : "ParticleTileMap.hx", lineNumber : 231, className : "test.ParticleTileMap", methodName : "AddShadowLight", customParams : [x,y]});
+		var _this = this.lightMap;
+		_this.data32[y * _this.w + x] = 256;
 		var _g = 0;
 		while(_g < maxi) {
 			var i = _g++;
 			var j = Math.max(0,i - range);
 			while(j <= i && j <= range) {
 				this.updateOcclusion(px - i + j,py - j,x,y,true);
-				this.updateOcclusion(px - i + j,py + j,x,y,true);
+				if(j != 0) this.updateOcclusion(px - i + j,py + j,x,y,true);
 				j++;
 			}
 		}
@@ -2381,7 +2312,7 @@ test.ParticleTileMap.prototype = {
 			var j = Math.max(0,i - range);
 			while(j <= i && j <= range) {
 				this.updateOcclusion(px + j,py - i + j,x,y,false);
-				this.updateOcclusion(px - j + i,py + j,x,y,false);
+				if(j != 0) this.updateOcclusion(px - j + i,py + j,x,y,false);
 				j++;
 			}
 		}
@@ -2390,21 +2321,30 @@ test.ParticleTileMap.prototype = {
 		if(x >= 0 && x < this.width && y >= 0 && y < this.height) {
 			var dX = x - lightX;
 			var dY = y - lightY;
+			if(dX == 0 && dY == 0) return;
+			haxe.Log.trace("-----------",{ fileName : "ParticleTileMap.hx", lineNumber : 260, className : "test.ParticleTileMap", methodName : "updateOcclusion"});
+			haxe.Log.trace("calc=",{ fileName : "ParticleTileMap.hx", lineNumber : 261, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [dX,dY]});
 			var dSQR = dX * dX + dY * dY;
 			var intensity = Math.max(0,1 - dSQR / 100);
 			var currentLight;
 			var _this = this.lightMap;
 			currentLight = _this.data32[y * _this.w + x];
 			var newLight = 256 * intensity;
-			if(newLight <= currentLight) return;
+			var occlusion = this.calcOcclusion(x,y,lightX,lightY,false);
 			var _this = this.lightMap;
-			_this.data32[y * _this.w + x] = 256 * intensity;
-			this.calcOcclusion(x,y,false);
+			_this.data32[y * _this.w + x] = occlusion;
+			haxe.Log.trace("occlusion=",{ fileName : "ParticleTileMap.hx", lineNumber : 271, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [occlusion]});
 		}
 	}
-	,calcOcclusion: function(x,y,normalize) {
-		var dx = Math.ceil(x) - x - 1;
-		var dy = Math.ceil(y) - y - 1;
+	,calcOcclusion: function(x,y,lightX,lightY,normalize) {
+		var occlusion;
+		var id;
+		var _this = this.map;
+		id = _this.data32[y * _this.w + x];
+		if(id == 80) occlusion = 40; else if(id == 77) occlusion = 30; else occlusion = 5;
+		var recievingLight = 0;
+		var dx = lightX - x;
+		var dy = lightY - y;
 		var sx;
 		if(dx == 0) sx = 0; else if(dx < 0) sx = -1; else sx = 1;
 		var sy;
@@ -2417,6 +2357,54 @@ test.ParticleTileMap.prototype = {
 		var y1 = y + 0.5 * (1 + sx + oy);
 		var x2 = x + 0.5 * (1 + sy + ox);
 		var y2 = y + 0.5 * (1 - sx + oy);
+		if(Math.abs(dx) + Math.abs(dy) > 1) {
+			var c = 0;
+			haxe.Log.trace("check",{ fileName : "ParticleTileMap.hx", lineNumber : 298, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			if(dx > 0 && x <= this.width) {
+				recievingLight += (function($this) {
+					var $r;
+					var _this = $this.lightMap;
+					$r = _this.data32[y * _this.w + (x + 1)];
+					return $r;
+				}(this));
+				c++;
+				haxe.Log.trace("right",{ fileName : "ParticleTileMap.hx", lineNumber : 303, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			} else if(dx < 0 && x >= 0) {
+				recievingLight += (function($this) {
+					var $r;
+					var _this = $this.lightMap;
+					$r = _this.data32[y * _this.w + (x - 1)];
+					return $r;
+				}(this));
+				c++;
+				haxe.Log.trace("left",{ fileName : "ParticleTileMap.hx", lineNumber : 309, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			}
+			if(dy > 0 && y <= this.height) {
+				recievingLight += (function($this) {
+					var $r;
+					var _this = $this.lightMap;
+					$r = _this.data32[(y + 1) * _this.w + x];
+					return $r;
+				}(this));
+				c++;
+				haxe.Log.trace("down",{ fileName : "ParticleTileMap.hx", lineNumber : 319, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			} else if(dy < 0 && y >= 0) {
+				recievingLight += (function($this) {
+					var $r;
+					var _this = $this.lightMap;
+					$r = _this.data32[(y - 1) * _this.w + x];
+					return $r;
+				}(this));
+				c++;
+				haxe.Log.trace("up",{ fileName : "ParticleTileMap.hx", lineNumber : 325, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			}
+			recievingLight = recievingLight / c;
+		} else {
+			haxe.Log.trace("direct=",{ fileName : "ParticleTileMap.hx", lineNumber : 337, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [dx,dy]});
+			recievingLight = 256;
+		}
+		haxe.Log.trace("recievingLight=",{ fileName : "ParticleTileMap.hx", lineNumber : 342, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [recievingLight]});
+		return Math.max(0,recievingLight - occlusion);
 	}
 	,castRays: function(x,y,range,allowDiagonalSteps) {
 		var rCeil = Math.ceil(range);
@@ -2441,19 +2429,20 @@ test.ParticleTileMap.prototype = {
 		var light = 256;
 		while(true) {
 			if(xSum * xSum + ySum * ySum >= range * range) break;
+			var opacity;
+			var id;
+			var _this = this.map;
+			id = _this.data32[y * _this.w + x];
+			if(id == 80) opacity = 40; else if(id == 77) opacity = 30; else opacity = 5;
+			var current;
 			var _this = this.lightMap;
-			_this.data32[y * _this.w + x] = light;
-			if((function($this) {
-				var $r;
-				var id;
-				{
-					var _this = $this.map;
-					id = _this.data32[y * _this.w + x];
-				}
-				$r = id == 80?100:id == 77?15:5;
-				return $r;
-			}(this)) > 99) return false;
-			light -= 15;
+			current = _this.data32[y * _this.w + x];
+			if(current == 0 && current < light) {
+				var _this = this.lightMap;
+				_this.data32[y * _this.w + x] = light;
+				light -= opacity;
+			}
+			if(light <= 0) return false;
 			var e2 = 2 * err;
 			if(allowDiagonalSteps == false) {
 				if(e2 > -dy && Math.abs(e2 + dy) > Math.abs(e2 - dx)) {
@@ -2479,6 +2468,91 @@ test.ParticleTileMap.prototype = {
 			}
 		}
 		return true;
+	}
+	,castVoxelRays: function(x,y,range) {
+		var _this = this.lightMap;
+		_this.data32[y * _this.w + x] = 256;
+		var rCeil = Math.ceil(range);
+		var dx = -rCeil;
+		var dy = -rCeil;
+		while(dx < rCeil) this.castVoxelRay(new physics.geometry.Vector2D(x,y),new physics.geometry.Vector2D(dx++,dy));
+		while(dy < rCeil) this.castVoxelRay(new physics.geometry.Vector2D(x,y),new physics.geometry.Vector2D(dx,dy++));
+		while(dx > -rCeil) this.castVoxelRay(new physics.geometry.Vector2D(x,y),new physics.geometry.Vector2D(dx--,dy));
+		while(dy > -rCeil) this.castVoxelRay(new physics.geometry.Vector2D(x,y),new physics.geometry.Vector2D(dx,dy--));
+	}
+	,castVoxelRay: function(p1Original,p2Original,tileSize) {
+		if(tileSize == null) tileSize = 16;
+		p2Original.x += p1Original.x;
+		p2Original.y += p1Original.y;
+		p2Original;
+		p1Original.x += 0.5;
+		p1Original.y += 0.5;
+		p1Original;
+		p2Original.x += 0.5;
+		p2Original.y += 0.5;
+		p2Original;
+		p1Original.x *= 16;
+		p1Original.y *= 16;
+		p1Original;
+		p2Original.x *= 16;
+		p2Original.y *= 16;
+		p2Original;
+		var p1 = new physics.geometry.Vector2D(p1Original.x / tileSize,p1Original.y / tileSize);
+		var p2 = new physics.geometry.Vector2D(p2Original.x / tileSize,p2Original.y / tileSize);
+		if((p1.x | 0) == (p2.x | 0) && (p1.y | 0) == (p2.y | 0)) return p2Original;
+		var stepX;
+		if(p2.x > p1.x) stepX = 1; else stepX = -1;
+		var stepY;
+		if(p2.y > p1.y) stepY = 1; else stepY = -1;
+		var rayDirection = new physics.geometry.Vector2D(p2.x - p1.x,p2.y - p1.y);
+		var ratioX = rayDirection.x / rayDirection.y;
+		var ratioY = rayDirection.y / rayDirection.x;
+		var deltaY = p2.x - p1.x;
+		var deltaX = p2.y - p1.y;
+		if(deltaX < 0) deltaX = -deltaX; else deltaX = deltaX;
+		if(deltaY < 0) deltaY = -deltaY; else deltaY = deltaY;
+		var testX = p1.x | 0;
+		var testY = p1.y | 0;
+		var maxX;
+		maxX = deltaX * (stepX > 0?1.0 - p1.x % 1:p1.x % 1);
+		var maxY;
+		maxY = deltaY * (stepY > 0?1.0 - p1.y % 1:p1.y % 1);
+		var endTileX = p2.x | 0;
+		var endTileY = p2.y | 0;
+		var hit;
+		var collisionPoint = new physics.geometry.Vector2D();
+		var light = 256;
+		while(testX != endTileX || testY != endTileY) {
+			var currentLight;
+			var _this = this.lightMap;
+			currentLight = _this.data32[testY * _this.w + testX];
+			if(maxX < maxY) {
+				maxX += deltaX;
+				testX += stepX;
+				var data;
+				var _this = this.map;
+				data = _this.data32[testY * _this.w + testX];
+				var newLight;
+				newLight = light - (data == 80?40:data == 77?30:5);
+				var _this = this.lightMap;
+				_this.data32[testY * _this.w + testX] = light;
+				light = newLight;
+				if(light <= 0) return null;
+			} else {
+				maxY += deltaY;
+				testY += stepY;
+				var data;
+				var _this = this.map;
+				data = _this.data32[testY * _this.w + testX];
+				var newLight;
+				newLight = light - (data == 80?40:data == 77?30:5);
+				var _this = this.lightMap;
+				_this.data32[testY * _this.w + testX] = light;
+				light = newLight;
+				if(light <= 0) return null;
+			}
+		}
+		return p2Original;
 	}
 	,drawTiles: function() {
 		var _g1 = 0;
@@ -2506,8 +2580,8 @@ test.ParticleTileMap.prototype = {
 		}
 	}
 	,tileOpacity: function(id) {
-		if(id == 80) return 100;
-		if(id == 77) return 15;
+		if(id == 80) return 40;
+		if(id == 77) return 30;
 		return 5;
 	}
 	,__class__: test.ParticleTileMap
