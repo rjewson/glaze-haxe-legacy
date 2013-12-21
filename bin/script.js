@@ -2136,12 +2136,14 @@ test.Light = function(x,y,range,intensity) {
 	this.range2 = range * 2;
 	this.intensity = Math.min(255,intensity);
 	this.preRenderedLight = new Uint8Array(this.range2 * this.range2);
+	this.renderedLight = new Uint8Array(this.range2 * this.range2);
+	this.workingCells = new Uint32Array(this.range2 * this.range2);
 	this.colour = 16777215;
-	this.calc();
+	this.preRenderLight();
 };
 test.Light.__name__ = true;
 test.Light.prototype = {
-	calc: function() {
+	preRenderLight: function() {
 		var _g1 = 0;
 		var _g = this.range2;
 		while(_g1 < _g) {
@@ -2155,7 +2157,48 @@ test.Light.prototype = {
 				var dSQR = dX * dX + dY * dY;
 				var cellIntensity = this.intensity * Math.max(0,1 - dSQR / (this.range * this.range));
 				this.preRenderedLight[ypos * this.range2 + xpos] = cellIntensity;
-				haxe.Log.trace(this.preRenderedLight[ypos * this.range2 + xpos],{ fileName : "Light.hx", lineNumber : 40, className : "test.Light", methodName : "calc"});
+			}
+		}
+	}
+	,resetRenderedLight: function() {
+		var _g1 = 0;
+		var _g = this.range2;
+		while(_g1 < _g) {
+			var y = _g1++;
+			var _g3 = 0;
+			var _g2 = this.range2;
+			while(_g3 < _g2) {
+				var x = _g3++;
+				this.renderedLight[y * this.range2 + x] = 0;
+			}
+		}
+	}
+	,renderLight: function(map,opacityLookup,lightMap) {
+		var cellX = this.x;
+		var cellY = this.y;
+		var encounteredWallness = 0;
+		var cellCount = 0;
+		this.workingCells[cellCount++] = 0 | cellX << 8 | cellY;
+		while(cellCount > 0) {
+			var cellValue = this.workingCells[--cellCount];
+			encounteredWallness = cellValue >> 16 & 255;
+			cellX = cellValue >> 8 & 255;
+			cellY = cellValue & 255;
+			if(cellX >= 0 && this.x < map.w && cellY >= 0 && this.y < map.h) {
+				var relX = this.x - cellX + this.range;
+				var relY = this.y - cellY + this.range;
+				if(relX >= 0 || relX < this.range2 || relY >= 0 || relY <= this.range2) {
+					encounteredWallness += opacityLookup[map.data32[cellY * map.w + cellX]];
+					var newLight = this.preRenderedLight[relY * this.range2 + relX] - encounteredWallness;
+					var currentLight = lightMap.data32[cellY * lightMap.w + cellX];
+					if(newLight > currentLight) {
+						lightMap.data32[cellY * lightMap.w + cellX] = newLight;
+						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX + 1 << 8 | cellY;
+						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX << 8 | cellY + 1;
+						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX - 1 << 8 | cellY;
+						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX << 8 | cellY - 1;
+					}
+				}
 			}
 		}
 	}
@@ -2181,8 +2224,13 @@ test.ParticleTileMap = function() {
 	this.renderer.ResizeBatch(this.width * this.height);
 	this.lights = new Array();
 	this.lights.push(new test.Light(25,5,20,255));
+	this.lights.push(new test.Light(20,9,200));
+	this.lights.push(new test.Light(30,30,255));
+	this.lights.push(new test.Light(60,18,255));
+	this.lights.push(new test.Light(5,40,255));
 	this.shadowCaster = new test.ShadowCast(this);
 	this.workingCells = new Uint32Array(new ArrayBuffer(40000));
+	this.tileOpacities = new Uint8Array(256);
 	this.count = 0;
 	this.InitMap();
 };
@@ -2212,6 +2260,15 @@ test.ParticleTileMap.prototype = {
 		_this.data32[11 * _this.w + 25] = 80;
 		var _this = this.map;
 		_this.data32[11 * _this.w + 26] = 80;
+		var _g1 = 0;
+		var _g = this.tileOpacities.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.tileOpacities[i] = 1;
+		}
+		this.tileOpacities[80] = 40;
+		this.tileOpacities[77] = 30;
+		this.tileOpacities[31] = 5;
 	}
 	,draw: function() {
 		this.count++;
@@ -2244,7 +2301,7 @@ test.ParticleTileMap.prototype = {
 			var light = _g1[_g];
 			++_g;
 			this.visited = { };
-			this.applyLight(light);
+			light.renderLight(this.map,this.tileOpacities,this.lightMap);
 		}
 	}
 	,applyLight: function(light) {
@@ -2293,7 +2350,7 @@ test.ParticleTileMap.prototype = {
 		var px = Math.ceil(x);
 		var py = Math.ceil(y);
 		var maxi = range * 1.41421356237 | 0;
-		haxe.Log.trace("light=",{ fileName : "ParticleTileMap.hx", lineNumber : 231, className : "test.ParticleTileMap", methodName : "AddShadowLight", customParams : [x,y]});
+		haxe.Log.trace("light=",{ fileName : "ParticleTileMap.hx", lineNumber : 243, className : "test.ParticleTileMap", methodName : "AddShadowLight", customParams : [x,y]});
 		var _this = this.lightMap;
 		_this.data32[y * _this.w + x] = 256;
 		var _g = 0;
@@ -2322,8 +2379,8 @@ test.ParticleTileMap.prototype = {
 			var dX = x - lightX;
 			var dY = y - lightY;
 			if(dX == 0 && dY == 0) return;
-			haxe.Log.trace("-----------",{ fileName : "ParticleTileMap.hx", lineNumber : 260, className : "test.ParticleTileMap", methodName : "updateOcclusion"});
-			haxe.Log.trace("calc=",{ fileName : "ParticleTileMap.hx", lineNumber : 261, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [dX,dY]});
+			haxe.Log.trace("-----------",{ fileName : "ParticleTileMap.hx", lineNumber : 272, className : "test.ParticleTileMap", methodName : "updateOcclusion"});
+			haxe.Log.trace("calc=",{ fileName : "ParticleTileMap.hx", lineNumber : 273, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [dX,dY]});
 			var dSQR = dX * dX + dY * dY;
 			var intensity = Math.max(0,1 - dSQR / 100);
 			var currentLight;
@@ -2333,7 +2390,7 @@ test.ParticleTileMap.prototype = {
 			var occlusion = this.calcOcclusion(x,y,lightX,lightY,false);
 			var _this = this.lightMap;
 			_this.data32[y * _this.w + x] = occlusion;
-			haxe.Log.trace("occlusion=",{ fileName : "ParticleTileMap.hx", lineNumber : 271, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [occlusion]});
+			haxe.Log.trace("occlusion=",{ fileName : "ParticleTileMap.hx", lineNumber : 283, className : "test.ParticleTileMap", methodName : "updateOcclusion", customParams : [occlusion]});
 		}
 	}
 	,calcOcclusion: function(x,y,lightX,lightY,normalize) {
@@ -2359,7 +2416,7 @@ test.ParticleTileMap.prototype = {
 		var y2 = y + 0.5 * (1 - sx + oy);
 		if(Math.abs(dx) + Math.abs(dy) > 1) {
 			var c = 0;
-			haxe.Log.trace("check",{ fileName : "ParticleTileMap.hx", lineNumber : 298, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+			haxe.Log.trace("check",{ fileName : "ParticleTileMap.hx", lineNumber : 310, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
 			if(dx > 0 && x <= this.width) {
 				recievingLight += (function($this) {
 					var $r;
@@ -2368,7 +2425,7 @@ test.ParticleTileMap.prototype = {
 					return $r;
 				}(this));
 				c++;
-				haxe.Log.trace("right",{ fileName : "ParticleTileMap.hx", lineNumber : 303, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+				haxe.Log.trace("right",{ fileName : "ParticleTileMap.hx", lineNumber : 315, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
 			} else if(dx < 0 && x >= 0) {
 				recievingLight += (function($this) {
 					var $r;
@@ -2377,7 +2434,7 @@ test.ParticleTileMap.prototype = {
 					return $r;
 				}(this));
 				c++;
-				haxe.Log.trace("left",{ fileName : "ParticleTileMap.hx", lineNumber : 309, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+				haxe.Log.trace("left",{ fileName : "ParticleTileMap.hx", lineNumber : 321, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
 			}
 			if(dy > 0 && y <= this.height) {
 				recievingLight += (function($this) {
@@ -2387,7 +2444,7 @@ test.ParticleTileMap.prototype = {
 					return $r;
 				}(this));
 				c++;
-				haxe.Log.trace("down",{ fileName : "ParticleTileMap.hx", lineNumber : 319, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+				haxe.Log.trace("down",{ fileName : "ParticleTileMap.hx", lineNumber : 331, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
 			} else if(dy < 0 && y >= 0) {
 				recievingLight += (function($this) {
 					var $r;
@@ -2396,14 +2453,14 @@ test.ParticleTileMap.prototype = {
 					return $r;
 				}(this));
 				c++;
-				haxe.Log.trace("up",{ fileName : "ParticleTileMap.hx", lineNumber : 325, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
+				haxe.Log.trace("up",{ fileName : "ParticleTileMap.hx", lineNumber : 337, className : "test.ParticleTileMap", methodName : "calcOcclusion"});
 			}
 			recievingLight = recievingLight / c;
 		} else {
-			haxe.Log.trace("direct=",{ fileName : "ParticleTileMap.hx", lineNumber : 337, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [dx,dy]});
+			haxe.Log.trace("direct=",{ fileName : "ParticleTileMap.hx", lineNumber : 349, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [dx,dy]});
 			recievingLight = 256;
 		}
-		haxe.Log.trace("recievingLight=",{ fileName : "ParticleTileMap.hx", lineNumber : 342, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [recievingLight]});
+		haxe.Log.trace("recievingLight=",{ fileName : "ParticleTileMap.hx", lineNumber : 354, className : "test.ParticleTileMap", methodName : "calcOcclusion", customParams : [recievingLight]});
 		return Math.max(0,recievingLight - occlusion);
 	}
 	,castRays: function(x,y,range,allowDiagonalSteps) {

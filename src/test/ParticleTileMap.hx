@@ -4,6 +4,7 @@ package test;
 import ds.Array2D;
 import js.html.ArrayBuffer;
 import js.html.Uint32Array;
+import js.html.Uint8Array;
 import physics.geometry.Vector2D;
 import test.Light;
 import test.Sector;
@@ -37,6 +38,8 @@ class ParticleTileMap
 
     public var workingCells:Uint32Array;
 
+    public var tileOpacities:Uint8Array;
+
     public function new() {
         this.width = 50;
         this.height = 40;
@@ -48,12 +51,13 @@ class ParticleTileMap
         this.renderer.ResizeBatch(width*height);
         this.lights = new Array<Light>();
         this.lights.push(new Light(25,5,20,255));
-        //this.lights.push(new Light(20,9,200));
-        //this.lights.push(new Light(30,30,255));
+        // this.lights.push(new Light(20,9,200));
+        // this.lights.push(new Light(30,30,255));
         // this.lights.push(new Light(60,18,255));
         // this.lights.push(new Light(5,40,255));
         shadowCaster=new ShadowCast(this);
         workingCells = new Uint32Array(new ArrayBuffer(100*100*4));
+        tileOpacities = new Uint8Array(256);
         count=0;
         // this.lightSector = new Sector();
         // this.incomingA = new Sector();
@@ -78,6 +82,13 @@ class ParticleTileMap
         map.set(26,10,80);
         map.set(25,11,80);
         map.set(26,11,80);
+
+        for (i in 0...tileOpacities.length) {
+            tileOpacities[i] = 1;
+        }
+        tileOpacities[80] = 40;
+        tileOpacities[77] = 30;
+        tileOpacities[31] =  5;
 
     }
 
@@ -106,7 +117,8 @@ class ParticleTileMap
             visited = {};
             //applyLight(light.x,light.y,light.intensity);
 
-            applyLight(light);
+            light.renderLight(map,tileOpacities,lightMap);
+            //applyLight(light);
 
             //applyLight2x(light.x,light.y,light,0);
             //AddShadowLight( light.x,light.y,10,0 );
