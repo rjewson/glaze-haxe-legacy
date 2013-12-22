@@ -9,7 +9,7 @@ import physics.geometry.Vector2D;
 import test.Light;
 import test.Sector;
 import test.ShadowCast;
-import wgr.renderers.webgl.PointSpriteRenderer;
+import wgr.renderers.webgl.PointSpriteLightMapRenderer;
 
 class ParticleTileMap 
 {
@@ -17,7 +17,7 @@ class ParticleTileMap
     public var map:Array2D;
     public var lightMap:Array2D;
     public var tileSize:Int;
-    public var renderer:PointSpriteRenderer;
+    public var renderer:PointSpriteLightMapRenderer;
 
     public var width:Int;
     public var height:Int;
@@ -45,9 +45,9 @@ class ParticleTileMap
         this.height = 40;
         this.map = new Array2D(this.width,this.height);
         this.lightMap = new Array2D(this.width,this.height);
-        this.tileSize = 16;
+        this.tileSize = 32;
         this.test = new Vector2D();
-        this.renderer = new PointSpriteRenderer();
+        this.renderer = new PointSpriteLightMapRenderer();
         this.renderer.ResizeBatch(width*height);
         this.lights = new Array<Light>();
         this.lights.push(new Light(25,5,20,255));
@@ -67,12 +67,14 @@ class ParticleTileMap
     }
 
     public function InitMap() {
+        var leftWall = 20;
+        var rightWall = 30;
        for (y in 0...height-1) {
             for (x in 0...width-1) {
                 var tileType = 77;
-                if (x==20||x==30)
+                if (x==leftWall||x==rightWall)
                     tileType = 80;
-                if (x>20&&x<30)
+                if (x>leftWall&&x<rightWall)
                     tileType = 31;
                 map.set(x,y,tileType);
             }
@@ -583,7 +585,7 @@ class ParticleTileMap
                 var tile = map.get(x,y);
                 if (tile>0) {
                     var light = lightMap.get(x,y) & 0xFFFF;
-                    renderer.AddSpriteToBatch(tile,x*tileSize,y*tileSize,16,0xFF,light,light,light);                    
+                    renderer.AddSpriteToBatch(x*tileSize,y*tileSize,light,0xFF,0x00,0x00);                    
                 }
             }
         }

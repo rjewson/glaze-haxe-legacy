@@ -22,6 +22,7 @@ import wgr.display.Stage;
 import wgr.geom.Matrix3;
 import wgr.geom.Point;
 import wgr.geom.Rectangle;
+import wgr.lighting.ParticleLightGrid;
 import wgr.particle.PointSpriteParticleEngine;
 import wgr.renderers.canvas.CanvasDebugView;
 import wgr.renderers.webgl.PointSpriteRenderer;
@@ -66,6 +67,11 @@ class Main
             var pointParticleEngine = new PointSpriteParticleEngine(14000,1000/60);
                 pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
                 view.renderer.AddRenderer(pointParticleEngine.renderer);
+
+
+            var lightGrid = new ParticleLightGrid();
+                //tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
+                view.renderer.AddRenderer(lightGrid.renderer);
 
             function createSprite(id:String,x:Float,y:Float,px:Float,py:Float,tid:String) {
                 var s = new Sprite();
@@ -126,6 +132,8 @@ class Main
                 entityManager.Update(1000/60);
                 view.camera.Focus(spr3.position.x,spr3.position.y);
                 view.renderer.Render(view.camera.viewPortAABB);
+                lightGrid.renderLightGrid();
+                lightGrid.draw();
             }
 
             gameLoop.updateFunc = tick;
@@ -149,11 +157,10 @@ class Main
 
         } );
 
-        assets.SetImagesToLoad( ["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png"] );
+        assets.SetImagesToLoad( ["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"] );
         assets.Load();
         // var pengine = new physics.PhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT());
         var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
-trace(pengine);
         // var m = physics.dynamics.Material.DEFAULTMATERIAL();
 
     }	

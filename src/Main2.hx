@@ -52,7 +52,7 @@ class Main2
             tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
 
             var tileMapRenderer = new test.ParticleTileMap();
-                tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
+                //tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
                 view.renderer.AddRenderer(tileMapRenderer.renderer);
 
             // var spriteRender = new SpriteRenderer();
