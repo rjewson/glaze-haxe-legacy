@@ -151,7 +151,6 @@ Main.main = function() {
 		entityManager.addSystem(new engine.systems.RenderSystem(itemContainer));
 		entityManager.addSystem(new engine.systems.ParticleSystem(pointParticleEngine));
 		entityManager.componentAdded.add(function(component) {
-			console.log(component.name);
 		});
 		var e1 = new engine.core.Entity();
 		var spr3 = createSprite("character",400,380,0,0,"texturechar1");
@@ -183,11 +182,8 @@ Main.main = function() {
 			entityManager.Update(16.6666666666666679);
 			view.camera.Focus(spr3.position.x,spr3.position.y);
 			view.renderer.Render(view.camera.viewPortAABB);
-			lightGrid.renderLightGrid();
-			lightGrid.draw();
 		};
 		gameLoop.updateFunc = tick;
-		gameLoop.start();
 		window.document.getElementById("stopbutton").addEventListener("click",function(event1) {
 			gameLoop.stop();
 		});
@@ -204,6 +200,8 @@ Main.main = function() {
 	assets.SetImagesToLoad(["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"]);
 	assets.Load();
 	var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
+	var b1 = new physics.dynamics.Body();
+	b1.AddFeature(new physics.geometry.AABBShape(new physics.geometry.Vector2D(5,10),new physics.geometry.Vector2D(0,0)));
 };
 var IMap = function() { };
 IMap.__name__ = true;
@@ -3803,17 +3801,6 @@ physics.geometry.AABB.prototype = {
 	}
 	,__class__: physics.geometry.AABB
 };
-physics.geometry.Axis = function(n,d) {
-	this.n = n;
-	this.d = d;
-};
-physics.geometry.Axis.__name__ = true;
-physics.geometry.Axis.prototype = {
-	clone: function() {
-		return new physics.geometry.Axis(this.n.clone(),this.d);
-	}
-	,__class__: physics.geometry.Axis
-};
 physics.geometry.GeometricShape = function(typeID,offset) {
 	this.typeID = typeID;
 	this.offset = offset;
@@ -3833,6 +3820,50 @@ physics.geometry.GeometricShape.prototype = {
 	,IntersectSegment: function(a,b,feature) {
 	}
 	,__class__: physics.geometry.GeometricShape
+};
+physics.geometry.AABBShape = function(halfWidths,offset) {
+	physics.geometry.GeometricShape.call(this,0,offset);
+	this.halfWidths = halfWidths;
+	this.InitShape();
+};
+physics.geometry.AABBShape.__name__ = true;
+physics.geometry.AABBShape.__super__ = physics.geometry.GeometricShape;
+physics.geometry.AABBShape.prototype = $extend(physics.geometry.GeometricShape.prototype,{
+	InitShape: function() {
+		this.centre = this.offset.clone();
+		this.transformedCentre = this.centre.clone();
+		this.area = this.halfWidths.x * this.halfWidths.y * 4;
+	}
+	,Update: function(rotation) {
+		this.transformedCentre.x = this.centre.x * rotation.x - this.centre.y * rotation.y;
+		this.transformedCentre.y = this.centre.x * rotation.y + this.centre.y * rotation.x;
+		this.aabb.l = this.transformedCentre.x - this.halfWidths.x;
+		this.aabb.r = this.transformedCentre.x + this.halfWidths.x;
+		this.aabb.t = this.transformedCentre.y - this.halfWidths.y;
+		this.aabb.b = this.transformedCentre.y + this.halfWidths.y;
+	}
+	,ContainsPoint: function(point,shapePosition) {
+		var x = this.transformedCentre.x + shapePosition.x - point.x;
+		var y = this.transformedCentre.y + shapePosition.y - point.y;
+		return false;
+	}
+	,IntersectRay: function(ray,feature) {
+		return false;
+	}
+	,IntersectSegment: function(a,b,feature) {
+	}
+	,__class__: physics.geometry.AABBShape
+});
+physics.geometry.Axis = function(n,d) {
+	this.n = n;
+	this.d = d;
+};
+physics.geometry.Axis.__name__ = true;
+physics.geometry.Axis.prototype = {
+	clone: function() {
+		return new physics.geometry.Axis(this.n.clone(),this.d);
+	}
+	,__class__: physics.geometry.Axis
 };
 physics.geometry.Circle = function(radius,offset) {
 	physics.geometry.GeometricShape.call(this,1,offset);

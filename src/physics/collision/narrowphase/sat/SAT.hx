@@ -7,6 +7,7 @@ import physics.dynamics.BodyContact;
 import physics.dynamics.BodyContactManager;
 import physics.dynamics.Feature;
 import physics.geometry.AABB;
+import physics.geometry.AABBShape;
 import physics.geometry.Axis;
 import physics.geometry.Circle;
 import physics.geometry.GeometricShape;
@@ -83,6 +84,8 @@ class SAT implements INarrowphase
 		else {
 			
 			switch (s1.typeID | s2.typeID) {
+				case (Shapes.AABB_AABB) :
+					collided = SAT.
 				case (Shapes.POLYGON_POLYGON) :
 					collided = SAT.poly2poly(cast s1, result.feature1.position, cast s2, result.feature2.position, result);
 				case (Shapes.CIRCLE_POLYGON) :
@@ -113,6 +116,11 @@ class SAT implements INarrowphase
 		return false;
 	}
 	
+	static public function aabb2aabb( shape1:AABBShape,shape1Pos:Vector2D,shape2:AABBShape,shape2Pos:Vector2D,arbiter:Arbiter ):Bool {
+		
+		return true;
+	}
+
 	static public function poly2poly( shape1:Polygon ,shape1Pos:Vector2D, shape2:Polygon ,shape2Pos:Vector2D , arbiter:Arbiter ):Bool {
 			
 		var vertValOnAxis:Float;

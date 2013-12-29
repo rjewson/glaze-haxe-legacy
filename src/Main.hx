@@ -12,6 +12,9 @@ import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.html.Element;
+import physics.dynamics.Body;
+import physics.geometry.AABBShape;
+import physics.geometry.Vector2D;
 import utils.Base64;
 import wgr.display.Camera;
 import wgr.display.DisplayListIter;
@@ -93,7 +96,7 @@ class Main
                 entityManager.addSystem(new ParticleSystem(pointParticleEngine));
 
                 entityManager.componentAdded.add(function(component:Component){
-                    trace(component.name);
+                    //trace(component.name);
                 });
 
             var e1 = new engine.core.Entity();
@@ -132,8 +135,8 @@ class Main
                 entityManager.Update(1000/60);
                 view.camera.Focus(spr3.position.x,spr3.position.y);
                 view.renderer.Render(view.camera.viewPortAABB);
-                lightGrid.renderLightGrid();
-                lightGrid.draw();
+                // lightGrid.renderLightGrid();
+                // lightGrid.draw();
             }
 
             gameLoop.updateFunc = tick;
@@ -161,7 +164,10 @@ class Main
         assets.Load();
         // var pengine = new physics.PhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT());
         var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
-        // var m = physics.dynamics.Material.DEFAULTMATERIAL();
+        //var m = physics.dynamics.Material.DEFAULTMATERIAL();
+
+        var b1 = new Body();
+        b1.AddFeature( new AABBShape(new Vector2D(5,10),new Vector2D(0,0)));
 
     }	
     
