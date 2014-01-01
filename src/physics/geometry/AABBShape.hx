@@ -12,9 +12,9 @@ class AABBShape extends GeometricShape {
     public var transformedCentre : Vector2D;
     public var halfWidths : Vector2D;
     
-    public function new(halfWidths:Vector2D, offset:Vector2D) 
+    public function new(halfWidths:Vector2D, offsetX:Float=0,offsetY:Float=0) 
     {
-        super(Shapes.AXIS_ALIGNED_BOX_SHAPE,offset);
+        super(Shapes.AXIS_ALIGNED_BOX_SHAPE,offsetX,offsetY);
         this.halfWidths = halfWidths;
         InitShape();
     }

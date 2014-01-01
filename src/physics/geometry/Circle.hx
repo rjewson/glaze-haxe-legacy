@@ -13,9 +13,9 @@ class Circle extends GeometricShape
 	public var transformedCentre : Vector2D;
 	public var radius : Float;
 	
-	public function new(radius:Float, offset:Vector2D) 
+	public function new(radius:Float, offsetX:Float=0,offsetY:Float=0) 
 	{
-		super(Shapes.CIRCLE_SHAPE,offset);
+		super(Shapes.CIRCLE_SHAPE,offsetX,offsetY);
 		this.radius = radius;
 		InitShape();
 	}

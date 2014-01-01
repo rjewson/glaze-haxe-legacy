@@ -184,6 +184,7 @@ Main.main = function() {
 			view.renderer.Render(view.camera.viewPortAABB);
 		};
 		gameLoop.updateFunc = tick;
+		gameLoop.start();
 		window.document.getElementById("stopbutton").addEventListener("click",function(event1) {
 			gameLoop.stop();
 		});
@@ -199,9 +200,18 @@ Main.main = function() {
 	});
 	assets.SetImagesToLoad(["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"]);
 	assets.Load();
-	var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
+	var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,400);
 	var b1 = new physics.dynamics.Body();
-	b1.AddFeature(new physics.geometry.AABBShape(new physics.geometry.Vector2D(5,10),new physics.geometry.Vector2D(0,0)));
+	b1.AddFeature(new physics.geometry.AABBShape(new physics.geometry.Vector2D(5,10)));
+	b1.SetStaticPosition(new physics.geometry.Vector2D(100,100));
+	var b2 = new physics.dynamics.Body();
+	b2.AddFeature(new physics.geometry.AABBShape(new physics.geometry.Vector2D(5,10)));
+	b2.SetStaticPosition(new physics.geometry.Vector2D(100,115));
+	pengine.AddBody(b1);
+	pengine.AddBody(b2);
+	pengine.Step();
+	console.log(b1);
+	console.log(b2);
 };
 var IMap = function() { };
 IMap.__name__ = true;
@@ -2927,6 +2937,32 @@ physics.collision.narrowphase.sat.SAT = function() {
 };
 physics.collision.narrowphase.sat.SAT.__name__ = true;
 physics.collision.narrowphase.sat.SAT.__interfaces__ = [physics.collision.narrowphase.INarrowphase];
+physics.collision.narrowphase.sat.SAT.aabb2aabb = function(shape1,shape1Pos,shape2,shape2Pos,arbiter) {
+	var tx = shape1.transformedCentre.x + shape1Pos.x - (shape2.transformedCentre.x + shape2Pos.x);
+	var x_overlap = shape1.halfWidths.x + shape2.halfWidths.x - Math.abs(tx);
+	var ty = shape1.transformedCentre.y + shape1Pos.y - (shape2.transformedCentre.y + shape2Pos.y);
+	var y_overlap = shape1.halfWidths.y + shape2.halfWidths.y - Math.abs(ty);
+	if(x_overlap > y_overlap) {
+		var nCoef;
+		if(tx < 0) nCoef = 1; else nCoef = -1;
+		var contact = arbiter.contacts[arbiter.contactCount];
+		contact.point.x = 0;
+		contact.point.y = 0;
+		contact.normal.x = nCoef;
+		contact.normal.y = 0 * nCoef;
+		contact.penDist = x_overlap;
+	} else {
+		var nCoef;
+		if(ty < 0) nCoef = 1; else nCoef = -1;
+		var contact = arbiter.contacts[arbiter.contactCount];
+		contact.point.x = 0;
+		contact.point.y = 0;
+		contact.normal.x = 0 * nCoef;
+		contact.normal.y = nCoef;
+		contact.penDist = x_overlap;
+	}
+	return true;
+};
 physics.collision.narrowphase.sat.SAT.poly2poly = function(shape1,shape1Pos,shape2,shape2Pos,arbiter) {
 	var vertValOnAxis;
 	var minValOnAxis;
@@ -3215,22 +3251,23 @@ physics.collision.narrowphase.sat.SAT.prototype = {
 			this.result.feature2 = feature2;
 		}
 		var collided = false;
-		if(s1.typeID == 0) collided = true; else {
-			var _g = s1.typeID | s2.typeID;
-			switch(_g) {
-			case 4:
-				collided = physics.collision.narrowphase.sat.SAT.poly2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 5:
-				collided = physics.collision.narrowphase.sat.SAT.circle2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 1:
-				collided = physics.collision.narrowphase.sat.SAT.circle2circle(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			case 3:
-				collided = physics.collision.narrowphase.sat.SAT.circle2segment(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
-				break;
-			}
+		var _g = s1.typeID | s2.typeID;
+		switch(_g) {
+		case 0:
+			collided = physics.collision.narrowphase.sat.SAT.aabb2aabb(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+			break;
+		case 4:
+			collided = physics.collision.narrowphase.sat.SAT.poly2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+			break;
+		case 5:
+			collided = physics.collision.narrowphase.sat.SAT.circle2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+			break;
+		case 1:
+			collided = physics.collision.narrowphase.sat.SAT.circle2circle(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+			break;
+		case 3:
+			collided = physics.collision.narrowphase.sat.SAT.circle2segment(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+			break;
 		}
 		if(collided) {
 			feature1.body.Wake();
@@ -3801,9 +3838,11 @@ physics.geometry.AABB.prototype = {
 	}
 	,__class__: physics.geometry.AABB
 };
-physics.geometry.GeometricShape = function(typeID,offset) {
+physics.geometry.GeometricShape = function(typeID,offsetX,offsetY) {
+	if(offsetY == null) offsetY = 0;
+	if(offsetX == null) offsetX = 0;
 	this.typeID = typeID;
-	this.offset = offset;
+	this.offset = new physics.geometry.Vector2D(offsetX,offsetY);
 	this.aabb = new physics.geometry.AABB();
 	this.UID = physics.geometry.GeometricShape.nextUID++;
 };
@@ -3821,8 +3860,10 @@ physics.geometry.GeometricShape.prototype = {
 	}
 	,__class__: physics.geometry.GeometricShape
 };
-physics.geometry.AABBShape = function(halfWidths,offset) {
-	physics.geometry.GeometricShape.call(this,0,offset);
+physics.geometry.AABBShape = function(halfWidths,offsetX,offsetY) {
+	if(offsetY == null) offsetY = 0;
+	if(offsetX == null) offsetX = 0;
+	physics.geometry.GeometricShape.call(this,0,offsetX,offsetY);
 	this.halfWidths = halfWidths;
 	this.InitShape();
 };
@@ -3865,8 +3906,10 @@ physics.geometry.Axis.prototype = {
 	}
 	,__class__: physics.geometry.Axis
 };
-physics.geometry.Circle = function(radius,offset) {
-	physics.geometry.GeometricShape.call(this,1,offset);
+physics.geometry.Circle = function(radius,offsetX,offsetY) {
+	if(offsetY == null) offsetY = 0;
+	if(offsetX == null) offsetX = 0;
+	physics.geometry.GeometricShape.call(this,1,offsetX,offsetY);
 	this.radius = radius;
 	this.InitShape();
 };
@@ -3934,8 +3977,10 @@ physics.geometry.Circle.prototype = $extend(physics.geometry.GeometricShape.prot
 	}
 	,__class__: physics.geometry.Circle
 });
-physics.geometry.Polygon = function(vertices,offset) {
-	physics.geometry.GeometricShape.call(this,4,offset);
+physics.geometry.Polygon = function(vertices,offsetX,offsetY) {
+	if(offsetY == null) offsetY = 0;
+	if(offsetX == null) offsetX = 0;
+	physics.geometry.GeometricShape.call(this,4,offsetX,offsetY);
 	this.InitShape(vertices);
 };
 physics.geometry.Polygon.__name__ = true;
@@ -6617,6 +6662,7 @@ physics.geometry.Shapes.AXIS_ALIGNED_BOX_SHAPE = 0;
 physics.geometry.Shapes.CIRCLE_SHAPE = 1;
 physics.geometry.Shapes.SEGMENT_SHAPE = 2;
 physics.geometry.Shapes.POLYGON_SHAPE = 4;
+physics.geometry.Shapes.AABB_AABB = 0;
 physics.geometry.Shapes.POLYGON_POLYGON = 4;
 physics.geometry.Shapes.CIRCLE_POLYGON = 5;
 physics.geometry.Shapes.CIRCLE_CIRCLE = 1;

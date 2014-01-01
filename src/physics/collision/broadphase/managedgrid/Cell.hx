@@ -142,7 +142,7 @@ class Cell
 	
 	inline public function CalcCellItemOccupancy(body:Body):Int {
 		var occupany:Int = 0;
-		
+		// js.Lib.debug();
 		if ((body.position.x + body.aabb.l) < aabb.l) 
 			occupany |= LEFT;
 		else if ((body.position.x + body.aabb.r) > aabb.r) 

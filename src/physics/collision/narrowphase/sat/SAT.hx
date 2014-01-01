@@ -48,7 +48,8 @@ class SAT implements INarrowphase
 	}
 	
 	public function CollideFeatures(feature1 : Feature, feature2 : Feature , n:Vector2D = null) : Bool {
-		
+		//js.Lib.debug();
+
 		if (feature1.body == feature2.body) return false;
 		// Shapes are on the same layer? exit...
 		if (feature1.body.layers & feature2.body.layers == 0) return false;
@@ -77,15 +78,15 @@ class SAT implements INarrowphase
 		var collided : Bool = false;
 		// Choose and call the correct collision function based on the two shapes.
 		
-		if (s1.typeID == Shapes.AXIS_ALIGNED_BOX_SHAPE)
+		//if (s1.typeID == Shapes.AXIS_ALIGNED_BOX_SHAPE)
 		// I can also assume that the broadphase already did this...
 		// collided = s1.aabb.intersects(s2.aabb);
-			collided = true;
-		else {
+		//	collided = true;
+		//else {
 			
 			switch (s1.typeID | s2.typeID) {
 				case (Shapes.AABB_AABB) :
-					collided = SAT.
+					collided = SAT.aabb2aabb(cast s1, result.feature1.position, cast s2, result.feature2.position, result);
 				case (Shapes.POLYGON_POLYGON) :
 					collided = SAT.poly2poly(cast s1, result.feature1.position, cast s2, result.feature2.position, result);
 				case (Shapes.CIRCLE_POLYGON) :
@@ -98,7 +99,7 @@ class SAT implements INarrowphase
 					collided = SAT.segment2poly(Segment(s1), Polygon(s2), result);
 					break;*/
 			}
-		}
+		//}
 		// The narrow phase reported a collision.
 		if (collided) {
 			feature1.body.Wake();// broadphase.WakeBody(feature1.body);
@@ -117,7 +118,29 @@ class SAT implements INarrowphase
 	}
 	
 	static public function aabb2aabb( shape1:AABBShape,shape1Pos:Vector2D,shape2:AABBShape,shape2Pos:Vector2D,arbiter:Arbiter ):Bool {
-		
+		// public static function AABBvsAABB(a_halfWidths:Vector2D,a_center:Vector2D,b_halfWidths:Vector2D,b_center:Vector2D,result:Contact):Bool {
+		//      //TODO Check
+		 // var combinedHalfWidths:Vector2D = a_halfWidths.plus(b_halfWidths);
+		 // var combinedHalfWidths:Vector2D = shape1.halfWidths.plus(shape2.halfWidths);
+		 // var delta:Vector2D = b_center.minus(a_center);
+		 // var planeN : Vector2D = delta.majorAxis().reverse();
+		 // var planeCentre : Vector2D = planeN.times(combinedHalfWidths).plusEquals(b_center);
+		 // var planeDelta : Vector2D = a_center.minus(planeCentre);
+		 // var dist : Float = planeDelta.dot(planeN);
+		 // result.Initialise(planeN, dist, a_center);
+		 // return dist<0;
+		//  }		
+
+		var tx:Float = (shape1.transformedCentre.x + shape1Pos.x) - (shape2.transformedCentre.x + shape2Pos.x);
+		var x_overlap:Float = shape1.halfWidths.x + shape2.halfWidths.x - Math.abs(tx);
+		var ty:Float = (shape1.transformedCentre.y + shape1Pos.y) - (shape2.transformedCentre.y + shape2Pos.y);
+		var y_overlap:Float = shape1.halfWidths.y + shape2.halfWidths.y - Math.abs(ty);
+
+		if (x_overlap > y_overlap) {
+			arbiter.AddContact(0, 0, 1, 0, (tx<0)?1:-1, x_overlap );
+		} else {
+			arbiter.AddContact(0, 0, 0, 1, (ty<0)?1:-1, x_overlap );
+		}
 		return true;
 	}
 

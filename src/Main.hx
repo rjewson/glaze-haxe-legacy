@@ -163,11 +163,21 @@ class Main
         assets.SetImagesToLoad( ["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"] );
         assets.Load();
         // var pengine = new physics.PhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT());
-        var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,16);
+        var pengine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),16,16,400);
         //var m = physics.dynamics.Material.DEFAULTMATERIAL();
 
         var b1 = new Body();
-        b1.AddFeature( new AABBShape(new Vector2D(5,10),new Vector2D(0,0)));
+        b1.AddFeature( new AABBShape(new Vector2D(5,10)));
+        b1.SetStaticPosition(new Vector2D(100,100));
+
+        var b2 = new Body();
+        b2.AddFeature( new AABBShape(new Vector2D(5,10)));
+        b2.SetStaticPosition(new Vector2D(100,115));
+        pengine.AddBody(b1);
+        pengine.AddBody(b2);
+        pengine.Step();
+        trace(b1);
+        trace(b2);
 
     }	
     

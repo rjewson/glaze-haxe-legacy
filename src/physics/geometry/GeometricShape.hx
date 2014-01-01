@@ -1,5 +1,6 @@
 package physics.geometry;
 import physics.dynamics.Feature;
+import physics.geometry.Vector2D;
 
 /**
  * ...
@@ -21,10 +22,10 @@ class GeometricShape
 	
 	public var UID:Int;
 	
-	public function new(typeID:Int, offset:Vector2D) 
+	public function new(typeID:Int, offsetX:Float = 0,offsetY:Float = 0) 
 	{
 		this.typeID = typeID;
-		this.offset = offset;
+		this.offset = new Vector2D(offsetX,offsetY);
 		aabb = new AABB();
 		UID = nextUID++;
 	}

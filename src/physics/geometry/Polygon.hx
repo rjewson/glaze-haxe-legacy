@@ -17,9 +17,9 @@ class Polygon extends GeometricShape
 	
 	public var vertexCount : Int;
 	
-	public function new(vertices:Array<Vector2D>, offset:Vector2D) 
+	public function new(vertices:Array<Vector2D>, offsetX:Float=0,offsetY:Float=0) 
 	{
-		super(Shapes.POLYGON_SHAPE,offset);
+		super(Shapes.POLYGON_SHAPE,offsetX,offsetY);
 		InitShape(vertices);
 	}
 	
