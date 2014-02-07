@@ -158,6 +158,10 @@ Main.main = function() {
 		spr3.pivot.x = 25.;
 		spr3.pivot.y = 75;
 		e1.add(new engine.components.Physics(400,380,0)).add(new engine.components.Sprite(spr3)).add(new engine.components.KeyboardControls(gameLoop.keyboard)).add(new engine.components.ParticleEmitter());
+		var actionList = new engine.components.action.ActionList();
+		actionList.AddToEnd(new engine.components.action.Delay(2000)).AddToEnd(new test.actions.ConsoleMsgAction("It works"));
+		e1.add(actionList);
+		console.log(actionList);
 		entityManager.addEntity(e1);
 		var xpos = 0;
 		var ypos = 0;
@@ -182,6 +186,8 @@ Main.main = function() {
 			entityManager.Update(16.6666666666666679);
 			view.camera.Focus(spr3.position.x,spr3.position.y);
 			view.renderer.Render(view.camera.viewPortAABB);
+			lightGrid.renderLightGrid();
+			lightGrid.draw();
 		};
 		gameLoop.updateFunc = tick;
 		gameLoop.start();
@@ -210,8 +216,6 @@ Main.main = function() {
 	pengine.AddBody(b1);
 	pengine.AddBody(b2);
 	pengine.Step();
-	console.log(b1);
-	console.log(b2);
 };
 var IMap = function() { };
 IMap.__name__ = true;
@@ -695,6 +699,142 @@ engine.components.Sprite.prototype = $extend(engine.core.Component.prototype,{
 		_this._rotation;
 	}
 	,__class__: engine.components.Sprite
+});
+engine.components.action = {};
+engine.components.action.Action = function() {
+	this.isBlocking = false;
+	this.duration = 0;
+	this.elapsed = 0;
+	this.isFinished = false;
+};
+engine.components.action.Action.__name__ = true;
+engine.components.action.Action.__interfaces__ = [ds.DLLNode];
+engine.components.action.Action.prototype = {
+	onStart: function() {
+	}
+	,onUpdate: function(dt) {
+		this.elapsed += dt;
+	}
+	,onEnd: function() {
+	}
+	,__class__: engine.components.action.Action
+};
+engine.components.action.ActionList = function() {
+	this.actions = new ds.DLL();
+};
+engine.components.action.ActionList.__name__ = true;
+engine.components.action.ActionList.__super__ = engine.core.Component;
+engine.components.action.ActionList.prototype = $extend(engine.core.Component.prototype,{
+	AddToFront: function(action) {
+		this.preAddAction(action);
+		var _this = this.actions;
+		if(_this.head == null) {
+			_this.head = action;
+			_this.tail = action;
+			action.prev = null;
+			action.next = null;
+		} else {
+			var node = _this.head;
+			action.prev = node.prev;
+			action.next = node;
+			if(node.prev == null) _this.head = action; else node.prev.next = action;
+			node.prev = action;
+		}
+		return this;
+	}
+	,AddToEnd: function(action) {
+		this.preAddAction(action);
+		var _this = this.actions;
+		if(_this.tail == null) {
+			if(_this.head == null) {
+				_this.head = action;
+				_this.tail = action;
+				action.prev = null;
+				action.next = null;
+			} else {
+				var node = _this.head;
+				action.prev = node.prev;
+				action.next = node;
+				if(node.prev == null) _this.head = action; else node.prev.next = action;
+				node.prev = action;
+			}
+		} else {
+			var node = _this.tail;
+			action.prev = node;
+			action.next = node.next;
+			if(node.next == null) _this.tail = action; else node.next.prev = action;
+			node.next = action;
+		}
+		return this;
+	}
+	,AddBefore: function(nextAction,action) {
+		this.preAddAction(action);
+		action.prev = nextAction.prev;
+		action.next = nextAction;
+		if(nextAction.prev == null) this.actions.head = action; else nextAction.prev.next = action;
+		nextAction.prev = action;
+		return this;
+	}
+	,AddAfter: function(previousAction,action) {
+		this.preAddAction(action);
+		action.prev = previousAction;
+		action.next = previousAction.next;
+		if(previousAction.next == null) this.actions.tail = action; else previousAction.next.prev = action;
+		previousAction.next = action;
+		return this;
+	}
+	,onUpdate: function(dt) {
+		var action = this.actions.head;
+		while(action != null) {
+			action.onUpdate(dt);
+			if(action.isFinished) {
+				var _this = this.actions;
+				var next = action.next;
+				if(action.prev == null) _this.head = action.next; else action.prev.next = action.next;
+				if(action.next == null) _this.tail = action.prev; else action.next.prev = action.prev;
+				action.prev = action.next = null;
+				action = next;
+			} else if(action.isBlocking) break; else action = action.next;
+		}
+	}
+	,RemoveAction: function(action) {
+		var _this = this.actions;
+		var next = action.next;
+		if(action.prev == null) _this.head = action.next; else action.prev.next = action.next;
+		if(action.next == null) _this.tail = action.prev; else action.next.prev = action.prev;
+		action.prev = action.next = null;
+		next;
+	}
+	,preAddAction: function(action) {
+		if(action.ownerList != null) action.ownerList.RemoveAction(action);
+		action.ownerList = this;
+	}
+	,__class__: engine.components.action.ActionList
+});
+engine.components.action.Delay = function(duration) {
+	engine.components.action.Action.call(this);
+	this.isBlocking = true;
+	this.duration = duration;
+};
+engine.components.action.Delay.__name__ = true;
+engine.components.action.Delay.__super__ = engine.components.action.Action;
+engine.components.action.Delay.prototype = $extend(engine.components.action.Action.prototype,{
+	onUpdate: function(dt) {
+		this.elapsed += dt;
+		if(this.elapsed > this.duration) this.isFinished = true;
+	}
+	,__class__: engine.components.action.Delay
+});
+engine.components.action.Sync = function() {
+	engine.components.action.Action.call(this);
+};
+engine.components.action.Sync.__name__ = true;
+engine.components.action.Sync.__super__ = engine.components.action.Action;
+engine.components.action.Sync.prototype = $extend(engine.components.action.Action.prototype,{
+	onUpdate: function(dt) {
+		if(this.ownerList.actions.head == this) this.isFinished = true;
+	}
+	,__class__: engine.components.action.Sync
 });
 engine.core.Entity = function() {
 	this.components = new ds.DLL();
@@ -4525,6 +4665,21 @@ physics.geometry.VertexList.prototype = {
 	}
 	,__class__: physics.geometry.VertexList
 };
+var test = {};
+test.actions = {};
+test.actions.ConsoleMsgAction = function(msg) {
+	engine.components.action.Action.call(this);
+	this.msg = msg;
+};
+test.actions.ConsoleMsgAction.__name__ = true;
+test.actions.ConsoleMsgAction.__super__ = engine.components.action.Action;
+test.actions.ConsoleMsgAction.prototype = $extend(engine.components.action.Action.prototype,{
+	onUpdate: function(dt) {
+		console.log(this.msg);
+		this.isFinished = true;
+	}
+	,__class__: test.actions.ConsoleMsgAction
+});
 var utils = {};
 utils.EventTarget = function() {
 	this.listeners = new haxe.ds.StringMap();

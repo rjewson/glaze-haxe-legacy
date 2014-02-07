@@ -1,6 +1,9 @@
 
 package ;
 
+import engine.components.action.ActionList;
+import engine.components.action.Delay;
+import engine.components.action.Sync;
 import engine.core.Component;
 import engine.core.signals.Signal0;
 import engine.core.signals.Signal1;
@@ -15,6 +18,7 @@ import js.html.Element;
 import physics.dynamics.Body;
 import physics.geometry.AABBShape;
 import physics.geometry.Vector2D;
+import test.actions.ConsoleMsgAction;
 import utils.Base64;
 import wgr.display.Camera;
 import wgr.display.DisplayListIter;
@@ -109,6 +113,12 @@ class Main
               .add(new engine.components.Sprite(spr3))
               .add(new engine.components.KeyboardControls(gameLoop.keyboard))
               .add(new engine.components.ParticleEmitter());
+
+            var actionList = new ActionList();
+            actionList.AddToEnd(new Delay(2000))
+                      .AddToEnd(new ConsoleMsgAction("It works"));
+            e1.add(actionList);
+            trace(actionList);
             entityManager.addEntity(e1);
 
             var xpos = 0, ypos = 0;
@@ -176,8 +186,8 @@ class Main
         pengine.AddBody(b1);
         pengine.AddBody(b2);
         pengine.Step();
-        trace(b1);
-        trace(b2);
+        //trace(b1);
+        //trace(b2);
 
     }	
     
