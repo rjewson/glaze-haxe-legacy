@@ -7,7 +7,6 @@ import physics.geometry.AABB;
 import physics.geometry.GeometricShape;
 import physics.geometry.Vector2D;
 import physics.geometry.VertexList;
-import physics.PhysicsEngine;
 import ds.IDManager;
 
 /**
@@ -17,9 +16,6 @@ import ds.IDManager;
 
 class Body 
 {
-
-	private static var nextBodyID : Int = 0;
-		
 	public var id : Int;
 	public var transient : Bool;
 	
@@ -66,9 +62,7 @@ class Body
 	
 	public var isStatic:Bool;
 	public var isOpaque:Bool;
-	
-	public var engine:PhysicsEngine;
-	
+		
 	public var broadphaseData:Int;
 	public var broadphaseData2:Int;
 	
@@ -76,11 +70,11 @@ class Body
 	
 	public var createdMS:Float;
 	
-	public function new() 
+	public function new(isStatic:Bool,transient:Bool = false) 
 	{
+		this.transient = transient;
 		id = transient ? IDManager.GetTransientID() : IDManager.GetPersistentID();
-		//transient = false;
-		//id = nextBodyID++;
+
 		this.aabb = new AABB();
 		averageCenterOffset = new Vector2D();
 		averageCenter = new Vector2D();
@@ -110,7 +104,7 @@ class Body
 		allowedToSleep = true;
 		canSleep = true;
 		isSleeping = false;
-		isStatic = false;
+		this.isStatic = isStatic;
 		isOpaque = false;
 		
 		collisionProcessingMask = 0;
@@ -122,28 +116,28 @@ class Body
 		
 	}
 	
-	public function Update():Void {
+	public function Update(physicsDeltaTime:Float,damping:Float,masslessForces:Vector2D,forces:Vector2D):Void {
 		if (isStatic || isSleeping)
 			return;
 		// AddMasslessForce(masslessForces);
-		accumulatedForces.x += engine.masslessForces.x*masslessForcesFactor;
-		accumulatedForces.y += engine.masslessForces.y*masslessForcesFactor;
+		accumulatedForces.x += masslessForces.x*masslessForcesFactor;
+		accumulatedForces.y += masslessForces.y*masslessForcesFactor;
 
 		// AddForce(forces);
-		accumulatedForces.x += engine.forces.x * invMass;
-		accumulatedForces.y += engine.forces.y * invMass;
+		accumulatedForces.x += forces.x * invMass;
+		accumulatedForces.y += forces.y * invMass;
 
 		// tempPosition.copy(position);
 		tempPosition.x = position.x;
 		tempPosition.y = position.y;
 
 		// var nv : Vector2D = velocity.plus(accumulatedForces.multEquals(deltaTime));
-		var nvX : Float = (position.x - prevPosition.x) + (accumulatedForces.x * engine.physicsDeltaTime);
-		var nvY : Float = (position.y - prevPosition.y) + (accumulatedForces.y * engine.physicsDeltaTime);
+		var nvX : Float = (position.x - prevPosition.x) + (accumulatedForces.x * physicsDeltaTime);
+		var nvY : Float = (position.y - prevPosition.y) + (accumulatedForces.y * physicsDeltaTime);
 
 		// nv.multEquals(damping);
-		nvX *= (damping * engine.damping);
-		nvY *= (damping * engine.damping);
+		nvX *= (damping * damping);
+		nvY *= (damping * damping);
 
 		if (maxVelocityScalarSqrd > 0) {
 			var scalarVelocitySqr = nvX * nvX + nvY * nvY;
@@ -194,27 +188,27 @@ class Body
 	}
 	
 	public function Sleep():Bool {
-		if (isSleeping||!allowedToSleep)
-			return false;
+		// if (isSleeping||!allowedToSleep)
+		// 	return false;
 			
-		if (engine.SleepItem(this)) {
-			motion = 0;
-			return true;
-		}
+		// if (engine.SleepItem(this)) {
+		// 	motion = 0;
+		// 	return true;
+		// }
 		
-		return false;
+		// return false;
 	}
 	
 	public function Wake():Bool {
-		if (!isSleeping)
-			return false;
+		// if (!isSleeping)
+		// 	return false;
 			
-		if (engine.WakeItem(this)) {
-			motion = Constants.WAKE_MOTION;
-			return true;
-		}
+		// if (engine.WakeItem(this)) {
+		// 	motion = Constants.WAKE_MOTION;
+		// 	return true;
+		// }
 		
-		return false;
+		// return false;
 	}
 	
 	inline public function GetVelocity() : Vector2D {
@@ -351,7 +345,7 @@ class Body
 	}
 	
 	public function Destroy():Void {
-		engine.RemoveBody(this);
+		// engine.RemoveBody(this);
 		
 		for (constraint in constraints)
 			constraint.Destroy();

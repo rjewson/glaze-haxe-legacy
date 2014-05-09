@@ -1,4 +1,5 @@
 package physics;
+import haxe.ds.GenericStack;
 import haxe.Timer;
 import physics.collision.broadphase.action.IBroadphaseAction;
 import physics.collision.narrowphase.INarrowphase;
@@ -12,13 +13,6 @@ import physics.geometry.Polygon;
 import physics.geometry.Ray;
 import physics.geometry.Shapes;
 import physics.geometry.Vector2D;
-// import hxs.Signal1;
-// import physics.signals.ChannelSignalData;
-
-/**
- * ...
- * @author rje
- */
 
 class PhysicsEngine 
 {
@@ -41,15 +35,13 @@ class PhysicsEngine
 	
 	public var damping:Float;
 
+	public var dynamicBodies:GenericStack<Body>;
+	public var staticBodies:GenericStack<Body>;
+
 	public var narrowphase : INarrowphase;
 	
 	public var contactManager : BodyContactManager;
-	
-	// public var bodyAddedSignaler : Signal1<Body>;
-	// public var bodyRemovedSignaler : Signal1<Body>;
-	
-	// var channels:Hash<Signal1<ChannelSignalData>>;
-	
+		
 	public function new(fps : Int, pps : Int, narrowphase:INarrowphase) 
 	{
 		this.fps = fps;
@@ -76,10 +68,10 @@ class PhysicsEngine
 		masslessForces = new Vector2D();
 
 		damping = 0.995;
-		
-		// bodyAddedSignaler = new Signal1<Body>(this);
-		// bodyRemovedSignaler = new Signal1<Body>(this);
-		// channels = new Hash<Signal1<ChannelSignalData>>();
+
+		dynamicBodies = new GenericStack<Body>();
+		staticBodies = new GenericStack<Body>();
+
 	}
 
 	public function Step() : Void {
@@ -123,22 +115,12 @@ class PhysicsEngine
 	public function EndStaticUpdate(body:Body):Void {
 		
 	}
-	
-	public function ProcessOnStep(step:Int):Void {
 		
-	}
-	
-	public function RenderItems(timeStamp:Int, aabb:AABB):Void {
-		
-	}
-	
 	public function AddBody(body : Body) : Void {
 		body.OnAddedToEngine(this);
-		// bodyAddedSignaler.dispatch(body);
 	}
 
 	public function RemoveBody(body : Body) : Void {
-		// bodyRemovedSignaler.dispatch(body);
 	}
 	
 	public function SleepItem(body:Body):Bool {
@@ -160,18 +142,5 @@ class PhysicsEngine
 	public function ProcessShapes(position:Vector2D, range:Float, action:GeometricShape -> Vector2D -> Void ) {
 
 	}
-	
-	// public function CreateChannel(name:String):Signal1<ChannelSignalData> {
-	// 	var channel:Signal1<ChannelSignalData> =  new Signal1<ChannelSignalData>(this);
-	// 	channels.set(name, channel);
-	// 	return channel;
-	// }
-	
-	// public function GetChannel(name:String):Signal1<ChannelSignalData> {
-	// 	if (channels.exists(name)) {
-	// 		return channels.get(name);
-	// 	}
-	// 	return null;
-	// }
-	
+		
 }

@@ -143,8 +143,8 @@ class Main
                 entityManager.Update(1000/60);
                 view.camera.Focus(spr3.position.x,spr3.position.y);
                 view.renderer.Render(view.camera.viewPortAABB);
-                // lightGrid.renderLightGrid();
-                // lightGrid.draw();
+                //lightGrid.renderLightGrid();
+                //lightGrid.draw();
             }
 
             gameLoop.updateFunc = tick;
