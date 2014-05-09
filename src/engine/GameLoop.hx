@@ -1,4 +1,3 @@
-
 package engine;
 
 import engine.input.DigitalInput;

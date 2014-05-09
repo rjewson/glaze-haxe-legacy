@@ -1,22 +1,15 @@
 
 package ;
 
-import engine.components.action.ActionList;
-import engine.components.action.Delay;
-import engine.components.action.Sync;
-import engine.core.Component;
-import engine.core.signals.Signal0;
-import engine.core.signals.Signal1;
+import ash.core.Engine;
+import engine.GameLoop;
 import engine.map.TileMapMap;
 import engine.map.tmx.TmxMap;
-import engine.systems.ParticleSystem;
-import engine.systems.RenderSystem;
 import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.html.Element;
 import physics.geometry.Vector2D;
-import test.actions.ConsoleMsgAction;
 import utils.Base64;
 import wgr.display.Camera;
 import wgr.display.DisplayListIter;
@@ -45,8 +38,8 @@ class Main
         var assets = new utils.AssetLoader();
 
         assets.addEventListener("loaded", function(event){
-
-            var gameLoop = new engine.GameLoop();
+ 
+            var gameLoop = new GameLoop();
 
             var tmxMap = new TmxMap(assets.assets.get("data/testMap.tmx"));
             tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
@@ -93,55 +86,57 @@ class Main
                 itemContainer.id = "itemContainer";
                 view.camera.addChild(itemContainer);
 
-            var entityManager = new engine.core.EntityManager();
-                entityManager.addSystem(new RenderSystem(itemContainer));
-                entityManager.addSystem(new ParticleSystem(pointParticleEngine));
+            //var engine = new Engine();
+            //trace(engine);
 
-                entityManager.componentAdded.add(function(component:Component){
-                    //trace(component.name);
-                });
+            // var entityManager = new engine.core.EntityManager();
+            //     entityManager.addSystem(new RenderSystem(itemContainer));
+            //     entityManager.addSystem(new ParticleSystem(pointParticleEngine));
 
-            var e1 = new engine.core.Entity();
-            var spr3 = createSprite("character",400,380,0,0,"texturechar1");
-            spr3.scale.x = -1;
-            spr3.pivot.x = 50/2;
-            spr3.pivot.y = 75;
+            //     entityManager.componentAdded.add(function(component:Component){
+            //         //trace(component.name);
+            //     });
 
-            e1.add(new engine.components.Physics(400,380,0))
-              .add(new engine.components.Sprite(spr3))
-              .add(new engine.components.KeyboardControls(gameLoop.keyboard))
-              .add(new engine.components.ParticleEmitter());
+            // var e1 = new engine.core.Entity();
+            // var spr3 = createSprite("character",400,380,0,0,"texturechar1");
+            // spr3.scale.x = -1;
+            // spr3.pivot.x = 50/2;
+            // spr3.pivot.y = 75;
 
-            var actionList = new ActionList();
-            actionList.AddToEnd(new Delay(2000))
-                      .AddToEnd(new ConsoleMsgAction("It works"));
-            e1.add(actionList);
-            trace(actionList);
-            entityManager.addEntity(e1);
+            // e1.add(new engine.components.Physics(400,380,0))
+            //   .add(new engine.components.Sprite(spr3))
+            //   .add(new engine.components.KeyboardControls(gameLoop.keyboard))
+            //   .add(new engine.components.ParticleEmitter());
 
-            var xpos = 0, ypos = 0;
-            for (i in 0...100) {
-                var newSpr = new Sprite();
-                newSpr.id="newSpr"+i;
-                newSpr.texture = tm.textures.get("texturechar1");
-                xpos++;
-                if (xpos>99) {
-                    xpos=0;
-                    ypos++;
-                }
-                newSpr.pivot.x = 50/2;
-                newSpr.pivot.y = 75/2;
+            // var actionList = new ActionList();
+            // actionList.AddToEnd(new Delay(2000))
+            //           .AddToEnd(new ConsoleMsgAction("It works"));
+            // e1.add(actionList);
+            // trace(actionList);
+            // entityManager.addEntity(e1);
 
-                var e = new engine.core.Entity();
-                e.add(new engine.components.Physics(100 + xpos*20,100 + ypos*20,0))
-                 .add(new engine.components.Sprite(newSpr));
-                entityManager.addEntity(e);
+            // var xpos = 0, ypos = 0;
+            // for (i in 0...100) {
+            //     var newSpr = new Sprite();
+            //     newSpr.id="newSpr"+i;
+            //     newSpr.texture = tm.textures.get("texturechar1");
+            //     xpos++;
+            //     if (xpos>99) {
+            //         xpos=0;
+            //         ypos++;
+            //     }
+            //     newSpr.pivot.x = 50/2;
+            //     newSpr.pivot.y = 75/2;
 
-            }
+            //     var e = new engine.core.Entity();
+            //     e.add(new engine.components.Physics(100 + xpos*20,100 + ypos*20,0))
+            //      .add(new engine.components.Sprite(newSpr));
+            //     entityManager.addEntity(e);
+
+            // }
 
             function tick() {
-                entityManager.Update(1000/60);
-                view.camera.Focus(spr3.position.x,spr3.position.y);
+//                view.camera.Focus(spr3.position.x,spr3.position.y);
                 view.renderer.Render(view.camera.viewPortAABB);
                 //lightGrid.renderLightGrid();
                 //lightGrid.draw();
