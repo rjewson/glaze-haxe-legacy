@@ -1,4 +1,3 @@
-
 package wgr.geom;
 
 import wgr.geom.Point;

@@ -4,7 +4,7 @@ package ds;
 import js.html.ArrayBuffer;
 import js.html.Uint32Array;
 import js.html.Uint8Array;
-import physics.geometry.Vector2D;
+import geom.Vector2D;
 
 class Array2D 
 {
@@ -15,7 +15,6 @@ class Array2D
     public var buffer:ArrayBuffer;
     public var data32:Uint32Array;
     public var data8:Uint8Array;
-
 
     public function new(width:Int,height:Int,buffer:ArrayBuffer=null) {
         w = width;
@@ -122,7 +121,7 @@ class Array2D
     
         }
         //no intersection found, just return end point:
-        return p2Original;
+        return null;
     }
 
 }

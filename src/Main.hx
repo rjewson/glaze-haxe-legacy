@@ -2,16 +2,30 @@
 package ;
 
 import ash.core.Engine;
+import ash.core.Entity;
+import engine.components.Camera;
+import engine.components.Collision;
+import engine.components.DebugDisplay;
+import engine.components.Display;
+import engine.components.Motion;
+import engine.components.MotionControls;
+import engine.components.Position;
 import engine.GameLoop;
+import engine.map.TileMapBroadphase;
 import engine.map.TileMapMap;
 import engine.map.tmx.TmxMap;
+import engine.systems.CameraControlSystem;
+import engine.systems.DebugRenderSystem;
+import engine.systems.MotionControlSystem;
+import engine.systems.MovementSystem;
+import engine.systems.PhysicsSystem;
+import engine.systems.RenderSystem;
 import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.html.Element;
-import physics.geometry.Vector2D;
+import geom.Vector2D;
 import utils.Base64;
-import wgr.display.Camera;
 import wgr.display.DisplayListIter;
 import wgr.display.DisplayObject;
 import wgr.display.DisplayObjectContainer;
@@ -86,57 +100,32 @@ class Main
                 itemContainer.id = "itemContainer";
                 view.camera.addChild(itemContainer);
 
-            //var engine = new Engine();
-            //trace(engine);
+            var mainEngine = new Engine();
+            mainEngine.addSystem(new MotionControlSystem(gameLoop.keyboard),1);
+            //mainEngine.addSystem(new MovementSystem(),2);
+            mainEngine.addSystem(new PhysicsSystem([new TileMapBroadphase(tmxMap.getLayer("Tile Layer 1"))]),3);
+            mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
+            mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
+            mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
-            // var entityManager = new engine.core.EntityManager();
-            //     entityManager.addSystem(new RenderSystem(itemContainer));
-            //     entityManager.addSystem(new ParticleSystem(pointParticleEngine));
+            var spr3 = createSprite("character",400,380,0,0,"texturechar1");
+            spr3.scale.x = -1;
+            spr3.pivot.x = 48/2;
+            spr3.pivot.y = 72/2;
 
-            //     entityManager.componentAdded.add(function(component:Component){
-            //         //trace(component.name);
-            //     });
+            var e1 = new Entity()
+            .add(new Position(300,0,0))
+            .add(new Display(spr3))
+            .add(new DebugDisplay())
+            .add(new Collision(48/2,72/2))
+            .add(new Motion(0,0,0,0.99))
+            .add(new MotionControls())
+            .add(new Camera());
 
-            // var e1 = new engine.core.Entity();
-            // var spr3 = createSprite("character",400,380,0,0,"texturechar1");
-            // spr3.scale.x = -1;
-            // spr3.pivot.x = 50/2;
-            // spr3.pivot.y = 75;
+            mainEngine.addEntity(e1);
 
-            // e1.add(new engine.components.Physics(400,380,0))
-            //   .add(new engine.components.Sprite(spr3))
-            //   .add(new engine.components.KeyboardControls(gameLoop.keyboard))
-            //   .add(new engine.components.ParticleEmitter());
-
-            // var actionList = new ActionList();
-            // actionList.AddToEnd(new Delay(2000))
-            //           .AddToEnd(new ConsoleMsgAction("It works"));
-            // e1.add(actionList);
-            // trace(actionList);
-            // entityManager.addEntity(e1);
-
-            // var xpos = 0, ypos = 0;
-            // for (i in 0...100) {
-            //     var newSpr = new Sprite();
-            //     newSpr.id="newSpr"+i;
-            //     newSpr.texture = tm.textures.get("texturechar1");
-            //     xpos++;
-            //     if (xpos>99) {
-            //         xpos=0;
-            //         ypos++;
-            //     }
-            //     newSpr.pivot.x = 50/2;
-            //     newSpr.pivot.y = 75/2;
-
-            //     var e = new engine.core.Entity();
-            //     e.add(new engine.components.Physics(100 + xpos*20,100 + ypos*20,0))
-            //      .add(new engine.components.Sprite(newSpr));
-            //     entityManager.addEntity(e);
-
-            // }
-
-            function tick() {
-//                view.camera.Focus(spr3.position.x,spr3.position.y);
+            function tick(time:Float) {
+                mainEngine.update(time);
                 view.renderer.Render(view.camera.viewPortAABB);
                 //lightGrid.renderLightGrid();
                 //lightGrid.draw();
@@ -152,14 +141,12 @@ class Main
                 gameLoop.start();
             });
             Browser.document.getElementById("debugbutton").addEventListener("click",function(event){
-                // debugSwitch = !debugSwitch;
-                //debug.Clear(camera);
             });
             Browser.document.getElementById("action1").addEventListener("click",function(event){
+                e1.remove(Display);
             });
             Browser.document.getElementById("action2").addEventListener("click",function(event){
             });
-
 
         } );
 

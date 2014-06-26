@@ -4,7 +4,7 @@
         <texture id="texture1up" top="0" left="0" width="256" height="256"/>
     </basetexture>
     <basetexture id="char" asset="data/characters.png">
-        <texture id="texturechar1" top="0" left="0" width="50" height="75"/>
+        <texture id="texturechar1" top="0" left="0" width="48" height="72"/>
     </basetexture>
     <basetexture id="tiles" asset="data/tilescompressed.png">
         <texture id="something" top="0" left="0" width="50" height="75"/>

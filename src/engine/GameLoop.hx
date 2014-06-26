@@ -16,7 +16,7 @@ class GameLoop
 
     public var keyboard:DigitalInput;
 
-    public var updateFunc:Void->Void;
+    public var updateFunc:Float->Void;
 
     public function new() {
         isRunning = false;
@@ -30,7 +30,7 @@ class GameLoop
         prevAnimationTime = timestamp;
         keyboard.Update();
         if (updateFunc!=null)
-            updateFunc();
+            updateFunc(delta);
         rafID = Browser.window.requestAnimationFrame(update);
         return false;
     }

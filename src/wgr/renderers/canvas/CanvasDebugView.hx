@@ -9,11 +9,13 @@ class CanvasDebugView
 {
     public var view:CanvasElement;
     public var ctx:CanvasRenderingContext2D;
+    public var camera:Camera;
     public var width:Int;
     public var height:Int;
 
-    public function new(view:CanvasElement,width:Int = 800,height:Int=600) {
+    public function new(view:CanvasElement,camera:Camera,width:Int = 800,height:Int=600) {
         this.view = view;
+        this.camera = camera;
         ctx = view.getContext2d();
         Resize(width,height);
     }
@@ -25,11 +27,11 @@ class CanvasDebugView
         view.height = height;
     }
 
-    public function Clear(camera:Camera) {
+    public function Clear() {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, width, height);
-        ctx.strokeStyle = "rgba(255,255,255,1)";
-        //ctx.translate(camera.position.x,camera.position.y);
+        ctx.strokeStyle = "rgba(0,255,0,1)";
+        ctx.translate(camera.position.x,camera.position.y);
     }
 
     public function DrawRect(x:Float,y:Float,w:Float,h:Float) {
@@ -38,6 +40,15 @@ class CanvasDebugView
 
     public function DrawAABB(aabb:wgr.geom.AABB) {
         ctx.strokeRect(aabb.l,aabb.t,aabb.width,aabb.height);
+    }
+
+    public function DrawCross(x:Float,y:Float,l:Float) {
+        ctx.beginPath();
+        ctx.moveTo(x-l,y);
+        ctx.lineTo(x+l,y);
+        ctx.moveTo(x,y-l);
+        ctx.lineTo(x,y+l);
+        ctx.stroke();
     }
 
 
