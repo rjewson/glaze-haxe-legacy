@@ -2194,12 +2194,15 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 		var control = node.controls;
 		var position = node.position;
 		var motion = node.motion;
-		var delta;
-		if(motion.onGround) delta = 4.0; else delta = 2;
-		if(this.input.keyMap[65] > 0) motion.forces.x -= delta;
-		if(this.input.keyMap[68] > 0) motion.forces.x += delta;
-		if(motion.onGround && this.input.JustPressed(87)) motion.forces.y -= delta * 4;
-		if(this.input.keyMap[83] > 0) motion.forces.y += delta;
+		if(motion.onGround) {
+			var onGroundForce = 4;
+			if(this.input.keyMap[65] > 0) motion.forces.x -= onGroundForce;
+			if(this.input.keyMap[68] > 0) motion.forces.x += onGroundForce;
+			if(motion.onGround && this.input.JustPressed(87)) motion.forces.y -= onGroundForce * 4;
+		} else {
+			var inAirForce = 2;
+			if(motion.velocity.x > 0 && this.input.keyMap[65] > 0) motion.forces.x -= inAirForce; else if(motion.velocity.x < 0 && this.input.keyMap[68] > 0) motion.forces.x += inAirForce;
+		}
 	}
 	,__class__: engine.systems.MotionControlSystem
 });

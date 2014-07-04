@@ -13,6 +13,12 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
 
     private var input:DigitalInput;
 
+    private var left:Bool;
+    private var right:Bool;
+    private var up:Bool;
+    private var down:Bool;
+
+
     public function new (input:DigitalInput) {
         super(MotionControlNode,updateNode);
         this.input = input;
@@ -23,22 +29,38 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
         var position:Position = node.position;
         var motion:Motion = node.motion;
 
-        var delta = motion.onGround ? 4.0 : 2;
+        left = input.Pressed(65);
+        right = input.Pressed(68);
 
-        if (input.Pressed(65)) {
-            motion.forces.x-=delta;
+        if (motion.onGround) {
+            var onGroundForce = 4;
+            //left
+            if (left) {
+                motion.forces.x-=onGroundForce;
+            }
+            //right
+            if (right) {
+                motion.forces.x+=onGroundForce;
+            }
+            //jump
+            if (motion.onGround&&input.JustPressed(87)) {
+                motion.forces.y-=onGroundForce*4;
+            }           
+        } else {
+            var inAirForce = 2;
+            //Going right?
+            if (motion.velocity.x>0&&left) {
+                motion.forces.x-=inAirForce;
+            } else if (motion.velocity.x<0&&right) {
+                motion.forces.x+=inAirForce;
+            } else {
+
+            }
+
+
         }
 
-        if (input.Pressed(68)) {
-            motion.forces.x+=delta;
-        }
-
-        if (motion.onGround&&input.JustPressed(87)) {
-            motion.forces.y-=delta*4;
-        }
-        if (input.Pressed(83)) {
-            motion.forces.y+=delta;
-        }
+ 
 
     }
 

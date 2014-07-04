@@ -47,7 +47,7 @@ class PhysicsSystem extends System
 
             var motion = node.motion;
 
-            node.motion.forces.y += 1;
+            node.motion.forces.y += 0.9;
 
             motion.forces.multEquals(1/time);
 
