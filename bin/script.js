@@ -168,7 +168,7 @@ Main.main = function() {
 		spr3.scale.x = -1;
 		spr3.pivot.x = 24.;
 		spr3.pivot.y = 36.;
-		var e1 = new ash.core.Entity().add(new engine.components.Position(300,0,0)).add(new engine.components.Display(spr3)).add(new engine.components.DebugDisplay()).add(new engine.components.Collision(24.,36.)).add(new engine.components.Motion(0,0,0,0.99)).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+		var e1 = new ash.core.Entity().add(new engine.components.Position(300,0,0)).add(new engine.components.Display(spr3)).add(new engine.components.DebugDisplay()).add(new engine.components.Collision(24.,36.)).add(new engine.components.Motion(0,0,0,1)).add(new engine.components.MotionControls()).add(new engine.components.Camera());
 		mainEngine.addEntity(e1);
 		var tick = function(time) {
 			mainEngine.update(time);
@@ -2194,14 +2194,21 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 		var control = node.controls;
 		var position = node.position;
 		var motion = node.motion;
+		this.left = this.input.keyMap[65] > 0;
+		this.right = this.input.keyMap[68] > 0;
+		this.up = this.input.keyMap[87] > 0;
+		var onGroundForce = 4;
+		if(this.left) motion.forces.x -= onGroundForce;
+		if(this.right) motion.forces.x += onGroundForce;
+		if(this.up) {
+			if(motion.onGround) motion.forces.y -= onGroundForce * 100; else if(this.input.PressedDuration(87) < 20) motion.forces.y -= onGroundForce;
+		}
+		return;
 		if(motion.onGround) {
-			var onGroundForce = 4;
-			if(this.input.keyMap[65] > 0) motion.forces.x -= onGroundForce;
-			if(this.input.keyMap[68] > 0) motion.forces.x += onGroundForce;
-			if(motion.onGround && this.input.JustPressed(87)) motion.forces.y -= onGroundForce * 4;
 		} else {
 			var inAirForce = 2;
-			if(motion.velocity.x > 0 && this.input.keyMap[65] > 0) motion.forces.x -= inAirForce; else if(motion.velocity.x < 0 && this.input.keyMap[68] > 0) motion.forces.x += inAirForce;
+			if(motion.velocity.x > 0 && this.left) motion.forces.x -= inAirForce; else if(motion.velocity.x < 0 && this.right) motion.forces.x += inAirForce; else {
+			}
 		}
 	}
 	,__class__: engine.systems.MotionControlSystem
@@ -2258,11 +2265,11 @@ engine.systems.PhysicsSystem.prototype = $extend(ash.core.System.prototype,{
 		while(_g.previous.next != null) {
 			var node = _g.next();
 			var motion = node.motion;
-			node.motion.forces.y += 1;
+			node.motion.forces.y += 0.8;
 			motion.forces.multEquals(1 / time);
 			motion.velocity.plusEquals(motion.forces);
 			motion.velocity.multEquals(motion.damping);
-			node.motion.velocity.clampMax(1);
+			node.motion.velocity.linearClampMax(0.5);
 			motion.forces.setTo(0,0);
 		}
 		var _g1 = 0;
@@ -2502,6 +2509,13 @@ geom.Vector2D.prototype = {
 	,clampMax: function(max) {
 		var l = Math.sqrt(this.x * this.x + this.y * this.y);
 		if(l > max) this.multEquals(max / l);
+		return this;
+	}
+	,linearClampMax: function(max) {
+		if(this.x < -max) this.x = -max;
+		if(this.x > max) this.x = max;
+		if(this.y < -max) this.y = -max;
+		if(this.y > max) this.y = max;
 		return this;
 	}
 	,interpolate: function(v,t) {

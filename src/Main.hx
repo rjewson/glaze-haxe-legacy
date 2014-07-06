@@ -118,7 +118,7 @@ class Main
             .add(new Display(spr3))
             .add(new DebugDisplay())
             .add(new Collision(48/2,72/2))
-            .add(new Motion(0,0,0,0.99))
+            .add(new Motion(0,0,0,1))
             .add(new MotionControls())
             .add(new Camera());
 

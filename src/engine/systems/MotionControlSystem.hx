@@ -31,8 +31,8 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
 
         left = input.Pressed(65);
         right = input.Pressed(68);
+        up = input.Pressed(87);
 
-        if (motion.onGround) {
             var onGroundForce = 4;
             //left
             if (left) {
@@ -43,9 +43,21 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
                 motion.forces.x+=onGroundForce;
             }
             //jump
-            if (motion.onGround&&input.JustPressed(87)) {
-                motion.forces.y-=onGroundForce*4;
-            }           
+            if (up) {
+                if (motion.onGround) {
+                        motion.forces.y-=onGroundForce*100;
+                    } else if (input.PressedDuration(87)<20) {
+                        motion.forces.y-=onGroundForce*1;
+                    }
+            }
+            // if (motion.onGround&&up) {
+            //     motion.forces.y-=onGroundForce*100;
+            // }  
+            // if (motion.onGround&&input.JustPressed(87)) {
+            //     motion.forces.y-=onGroundForce*4;
+            // }             
+        return;
+        if (motion.onGround) {
         } else {
             var inAirForce = 2;
             //Going right?

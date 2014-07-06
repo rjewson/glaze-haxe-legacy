@@ -47,7 +47,7 @@ class PhysicsSystem extends System
 
             var motion = node.motion;
 
-            node.motion.forces.y += 0.9;
+            node.motion.forces.y += 0.8;
 
             motion.forces.multEquals(1/time);
 
@@ -55,7 +55,8 @@ class PhysicsSystem extends System
 
             motion.velocity.multEquals(motion.damping);
 
-            node.motion.velocity.clampMax(1);
+            node.motion.velocity.linearClampMax(0.5);
+
             motion.forces.setTo(0,0);
         }
 

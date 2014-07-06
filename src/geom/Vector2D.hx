@@ -182,6 +182,14 @@ class Vector2D
         return this;
     }
     
+    public function linearClampMax(max:Float) : Vector2D {
+        if (x<-max) x=-max;
+        if (x>max) x=max;
+        if (y<-max) y=-max;
+        if (y>max) y=max;
+        return this;   
+    }
+
     public function interpolate(v:Vector2D, t:Float):Vector2D {
         return mult(1 - t).plus(v.mult(t));
         //return cpvadd(cpvmult(v1, 1.0f - t), cpvmult(v2, t));
