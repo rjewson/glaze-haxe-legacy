@@ -61,7 +61,7 @@ class Collide
                 if (true) {
                     var tangent = contact.normal.rightHandNormal();
                         
-                    var tv:Float = motion.velocity.dot(tangent)*0.5;
+                    var tv:Float = motion.velocity.dot(tangent)*0;//0.5;
                         
                     motion.velocity.minusEquals(tangent.mult(tv)); //.SubFrom( tangent.MulScalar( tv ) );
                 }

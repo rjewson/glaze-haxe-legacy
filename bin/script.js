@@ -2105,7 +2105,7 @@ engine.physics.Collide.CollisionResponse = function(contact,motion,time) {
 		if(contact.normal.y < 0) {
 			motion.onGround = true;
 			var tangent = contact.normal.rightHandNormal();
-			var tv = motion.velocity.dot(tangent) * 0.5;
+			var tv = motion.velocity.dot(tangent) * 0;
 			motion.velocity.minusEquals(new geom.Vector2D(tangent.x * tv,tangent.y * tv));
 		}
 	}
