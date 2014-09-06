@@ -42,6 +42,15 @@ class CanvasDebugView
         ctx.strokeRect(aabb.l,aabb.t,aabb.width,aabb.height);
     }
 
+    public function DrawPhysicsAABB(aabb:physics.geometry.AABB) {
+        ctx.beginPath();
+        ctx.moveTo(aabb.l,aabb.t);
+        ctx.lineTo(aabb.r,aabb.t);
+        ctx.moveTo(aabb.r,aabb.b);
+        ctx.lineTo(aabb.l,aabb.b);
+        ctx.stroke();    
+    }
+
     public function DrawCross(x:Float,y:Float,l:Float) {
         ctx.beginPath();
         ctx.moveTo(x-l,y);

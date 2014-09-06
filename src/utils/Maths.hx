@@ -1,5 +1,5 @@
 package utils;
-import geom.Vector2D;
+import physics.geometry.Vector2D;
 
 /**
  * ...

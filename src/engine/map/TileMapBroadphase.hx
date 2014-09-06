@@ -16,10 +16,12 @@ class TileMapBroadphase implements IBroadphase
     public var collisionLayer:TmxLayer;
     var tileSize:Int;
     var invTileSize:Float;
+    var tileScale:Int;
 
     public function new(layer:TmxLayer) {
+        tileScale = 4;
         this.collisionLayer = layer;
-        this.tileSize = layer.map.tileWidth * 2;
+        this.tileSize = layer.map.tileWidth * tileScale;
         trace(this.tileSize);
         this.invTileSize = 1 / tileSize;
     }
@@ -70,8 +72,8 @@ class TileMapBroadphase implements IBroadphase
                 for ( y in y1...y2 ) {
                     var tile = collisionLayer.tileGIDs.get(x,y);
                     if (tile>0) {
-                        tilePosition.x = (x*tileSize)+tileSize/2;
-                        tilePosition.y = (y*tileSize)+tileSize/2;
+                        tilePosition.x = (x*tileSize)+(tileSize/2);
+                        tilePosition.y = (y*tileSize)+(tileSize/2);
 
                         if (engine.physics.Collide.IntersectAABBvsSegment( tileAABB.extents, tilePosition , position , predictedPos.minus(position), node.collision.aabb.extents.x, node.collision.aabb.extents.y )) {
                             engine.physics.Collide.AABBvsAABB( node.collision.aabb , position , tileAABB , tilePosition , contact);

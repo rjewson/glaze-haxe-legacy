@@ -159,17 +159,23 @@ Main.main = function() {
 		itemContainer.id = "itemContainer";
 		view.camera.addChild(itemContainer);
 		var mainEngine = new ash.core.Engine();
+		mainEngine.addSystem(new engine.systems.PhysicsSystem(),0);
 		mainEngine.addSystem(new engine.systems.MotionControlSystem(gameLoop.keyboard),1);
-		mainEngine.addSystem(new engine.systems.PhysicsSystem([new engine.map.TileMapBroadphase(tmxMap.getLayer("Tile Layer 1"))]),3);
 		mainEngine.addSystem(new engine.systems.CameraControlSystem(view.camera),4);
 		mainEngine.addSystem(new engine.systems.RenderSystem(itemContainer),5);
 		mainEngine.addSystem(new engine.systems.DebugRenderSystem(view.debugRenderer),6);
-		var spr3 = createSprite("character",400,380,0,0,"texturechar1");
-		spr3.scale.x = -1;
-		spr3.pivot.x = 24.;
-		spr3.pivot.y = 36.;
-		var e1 = new ash.core.Entity().add(new engine.components.Position(300,0,0)).add(new engine.components.Display(spr3)).add(new engine.components.DebugDisplay()).add(new engine.components.Collision(24.,36.)).add(new engine.components.Motion(0,0,0,1)).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+		var spr1 = createSprite("character",400,380,0,0,"texturechar1");
+		spr1.scale.x = -1;
+		spr1.pivot.x = 24.;
+		spr1.pivot.y = 36.;
+		var e1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(0,0,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
 		mainEngine.addEntity(e1);
+		var spr2 = createSprite("character",400,380,0,0,"texturechar1");
+		spr2.scale.x = -1;
+		spr2.pivot.x = 24.;
+		spr2.pivot.y = 36.;
+		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(200,200,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
+		mainEngine.addEntity(e2);
 		var tick = function(time) {
 			mainEngine.update(time);
 			view.renderer.Render(view.camera.viewPortAABB);
@@ -1299,14 +1305,14 @@ ds.Array2D.prototype = {
 	}
 	,castRay: function(p1Original,p2Original,tileSize) {
 		if(tileSize == null) tileSize = 16;
-		var p1 = new geom.Vector2D(p1Original.x / tileSize,p1Original.y / tileSize);
-		var p2 = new geom.Vector2D(p2Original.x / tileSize,p2Original.y / tileSize);
+		var p1 = new physics.geometry.Vector2D(p1Original.x / tileSize,p1Original.y / tileSize);
+		var p2 = new physics.geometry.Vector2D(p2Original.x / tileSize,p2Original.y / tileSize);
 		if((p1.x | 0) == (p2.x | 0) && (p1.y | 0) == (p2.y | 0)) return p2Original;
 		var stepX;
 		if(p2.x > p1.x) stepX = 1; else stepX = -1;
 		var stepY;
 		if(p2.y > p1.y) stepY = 1; else stepY = -1;
-		var rayDirection = new geom.Vector2D(p2.x - p1.x,p2.y - p1.y);
+		var rayDirection = new physics.geometry.Vector2D(p2.x - p1.x,p2.y - p1.y);
 		var ratioX = rayDirection.x / rayDirection.y;
 		var ratioY = rayDirection.y / rayDirection.x;
 		var deltaY = p2.x - p1.x;
@@ -1322,7 +1328,7 @@ ds.Array2D.prototype = {
 		var endTileX = p2.x | 0;
 		var endTileY = p2.y | 0;
 		var hit;
-		var collisionPoint = new geom.Vector2D();
+		var collisionPoint = new physics.geometry.Vector2D();
 		while(testX != endTileX || testY != endTileY) if(maxX < maxY) {
 			maxX += deltaX;
 			testX += stepX;
@@ -1351,6 +1357,62 @@ ds.Array2D.prototype = {
 		return null;
 	}
 	,__class__: ds.Array2D
+};
+ds.Grid2D = function(gridWidth,gridHeight,cellSize) {
+	this.initalize(gridWidth,gridHeight,cellSize);
+};
+$hxClasses["ds.Grid2D"] = ds.Grid2D;
+ds.Grid2D.__name__ = ["ds","Grid2D"];
+ds.Grid2D.prototype = {
+	initalize: function(gridWidth,gridHeight,cellSize) {
+		this.gridWidth = gridWidth;
+		this.gridHeight = gridHeight;
+		this.cellSize = cellSize;
+		this.invCellSize = 1 / cellSize;
+		this.data = new Array();
+	}
+	,GetGrid: function(x,y) {
+		return this.data[y * this.gridWidth + x];
+	}
+	,GetGridSafe: function(x,y) {
+		if(x >= this.gridWidth || y >= this.gridHeight || x < 0 || y < 0) return null; else return this.data[y * this.gridWidth + x];
+	}
+	,SetGrid: function(x,y,value) {
+		this.data[y * this.gridWidth + x] = value;
+	}
+	,Index: function(value) {
+		return value * this.invCellSize | 0;
+	}
+	,Width: function() {
+		return this.gridWidth * this.cellSize;
+	}
+	,Height: function() {
+		return this.gridHeight * this.cellSize;
+	}
+	,__class__: ds.Grid2D
+};
+ds.Grid2DIterator = function() {
+};
+$hxClasses["ds.Grid2DIterator"] = ds.Grid2DIterator;
+ds.Grid2DIterator.__name__ = ["ds","Grid2DIterator"];
+ds.Grid2DIterator.prototype = {
+	__class__: ds.Grid2DIterator
+};
+ds.IDManager = function() { };
+$hxClasses["ds.IDManager"] = ds.IDManager;
+ds.IDManager.__name__ = ["ds","IDManager"];
+ds.IDManager.GetPersistentID = function() {
+	return ds.IDManager.NEXT_PERSISTENT_ID++;
+};
+ds.IDManager.GetTransientID = function() {
+	var id = ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER];
+	ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER] = 0;
+	ds.IDManager.TRANSIENT_POINTER++;
+	return id;
+};
+ds.IDManager.ReleaseTransientID = function(id) {
+	ds.IDManager.TRANSIENT_POINTER--;
+	ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER] = id;
 };
 var engine = {};
 engine.GameLoop = function() {
@@ -1390,14 +1452,6 @@ engine.components.Camera.__name__ = ["engine","components","Camera"];
 engine.components.Camera.prototype = {
 	__class__: engine.components.Camera
 };
-engine.components.Collision = function(width,height) {
-	this.aabb = new geom.AABB(width,height);
-};
-$hxClasses["engine.components.Collision"] = engine.components.Collision;
-engine.components.Collision.__name__ = ["engine","components","Collision"];
-engine.components.Collision.prototype = {
-	__class__: engine.components.Collision
-};
 engine.components.DebugDisplay = function() {
 };
 $hxClasses["engine.components.DebugDisplay"] = engine.components.DebugDisplay;
@@ -1413,24 +1467,6 @@ engine.components.Display.__name__ = ["engine","components","Display"];
 engine.components.Display.prototype = {
 	__class__: engine.components.Display
 };
-engine.components.Motion = function(velocityX,velocityY,angularVelocity,damping) {
-	if(damping == null) damping = 0.99999;
-	if(angularVelocity == null) angularVelocity = .0;
-	if(velocityY == null) velocityY = .0;
-	if(velocityX == null) velocityX = .0;
-	this.velocity = new geom.Vector2D(velocityX,velocityY);
-	this.positionCorrection = new geom.Vector2D();
-	this.angularVelocity = angularVelocity;
-	this.damping = damping;
-	this.forces = new geom.Vector2D();
-	this.onGround = false;
-	this.preOnGround = false;
-};
-$hxClasses["engine.components.Motion"] = engine.components.Motion;
-engine.components.Motion.__name__ = ["engine","components","Motion"];
-engine.components.Motion.prototype = {
-	__class__: engine.components.Motion
-};
 engine.components.MotionControls = function() {
 };
 $hxClasses["engine.components.MotionControls"] = engine.components.MotionControls;
@@ -1438,8 +1474,24 @@ engine.components.MotionControls.__name__ = ["engine","components","MotionContro
 engine.components.MotionControls.prototype = {
 	__class__: engine.components.MotionControls
 };
+engine.components.Physics = function(x,y,velocityX,velocityY,shapes) {
+	this.body = new physics.dynamics.Body();
+	this.body.SetStaticPosition(new physics.geometry.Vector2D(x,y));
+	this.body.SetVelocity(new physics.geometry.Vector2D(velocityX,velocityY));
+	var _g = 0;
+	while(_g < shapes.length) {
+		var shape = shapes[_g];
+		++_g;
+		this.body.AddFeature(shape,new physics.dynamics.Material());
+	}
+};
+$hxClasses["engine.components.Physics"] = engine.components.Physics;
+engine.components.Physics.__name__ = ["engine","components","Physics"];
+engine.components.Physics.prototype = {
+	__class__: engine.components.Physics
+};
 engine.components.Position = function(x,y,rotation) {
-	this.position = new geom.Vector2D(x,y);
+	this.position = new physics.geometry.Vector2D(x,y);
 	this.rotation = rotation;
 };
 $hxClasses["engine.components.Position"] = engine.components.Position;
@@ -1490,109 +1542,7 @@ engine.input.DigitalInput.prototype = {
 	}
 	,__class__: engine.input.DigitalInput
 };
-engine.physics = {};
-engine.physics.IBroadphase = function() { };
-$hxClasses["engine.physics.IBroadphase"] = engine.physics.IBroadphase;
-engine.physics.IBroadphase.__name__ = ["engine","physics","IBroadphase"];
-engine.physics.IBroadphase.prototype = {
-	__class__: engine.physics.IBroadphase
-};
 engine.map = {};
-engine.map.TileMapBroadphase = function(layer) {
-	this.collisionLayer = layer;
-	this.tileSize = layer.map.tileWidth * 2;
-	console.log(this.tileSize);
-	this.invTileSize = 1 / this.tileSize;
-};
-$hxClasses["engine.map.TileMapBroadphase"] = engine.map.TileMapBroadphase;
-engine.map.TileMapBroadphase.__name__ = ["engine","map","TileMapBroadphase"];
-engine.map.TileMapBroadphase.__interfaces__ = [engine.physics.IBroadphase];
-engine.map.TileMapBroadphase.prototype = {
-	add: function(shape) {
-		console.log("add");
-	}
-	,remove: function(shape) {
-		console.log("remove");
-	}
-	,IsInternalCollision: function(tileX,tileY,normal) {
-		var tile = this.collisionLayer.tileGIDs.get(tileX + normal.x,tileY + normal.y);
-		return tile > 0;
-	}
-	,collide: function(nodes,time) {
-		var tileAABB = new geom.AABB(this.tileSize / 2,this.tileSize / 2);
-		var tilePosition = new geom.Vector2D();
-		var contact = new engine.physics.Contact();
-		var _g = new ash.GenericListIterator(nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var position = node.position.position;
-			var motion = node.motion;
-			var extents = node.collision.aabb.extents;
-			motion.preOnGround = motion.onGround;
-			motion.onGround = false;
-			var predictedPos = position.plus(motion.velocity.mult(time));
-			var min = new geom.Vector2D(Math.min(position.x,predictedPos.x),Math.min(position.y,predictedPos.y));
-			var max = new geom.Vector2D(Math.max(position.x,predictedPos.x),Math.max(position.y,predictedPos.y));
-			min.x -= extents.x;
-			min.y -= extents.y;
-			min;
-			max.x += extents.x;
-			max.y += extents.y;
-			max;
-			var x1 = Math.floor(min.x * this.invTileSize);
-			var y1 = Math.floor(min.y * this.invTileSize);
-			var x2 = Math.ceil(max.x * this.invTileSize);
-			var y2 = Math.ceil(max.y * this.invTileSize);
-			var result = "";
-			var _g1 = x1;
-			while(_g1 < x2) {
-				var x = _g1++;
-				var _g11 = y1;
-				while(_g11 < y2) {
-					var y = _g11++;
-					var tile = this.collisionLayer.tileGIDs.get(x,y);
-					if(tile > 0) {
-						tilePosition.x = x * this.tileSize + this.tileSize / 2;
-						tilePosition.y = y * this.tileSize + this.tileSize / 2;
-						if(engine.physics.Collide.IntersectAABBvsSegment(tileAABB.extents,tilePosition,position,new geom.Vector2D(predictedPos.x - position.x,predictedPos.y - position.y),node.collision.aabb.extents.x,node.collision.aabb.extents.y)) {
-							engine.physics.Collide.AABBvsAABB(node.collision.aabb,position,tileAABB,tilePosition,contact);
-							if(!this.IsInternalCollision(x,y,contact.normal)) engine.physics.Collide.CollisionResponse(contact,motion,time);
-							result += x + ":" + y + " ";
-						}
-					}
-				}
-			}
-		}
-	}
-	,collide2: function(nodes) {
-		var _g = new ash.GenericListIterator(nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var position = node.position.position;
-			var result = "";
-			var extents = node.collision.aabb.extents;
-			var x1 = Math.floor((position.x - extents.x) * this.invTileSize);
-			var y1 = Math.floor((position.y - extents.y) * this.invTileSize);
-			var x2 = Math.ceil((position.x + extents.x) * this.invTileSize);
-			var y2 = Math.ceil((position.y + extents.y) * this.invTileSize);
-			var _g1 = x1;
-			while(_g1 < x2) {
-				var x = _g1++;
-				var _g11 = y1;
-				while(_g11 < y2) {
-					var y = _g11++;
-					var tile = this.collisionLayer.tileGIDs.get(x,y);
-					if(tile > 0) result += x + ":" + y + " ";
-				}
-			}
-			console.log(result);
-		}
-	}
-	,Index: function(value) {
-		return value * this.invTileSize;
-	}
-	,__class__: engine.map.TileMapBroadphase
-};
 engine.map.TileMapMap = function(w,h,data) {
 	this.mapData = new ds.Array2D(w,h,data);
 	this.tiles = new haxe.ds.IntMap();
@@ -1993,7 +1943,7 @@ engine.nodes.DebugRenderNode._getComponents = function() {
 	if(engine.nodes.DebugRenderNode._components == null) {
 		engine.nodes.DebugRenderNode._components = new ash.ClassMap();
 		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.Collision),"collision");
+		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
 		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.DebugDisplay),"debugDisplay");
 	}
 	return engine.nodes.DebugRenderNode._components;
@@ -2010,7 +1960,7 @@ engine.nodes.MotionControlNode._getComponents = function() {
 		engine.nodes.MotionControlNode._components = new ash.ClassMap();
 		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.MotionControls),"controls");
 		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.Motion),"motion");
+		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
 	}
 	return engine.nodes.MotionControlNode._components;
 };
@@ -2018,30 +1968,14 @@ engine.nodes.MotionControlNode.__super__ = ash.core.Node;
 engine.nodes.MotionControlNode.prototype = $extend(ash.core.Node.prototype,{
 	__class__: engine.nodes.MotionControlNode
 });
-engine.nodes.MovementNode = function() { };
-$hxClasses["engine.nodes.MovementNode"] = engine.nodes.MovementNode;
-engine.nodes.MovementNode.__name__ = ["engine","nodes","MovementNode"];
-engine.nodes.MovementNode._getComponents = function() {
-	if(engine.nodes.MovementNode._components == null) {
-		engine.nodes.MovementNode._components = new ash.ClassMap();
-		engine.nodes.MovementNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.MovementNode._components.h.set(Type.getClassName(engine.components.Motion),"motion");
-	}
-	return engine.nodes.MovementNode._components;
-};
-engine.nodes.MovementNode.__super__ = ash.core.Node;
-engine.nodes.MovementNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.MovementNode
-});
 engine.nodes.PhysicsNode = function() { };
 $hxClasses["engine.nodes.PhysicsNode"] = engine.nodes.PhysicsNode;
 engine.nodes.PhysicsNode.__name__ = ["engine","nodes","PhysicsNode"];
 engine.nodes.PhysicsNode._getComponents = function() {
 	if(engine.nodes.PhysicsNode._components == null) {
 		engine.nodes.PhysicsNode._components = new ash.ClassMap();
-		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Collision),"collision");
 		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Motion),"motion");
+		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
 	}
 	return engine.nodes.PhysicsNode._components;
 };
@@ -2067,79 +2001,6 @@ engine.nodes.RenderNode.prototype = $extend(ash.core.Node.prototype,{
 	}
 	,__class__: engine.nodes.RenderNode
 });
-engine.physics.Collide = function() { };
-$hxClasses["engine.physics.Collide"] = engine.physics.Collide;
-engine.physics.Collide.__name__ = ["engine","physics","Collide"];
-engine.physics.Collide.AABBvsAABBInternal = function(delta,aabbCenter,aabbExtents,point,contact) {
-	if(Math.abs(delta.x) > Math.abs(delta.y)) {
-		if(delta.x < 0) contact.normal.x = 1; else contact.normal.x = -1;
-		contact.normal.y = 0;
-	} else {
-		contact.normal.x = 0;
-		if(delta.y < 0) contact.normal.y = 1; else contact.normal.y = -1;
-	}
-	var resultX = contact.normal.x * aabbExtents.x;
-	var resultY = contact.normal.y * aabbExtents.y;
-	resultX += aabbCenter.x;
-	resultY += aabbCenter.y;
-	resultX = point.x - resultX;
-	resultY = point.y - resultY;
-	contact.point.x = point.x;
-	contact.point.y = point.y;
-	contact.distance = resultX * contact.normal.x + resultY * contact.normal.y;
-	return true;
-};
-engine.physics.Collide.AABBvsAABB = function(a,aPos,b,bPos,contact) {
-	var combinedExtents = a.extents.plus(b.extents);
-	var delta = new geom.Vector2D(bPos.x - aPos.x,bPos.y - aPos.y);
-	engine.physics.Collide.AABBvsAABBInternal(delta,bPos,combinedExtents,aPos,contact);
-	return true;
-};
-engine.physics.Collide.CollisionResponse = function(contact,motion,time) {
-	var seperation = Math.max(contact.distance,0);
-	var penetration = Math.min(contact.distance,0);
-	var nv = motion.velocity.dot(contact.normal) + seperation / time;
-	motion.positionCorrection.minusEquals(contact.normal.mult(penetration / time));
-	if(nv < 0) {
-		motion.velocity.minusEquals(contact.normal.mult(nv));
-		if(contact.normal.y < 0) {
-			motion.onGround = true;
-			var tangent = contact.normal.rightHandNormal();
-			var tv = motion.velocity.dot(tangent) * 0;
-			motion.velocity.minusEquals(new geom.Vector2D(tangent.x * tv,tangent.y * tv));
-		}
-	}
-};
-engine.physics.Collide.sign = function(v) {
-	if(v < 0) return -1; else return 1;
-};
-engine.physics.Collide.IntersectAABBvsSegment = function(aabbExtends,aabbPos,pos,delta,paddingX,paddingY) {
-	var scaleX = 1.0 / delta.x;
-	var scaleY = 1.0 / delta.y;
-	var signX = engine.physics.Collide.sign(scaleX);
-	var signY = engine.physics.Collide.sign(scaleY);
-	var nearTimeX = (aabbPos.x - signX * (aabbExtends.x + paddingX) - pos.x) * scaleX;
-	var nearTimeY = (aabbPos.y - signY * (aabbExtends.y + paddingY) - pos.y) * scaleY;
-	var farTimeX = (aabbPos.x + signX * (aabbExtends.x + paddingX) - pos.x) * scaleX;
-	var farTimeY = (aabbPos.y + signY * (aabbExtends.y + paddingY) - pos.y) * scaleY;
-	if(nearTimeX > farTimeY || nearTimeY > farTimeX) return false;
-	var nearTime;
-	if(nearTimeX > nearTimeY) nearTime = nearTimeX; else nearTime = nearTimeY;
-	var farTime;
-	if(farTimeX < farTimeY) farTime = farTimeX; else farTime = farTimeY;
-	if(nearTime >= 1 || farTime <= 0) return false;
-	return true;
-};
-engine.physics.Contact = function() {
-	this.normal = new geom.Vector2D();
-	this.distance = .0;
-	this.point = new geom.Vector2D();
-};
-$hxClasses["engine.physics.Contact"] = engine.physics.Contact;
-engine.physics.Contact.__name__ = ["engine","physics","Contact"];
-engine.physics.Contact.prototype = {
-	__class__: engine.physics.Contact
-};
 engine.systems = {};
 engine.systems.CameraControlSystem = function(camera) {
 	ash.tools.ListIteratingSystem.call(this,engine.nodes.CameraControlNode,$bind(this,this.updateNode));
@@ -2172,9 +2033,10 @@ engine.systems.DebugRenderSystem.prototype = $extend(ash.core.System.prototype,{
 		while(_g.previous.next != null) {
 			var node = _g.next();
 			var position = node.position.position;
-			var collision = node.collision;
+			var physics = node.physics;
+			var aabb = physics.body.aabb;
 			this.view.DrawCross(position.x,position.y,10);
-			this.view.DrawRect(position.x - collision.aabb.extents.x,position.y - collision.aabb.extents.y,collision.aabb.extents.x * 2,collision.aabb.extents.y * 2);
+			this.view.DrawRect(position.x - (aabb.r - aabb.l) / 2,position.y - (aabb.b - aabb.t) / 2,aabb.r - aabb.l,aabb.b - aabb.t);
 		}
 	}
 	,removeFromEngine: function(engine) {
@@ -2185,6 +2047,7 @@ engine.systems.DebugRenderSystem.prototype = $extend(ash.core.System.prototype,{
 engine.systems.MotionControlSystem = function(input) {
 	ash.tools.ListIteratingSystem.call(this,engine.nodes.MotionControlNode,$bind(this,this.updateNode));
 	this.input = input;
+	this.force = new physics.geometry.Vector2D();
 };
 $hxClasses["engine.systems.MotionControlSystem"] = engine.systems.MotionControlSystem;
 engine.systems.MotionControlSystem.__name__ = ["engine","systems","MotionControlSystem"];
@@ -2193,40 +2056,23 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 	updateNode: function(node,time) {
 		var control = node.controls;
 		var position = node.position;
-		var motion = node.motion;
+		var physics = node.physics;
 		this.left = this.input.keyMap[65] > 0;
 		this.right = this.input.keyMap[68] > 0;
 		this.up = this.input.keyMap[87] > 0;
-		var onGroundForce = 4;
-		if(this.left) motion.forces.x -= onGroundForce;
-		if(this.right) motion.forces.x += onGroundForce;
-		if(this.up) {
-			if(motion.onGround) motion.forces.y -= onGroundForce * 100; else if(this.input.PressedDuration(87) < 20) motion.forces.y -= onGroundForce;
-		}
-		return;
-		if(motion.onGround) {
-		} else {
-			var inAirForce = 2;
-			if(motion.velocity.x > 0 && this.left) motion.forces.x -= inAirForce; else if(motion.velocity.x < 0 && this.right) motion.forces.x += inAirForce; else {
-			}
-		}
+		this.down = this.input.keyMap[87] > 0;
+		this.force.setTo(0,0);
+		if(this.left) this.force.x -= 10; else this.force.x -= 0;
+		if(this.right) this.force.x += 10; else this.force.x += 0;
+		if(this.up) this.force.y -= 10; else this.force.y -= 0;
+		if(this.down) this.force.y += 10; else this.force.y += 0;
+		physics.body.AddForce(this.force);
 	}
 	,__class__: engine.systems.MotionControlSystem
 });
-engine.systems.MovementSystem = function() {
-	ash.tools.ListIteratingSystem.call(this,engine.nodes.MovementNode,$bind(this,this.updateNode));
-};
-$hxClasses["engine.systems.MovementSystem"] = engine.systems.MovementSystem;
-engine.systems.MovementSystem.__name__ = ["engine","systems","MovementSystem"];
-engine.systems.MovementSystem.__super__ = ash.tools.ListIteratingSystem;
-engine.systems.MovementSystem.prototype = $extend(ash.tools.ListIteratingSystem.prototype,{
-	updateNode: function(node,time) {
-	}
-	,__class__: engine.systems.MovementSystem
-});
-engine.systems.PhysicsSystem = function(broadphases) {
+engine.systems.PhysicsSystem = function() {
 	ash.core.System.call(this);
-	this.broadphases = broadphases;
+	this.physicsEngine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),10,10,1000);
 };
 $hxClasses["engine.systems.PhysicsSystem"] = engine.systems.PhysicsSystem;
 engine.systems.PhysicsSystem.__name__ = ["engine","systems","PhysicsSystem"];
@@ -2237,57 +2083,20 @@ engine.systems.PhysicsSystem.prototype = $extend(ash.core.System.prototype,{
 		var _g = new ash.GenericListIterator(this.nodes.head);
 		while(_g.previous.next != null) {
 			var node = _g.next();
-			this.addToBroadphase(node);
+			this.addToPhysicsEngine(node);
 		}
-		this.nodes.nodeAdded.add($bind(this,this.addToBroadphase));
-		this.nodes.nodeRemoved.add($bind(this,this.removeFromBroadphase));
+		this.nodes.nodeAdded.add($bind(this,this.addToPhysicsEngine));
+		this.nodes.nodeRemoved.add($bind(this,this.removeFromPhysicsEngine));
 	}
-	,addToBroadphase: function(node) {
-		var _g = 0;
-		var _g1 = this.broadphases;
-		while(_g < _g1.length) {
-			var broadphase = _g1[_g];
-			++_g;
-			broadphase.add(node.collision.aabb);
-		}
+	,addToPhysicsEngine: function(node) {
+		this.physicsEngine.AddBody(node.physics.body);
+		node.position.position = node.physics.body.position;
 	}
-	,removeFromBroadphase: function(node) {
-		var _g = 0;
-		var _g1 = this.broadphases;
-		while(_g < _g1.length) {
-			var broadphase = _g1[_g];
-			++_g;
-			broadphase.remove(node.collision.aabb);
-		}
+	,removeFromPhysicsEngine: function(node) {
+		this.physicsEngine.RemoveBody(node.physics.body);
 	}
 	,update: function(time) {
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var motion = node.motion;
-			node.motion.forces.y += 0.8;
-			motion.forces.multEquals(1 / time);
-			motion.velocity.plusEquals(motion.forces);
-			motion.velocity.multEquals(motion.damping);
-			node.motion.velocity.linearClampMax(0.5);
-			motion.forces.setTo(0,0);
-		}
-		var _g1 = 0;
-		var _g11 = this.broadphases;
-		while(_g1 < _g11.length) {
-			var broadphase = _g11[_g1];
-			++_g1;
-			broadphase.collide(this.nodes,time);
-		}
-		var _g2 = new ash.GenericListIterator(this.nodes.head);
-		while(_g2.previous.next != null) {
-			var node1 = _g2.next();
-			node1.position.position.x += (node1.motion.velocity.x + node1.motion.positionCorrection.x) * time;
-			node1.position.position.y += (node1.motion.velocity.y + node1.motion.positionCorrection.y) * time;
-			node1.motion.positionCorrection.setTo(0,0);
-		}
-	}
-	,Update: function() {
+		this.physicsEngine.Step();
 	}
 	,removeFromEngine: function(engine) {
 		this.nodes = null;
@@ -2354,209 +2163,6 @@ engine.view.View.__name__ = ["engine","view","View"];
 engine.view.View.prototype = {
 	__class__: engine.view.View
 };
-var geom = {};
-geom.AABB = function(width,height) {
-	this.extents = new geom.Vector2D(width,height);
-	this.position = new geom.Vector2D();
-};
-$hxClasses["geom.AABB"] = geom.AABB;
-geom.AABB.__name__ = ["geom","AABB"];
-geom.AABB.prototype = {
-	__class__: geom.AABB
-};
-geom.Vector2D = function(x,y) {
-	if(y == null) y = .0;
-	if(x == null) x = .0;
-	this.x = x;
-	this.y = y;
-};
-$hxClasses["geom.Vector2D"] = geom.Vector2D;
-geom.Vector2D.__name__ = ["geom","Vector2D"];
-geom.Vector2D.fromString = function(str) {
-	if(str == null) return null;
-	var vectorParts = str.split(":");
-	if(vectorParts == null || vectorParts.length != 2) return null;
-	var xVal = Std.parseFloat(vectorParts[0]);
-	var yVal = Std.parseFloat(vectorParts[1]);
-	if(Math.isNaN(xVal) || Math.isNaN(yVal)) return null;
-	return new geom.Vector2D(xVal,yVal);
-};
-geom.Vector2D.prototype = {
-	setTo: function(x,y) {
-		this.x = x;
-		this.y = y;
-		return this;
-	}
-	,copy: function(v) {
-		this.x = v.x;
-		this.y = v.y;
-	}
-	,dot: function(v) {
-		return this.x * v.x + this.y * v.y;
-	}
-	,cross: function(v) {
-		return this.x * v.y - this.y * v.x;
-	}
-	,plus: function(v) {
-		return new geom.Vector2D(this.x + v.x,this.y + v.y);
-	}
-	,plus2: function(x,y) {
-		return new geom.Vector2D(this.x + x,this.y + y);
-	}
-	,plusEquals: function(v) {
-		this.x += v.x;
-		this.y += v.y;
-		return this;
-	}
-	,plusEquals2: function(x,y) {
-		this.x += x;
-		this.y += y;
-		return this;
-	}
-	,minus: function(v) {
-		return new geom.Vector2D(this.x - v.x,this.y - v.y);
-	}
-	,minus2: function(x,y) {
-		return new geom.Vector2D(this.x - x,this.y - y);
-	}
-	,minusEquals: function(v) {
-		this.x -= v.x;
-		this.y -= v.y;
-		return this;
-	}
-	,minusEquals2: function(x,y) {
-		this.x -= x;
-		this.y -= y;
-		return this;
-	}
-	,mult: function(s) {
-		return new geom.Vector2D(this.x * s,this.y * s);
-	}
-	,multEquals: function(s) {
-		this.x *= s;
-		this.y *= s;
-		return this;
-	}
-	,times: function(v) {
-		return new geom.Vector2D(this.x * v.x,this.y * v.y);
-	}
-	,times2: function(x,y) {
-		return new geom.Vector2D(this.x * x,this.y * y);
-	}
-	,timesEquals: function(v) {
-		this.x *= v.x;
-		this.y *= v.y;
-		return this;
-	}
-	,timesEquals2: function(x,y) {
-		this.x *= x;
-		this.y *= y;
-		return this;
-	}
-	,div: function(s) {
-		if(s == 0) s = 0.0001;
-		return new geom.Vector2D(this.x / s,this.y / s);
-	}
-	,divEquals: function(s) {
-		if(s == 0) s = 0.0001;
-		this.x /= s;
-		this.y /= s;
-		return this;
-	}
-	,length: function() {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-	,lengthSqr: function() {
-		return this.x * this.x + this.y * this.y;
-	}
-	,unit: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		return new geom.Vector2D(this.x / t,this.y / t);
-	}
-	,unitEquals: function() {
-		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
-		this.x /= t;
-		this.y /= t;
-		return this;
-	}
-	,leftHandNormal: function() {
-		return new geom.Vector2D(this.y,-this.x);
-	}
-	,leftHandNormalEquals: function() {
-		var t = this.x;
-		this.x = this.y;
-		this.y = -t;
-		return this;
-	}
-	,rightHandNormal: function() {
-		return new geom.Vector2D(-this.y,this.x);
-	}
-	,rightHandNormalEquals: function() {
-		var t = this.x;
-		this.x = -this.y;
-		this.y = this.x;
-		return this;
-	}
-	,distance: function(v) {
-		var delta = new geom.Vector2D(v.x - this.x,v.y - this.y);
-		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-	}
-	,distanceSqrd: function(v) {
-		var dX = this.x - v.x;
-		var dY = this.y - v.y;
-		return dX * dX + dY * dY;
-	}
-	,clampMax: function(max) {
-		var l = Math.sqrt(this.x * this.x + this.y * this.y);
-		if(l > max) this.multEquals(max / l);
-		return this;
-	}
-	,linearClampMax: function(max) {
-		if(this.x < -max) this.x = -max;
-		if(this.x > max) this.x = max;
-		if(this.y < -max) this.y = -max;
-		if(this.y > max) this.y = max;
-		return this;
-	}
-	,interpolate: function(v,t) {
-		return this.mult(1 - t).plus(new geom.Vector2D(v.x * t,v.y * t));
-	}
-	,rotate: function(angle) {
-		var a = angle * Math.PI / 180;
-		var cos = Math.cos(a);
-		var sin = Math.sin(a);
-		return new geom.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
-	}
-	,rotateEquals: function(angle) {
-		var a = angle * Math.PI / 180;
-		var cos = Math.cos(a);
-		var sin = Math.sin(a);
-		var rx = cos * this.x - sin * this.y;
-		var ry = cos * this.y + sin * this.x;
-		this.x = rx;
-		this.y = ry;
-		return this;
-	}
-	,reverse: function() {
-		return new geom.Vector2D(-this.x,-this.y);
-	}
-	,majorAxis: function() {
-		if(Math.abs(this.x) > Math.abs(this.y)) return new geom.Vector2D(this.x >= 0?1:-1,0); else return new geom.Vector2D(0,this.y >= 0?1:-1);
-	}
-	,isEquals: function(v) {
-		return this.x == v.x && this.y == v.y;
-	}
-	,equalsZero: function() {
-		return this.x == 0 && this.y == 0;
-	}
-	,clone: function() {
-		return new geom.Vector2D(this.x,this.y);
-	}
-	,toString: function() {
-		return this.x + ":" + this.y;
-	}
-	,__class__: geom.Vector2D
-};
 var haxe = {};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
@@ -2571,6 +2177,26 @@ haxe.ds.IntMap.prototype = {
 	}
 	,get: function(key) {
 		return this.h[key];
+	}
+	,remove: function(key) {
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
+	}
+	,keys: function() {
+		var a = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) a.push(key | 0);
+		}
+		return HxOverrides.iter(a);
+	}
+	,iterator: function() {
+		return { ref : this.h, it : this.keys(), hasNext : function() {
+			return this.it.hasNext();
+		}, next : function() {
+			var i = this.it.next();
+			return this.ref[i];
+		}};
 	}
 	,__class__: haxe.ds.IntMap
 };
@@ -3138,6 +2764,1532 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 		if(ctx != null) return ctx;
 	}
 	return null;
+};
+var physics = {};
+physics.Constants = function() { };
+$hxClasses["physics.Constants"] = physics.Constants;
+physics.Constants.__name__ = ["physics","Constants"];
+physics.PhysicsEngine = function(fps,pps,narrowphase) {
+	this.fps = fps;
+	this.pps = pps;
+	this.narrowphase = narrowphase;
+	this.Initalize();
+};
+$hxClasses["physics.PhysicsEngine"] = physics.PhysicsEngine;
+physics.PhysicsEngine.__name__ = ["physics","PhysicsEngine"];
+physics.PhysicsEngine.prototype = {
+	Initalize: function() {
+		this.narrowphase.bodyContactManager = this.contactManager;
+		this.accumulator = 0.0;
+		this.currTime = 0.0;
+		this.msPerFrame = 1000 / this.fps;
+		this.msPerPhysics = 1000 / this.pps;
+		this.physicsDeltaTime = 1 / this.pps;
+		this.step = 0;
+		this.forces = new physics.geometry.Vector2D();
+		this.masslessForces = new physics.geometry.Vector2D();
+		this.damping = 0.995;
+	}
+	,Step: function() {
+		this.step++;
+		var newTime = new Date().getTime();
+		this.deltaTime = newTime - this.currTime;
+		this.currTime = newTime;
+		this.ProcessOnStep(this.step);
+		if(this.deltaTime > 100) this.deltaTime = 100;
+		this.accumulator += this.deltaTime;
+		while(this.accumulator >= this.msPerPhysics) {
+			this.accumulator -= this.msPerPhysics;
+			this.update++;
+			this.Update();
+			this.Collide();
+		}
+		if(this.contactManager != null) this.contactManager.ProcessBodyContacts();
+	}
+	,Update: function() {
+	}
+	,Collide: function() {
+	}
+	,StartStaticUpdate: function(body) {
+	}
+	,EndStaticUpdate: function(body) {
+	}
+	,ProcessOnStep: function(step) {
+	}
+	,RenderItems: function(timeStamp,aabb) {
+	}
+	,AddBody: function(body) {
+		body.OnAddedToEngine(this);
+	}
+	,RemoveBody: function(body) {
+	}
+	,SleepItem: function(body) {
+		return true;
+	}
+	,WakeItem: function(body) {
+		return true;
+	}
+	,CastRay: function(ray) {
+		return null;
+	}
+	,ProcessAction: function(action) {
+	}
+	,ProcessShapes: function(position,range,action) {
+	}
+	,__class__: physics.PhysicsEngine
+};
+physics.collision = {};
+physics.collision.broadphase = {};
+physics.collision.broadphase.action = {};
+physics.collision.broadphase.action.ActionParams = function() {
+};
+$hxClasses["physics.collision.broadphase.action.ActionParams"] = physics.collision.broadphase.action.ActionParams;
+physics.collision.broadphase.action.ActionParams.__name__ = ["physics","collision","broadphase","action","ActionParams"];
+physics.collision.broadphase.action.ActionParams.prototype = {
+	PreProcess: function() {
+		this.radiusSqrd = this.radius * this.radius;
+	}
+	,__class__: physics.collision.broadphase.action.ActionParams
+};
+physics.collision.broadphase.action.ActionResult = function() {
+};
+$hxClasses["physics.collision.broadphase.action.ActionResult"] = physics.collision.broadphase.action.ActionResult;
+physics.collision.broadphase.action.ActionResult.__name__ = ["physics","collision","broadphase","action","ActionResult"];
+physics.collision.broadphase.action.ActionResult.prototype = {
+	Reset: function() {
+		this.body = null;
+		this.distanceSqrd = 0;
+	}
+	,__class__: physics.collision.broadphase.action.ActionResult
+};
+physics.collision.broadphase.action.ActionResultCollection = function() {
+	this.results = new Array();
+	this.opaqueBodies = new Array();
+};
+$hxClasses["physics.collision.broadphase.action.ActionResultCollection"] = physics.collision.broadphase.action.ActionResultCollection;
+physics.collision.broadphase.action.ActionResultCollection.__name__ = ["physics","collision","broadphase","action","ActionResultCollection"];
+physics.collision.broadphase.action.ActionResultCollection.prototype = {
+	Reset: function() {
+		var _g1 = 0;
+		var _g = this.resultCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.results[i].Reset();
+		}
+		this.resultCount = 0;
+		var _g11 = 0;
+		var _g2 = this.opaqueBodyCount;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			this.opaqueBodies[i1].Reset();
+		}
+		this.opaqueBodyCount = 0;
+		this.furthestDistSqrd = 0;
+	}
+	,AddResult: function(body,distanceSqrd) {
+		var result;
+		this.resultCount++;
+		if(this.resultCount > this.results.length) {
+			result = new physics.collision.broadphase.action.ActionResult();
+			this.results.push(result);
+		} else result = this.results[this.resultCount - 1];
+		result.body = body;
+		result.distanceSqrd = distanceSqrd;
+		if(body.isOpaque) {
+			this.opaqueBodyCount++;
+			if(this.opaqueBodyCount > this.opaqueBodies.length) {
+				result = new physics.collision.broadphase.action.ActionResult();
+				this.opaqueBodies.push(result);
+			} else result = this.opaqueBodies[this.opaqueBodyCount - 1];
+			result.body = body;
+			result.distanceSqrd = distanceSqrd;
+		}
+	}
+	,Sort: function() {
+		this.quicksort(this.results,0,this.resultCount - 1);
+		this.quicksort(this.opaqueBodies,0,this.opaqueBodyCount - 1);
+	}
+	,quicksort: function(arrayInput,left,right) {
+		var i = left;
+		var j = right;
+		var pivotPoint = arrayInput[Math.round((left + right) * .5)];
+		while(i <= j) {
+			while(arrayInput[i].distanceSqrd < pivotPoint.distanceSqrd) i++;
+			while(arrayInput[j].distanceSqrd > pivotPoint.distanceSqrd) j--;
+			if(i <= j) {
+				var tempStore = arrayInput[i];
+				arrayInput[i] = arrayInput[j];
+				i++;
+				arrayInput[j] = tempStore;
+				j--;
+			}
+		}
+		if(left < j) this.quicksort(arrayInput,left,j);
+		if(i < right) this.quicksort(arrayInput,i,right);
+	}
+	,__class__: physics.collision.broadphase.action.ActionResultCollection
+};
+physics.collision.broadphase.action.IBroadphaseAction = function() { };
+$hxClasses["physics.collision.broadphase.action.IBroadphaseAction"] = physics.collision.broadphase.action.IBroadphaseAction;
+physics.collision.broadphase.action.IBroadphaseAction.__name__ = ["physics","collision","broadphase","action","IBroadphaseAction"];
+physics.collision.broadphase.action.IBroadphaseAction.prototype = {
+	__class__: physics.collision.broadphase.action.IBroadphaseAction
+};
+physics.collision.broadphase.managedgrid = {};
+physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
+	this.index = index;
+	this.x = x;
+	this.y = y;
+	this.width = w;
+	this.height = h;
+	this.aabb = new physics.geometry.AABB(x,y + h,x + w,y);
+	this.dynamicItems = new Array();
+	this.sleepingItems = new Array();
+	this.staticItems = new Array();
+};
+$hxClasses["physics.collision.broadphase.managedgrid.Cell"] = physics.collision.broadphase.managedgrid.Cell;
+physics.collision.broadphase.managedgrid.Cell.__name__ = ["physics","collision","broadphase","managedgrid","Cell"];
+physics.collision.broadphase.managedgrid.Cell.prototype = {
+	AddBody: function(body) {
+		if(body.isStatic) this.staticItems.push(body); else this.dynamicItems.push(body);
+	}
+	,RemoveBody: function(body) {
+		if(body.isStatic) HxOverrides.remove(this.staticItems,body); else HxOverrides.remove(this.dynamicItems,body);
+	}
+	,__class__: physics.collision.broadphase.managedgrid.Cell
+};
+physics.collision.broadphase.managedgrid.ManagedGrid = function(fps,pps,narrowphase,worldGridWidth,worldGridHeight,cellSize) {
+	physics.PhysicsEngine.call(this,fps,pps,narrowphase);
+	this.grid = new ds.Grid2D(worldGridWidth,worldGridHeight,cellSize);
+	this.init();
+};
+$hxClasses["physics.collision.broadphase.managedgrid.ManagedGrid"] = physics.collision.broadphase.managedgrid.ManagedGrid;
+physics.collision.broadphase.managedgrid.ManagedGrid.__name__ = ["physics","collision","broadphase","managedgrid","ManagedGrid"];
+physics.collision.broadphase.managedgrid.ManagedGrid.__super__ = physics.PhysicsEngine;
+physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics.PhysicsEngine.prototype,{
+	init: function() {
+		var index = 0;
+		var _g1 = 0;
+		var _g = this.grid.gridWidth;
+		while(_g1 < _g) {
+			var y = _g1++;
+			var _g3 = 0;
+			var _g2 = this.grid.gridHeight;
+			while(_g3 < _g2) {
+				var x = _g3++;
+				this.grid.data.push(new physics.collision.broadphase.managedgrid.Cell(index++,x * this.grid.cellSize,y * this.grid.cellSize,this.grid.cellSize,this.grid.cellSize));
+			}
+		}
+	}
+	,Update: function() {
+		var _g = 0;
+		var _g1 = this.grid.data;
+		while(_g < _g1.length) {
+			var cell = _g1[_g];
+			++_g;
+			var _g2 = 0;
+			var _g3 = cell.dynamicItems;
+			while(_g2 < _g3.length) {
+				var body = _g3[_g2];
+				++_g2;
+				body.Update();
+				if(!cell.aabb.containtsPoint(body.position)) {
+					cell.RemoveBody(body);
+					this.AddBodyToCell(body);
+				}
+			}
+		}
+	}
+	,Collide: function() {
+		var _g = 0;
+		var _g1 = this.grid.data;
+		while(_g < _g1.length) {
+			var cell = _g1[_g];
+			++_g;
+			var _g3 = 0;
+			var _g2 = cell.dynamicItems.length;
+			while(_g3 < _g2) {
+				var i = _g3++;
+				var bodyA = cell.dynamicItems[i];
+				var _g5 = i + 1;
+				var _g4 = cell.dynamicItems.length;
+				while(_g5 < _g4) {
+					var j = _g5++;
+					var bodyB = cell.dynamicItems[j];
+					console.log("a+b");
+					this.narrowphase.CollideBodies(bodyA,bodyB);
+				}
+			}
+		}
+	}
+	,AddBody: function(body) {
+		physics.PhysicsEngine.prototype.AddBody.call(this,body);
+		this.AddBodyToCell(body);
+	}
+	,AddBodyToCell: function(body) {
+		var x = body.position.x * this.grid.invCellSize | 0;
+		var y = body.position.y * this.grid.invCellSize | 0;
+		var cell = this.grid.GetGridSafe(x,y);
+		if(cell != null) cell.AddBody(body);
+	}
+	,__class__: physics.collision.broadphase.managedgrid.ManagedGrid
+});
+physics.collision.narrowphase = {};
+physics.collision.narrowphase.INarrowphase = function() { };
+$hxClasses["physics.collision.narrowphase.INarrowphase"] = physics.collision.narrowphase.INarrowphase;
+physics.collision.narrowphase.INarrowphase.__name__ = ["physics","collision","narrowphase","INarrowphase"];
+physics.collision.narrowphase.INarrowphase.prototype = {
+	__class__: physics.collision.narrowphase.INarrowphase
+};
+physics.collision.narrowphase.sat = {};
+physics.collision.narrowphase.sat.SAT = function() {
+	this.result = new physics.dynamics.Arbiter();
+};
+$hxClasses["physics.collision.narrowphase.sat.SAT"] = physics.collision.narrowphase.sat.SAT;
+physics.collision.narrowphase.sat.SAT.__name__ = ["physics","collision","narrowphase","sat","SAT"];
+physics.collision.narrowphase.sat.SAT.__interfaces__ = [physics.collision.narrowphase.INarrowphase];
+physics.collision.narrowphase.sat.SAT.poly2poly = function(shape1,shape1Pos,shape2,shape2Pos,arbiter) {
+	var vertValOnAxis;
+	var minValOnAxis;
+	var minPen1 = -1e+99;
+	var minAxis1 = null;
+	var _g = 0;
+	var _g1 = shape1.transformedAxes;
+	while(_g < _g1.length) {
+		var a = _g1[_g];
+		++_g;
+		minValOnAxis = shape2.ValueOnAxis(a,shape1Pos,shape2Pos);
+		if(minValOnAxis > 0) return false;
+		if(minValOnAxis > minPen1) {
+			minPen1 = minValOnAxis;
+			minAxis1 = a;
+		}
+	}
+	var minPen2 = -1e+99;
+	var minAxis2 = null;
+	var _g2 = 0;
+	var _g11 = shape2.transformedAxes;
+	while(_g2 < _g11.length) {
+		var a1 = _g11[_g2];
+		++_g2;
+		minValOnAxis = shape1.ValueOnAxis(a1,shape2Pos,shape1Pos);
+		if(minValOnAxis > 0) return false;
+		if(minValOnAxis > minPen2) {
+			minPen2 = minValOnAxis;
+			minAxis2 = a1;
+		}
+	}
+	var minAxis;
+	var nCoef;
+	var dist;
+	if(minPen1 > minPen2) {
+		minAxis = minAxis1;
+		nCoef = 1;
+		dist = minPen1;
+	} else {
+		minAxis = minAxis2;
+		nCoef = -1;
+		dist = minPen2;
+	}
+	arbiter.AddContact(0,0,minAxis.n.x,minAxis.n.y,nCoef,dist);
+	return true;
+};
+physics.collision.narrowphase.sat.SAT.circle2circle = function(circle1,circle1Pos,circle2,circle2Pos,arbiter) {
+	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(circle1.transformedCentre.x + circle1Pos.x,circle1.transformedCentre.y + circle1Pos.y,circle2.transformedCentre.x + circle2Pos.x,circle2.transformedCentre.y + circle2Pos.y,circle1.radius,circle2.radius,arbiter);
+};
+physics.collision.narrowphase.sat.SAT.circle2circleQuery = function(p1x,p1y,p2x,p2y,r1,r2,arbiter) {
+	var minDist = r1 + r2;
+	var x = p2x - p1x;
+	var y = p2y - p1y;
+	var distSqr = x * x + y * y;
+	var result = false;
+	if(distSqr < minDist * minDist) {
+		var dist = Math.sqrt(distSqr) + 0.0000001;
+		var invDist = 1 / dist;
+		var deltaFact = 0.5 + (r1 - 0.5 * minDist) / dist;
+		arbiter.AddContact(p1x + x * deltaFact,p1y + y * deltaFact,x * invDist,y * invDist,1,dist - minDist);
+		result = true;
+	}
+	return result;
+};
+physics.collision.narrowphase.sat.SAT.circle2poly = function(circle,circlePos,poly,polyPos,arbiter) {
+	var miniA = null;
+	var min = -1e+99;
+	var tCx = circle.transformedCentre.x + circlePos.x;
+	var tCy = circle.transformedCentre.y + circlePos.y;
+	var miniVindex = 0;
+	var _g1 = 0;
+	var _g = poly.vertexCount;
+	while(_g1 < _g) {
+		var i = _g1++;
+		var tA = poly.transformedAxes[i];
+		var dist = tA.n.x * tCx + tA.n.y * tCy - (polyPos.x * tA.n.x + polyPos.y * tA.n.y + tA.d) - circle.radius;
+		if(dist > 0) return false;
+		if(dist > min) {
+			min = dist;
+			miniA = tA;
+			miniVindex = i;
+		}
+	}
+	var miniV = poly.transformedVertices[miniVindex];
+	var n = miniA.n;
+	var ax = miniV.x + polyPos.x;
+	var ay = miniV.y + polyPos.y;
+	miniVindex++;
+	var b = poly.transformedVertices[miniVindex % poly.vertexCount];
+	var bx = b.x + polyPos.x;
+	var by = b.y + polyPos.y;
+	var dtb = n.x * by - n.y * bx;
+	var dt = n.x * tCy - n.y * tCx;
+	if(dt < dtb) return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCx,tCy,bx,by,circle.radius,0,arbiter);
+	var dta = n.x * ay - n.y * ax;
+	if(dt < dta) {
+		var factor = circle.radius + min / 2;
+		arbiter.AddContact(tCx - n.x * factor,tCy - n.y * factor,n.x,n.y,-1,min);
+		return true;
+	}
+	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCx,tCy,ax,ay,circle.radius,0,arbiter);
+};
+physics.collision.narrowphase.sat.SAT.circle2segment = function(circle,circlePos,segment,segmentPos,arbiter) {
+	var tAP = segment.tA.plus(segmentPos);
+	var tCP = circle.transformedCentre.plus(circlePos);
+	var closest_t = segment.delta.dot(new physics.geometry.Vector2D(tCP.x - tAP.x,tCP.y - tAP.y)) / segment.delta.lengthSqr();
+	if(closest_t < 0) closest_t = 0;
+	if(closest_t > 1) closest_t = 1;
+	var closest = tAP.plus(segment.delta.mult(closest_t));
+	return physics.collision.narrowphase.sat.SAT.circle2circleQuery(tCP.x,tCP.y,closest.x,closest.y,circle.radius,segment.radius,arbiter);
+};
+physics.collision.narrowphase.sat.SAT.prototype = {
+	CollideBodies: function(body1,body2,n) {
+		var _g = 0;
+		var _g1 = body1.features;
+		while(_g < _g1.length) {
+			var feature1 = _g1[_g];
+			++_g;
+			var _g2 = 0;
+			var _g3 = body2.features;
+			while(_g2 < _g3.length) {
+				var feature2 = _g3[_g2];
+				++_g2;
+				if(physics.geometry.AABB.intersects(feature1.shape.aabb,feature1.body.position,feature2.shape.aabb,feature2.body.position)) this.CollideFeatures(feature1,feature2,n);
+			}
+		}
+	}
+	,CollideFeatures: function(feature1,feature2,n) {
+		if(feature1.body == feature2.body) return false;
+		if((feature1.body.layers & feature2.body.layers) == 0) return false;
+		if(feature1.body.group > 0 && feature2.body.group > 0 && feature1.body.group == feature2.body.group) return false;
+		var s1 = feature1.shape;
+		var s2 = feature2.shape;
+		this.result.contactCount = 0;
+		if(s1.typeID > s2.typeID) {
+			var tempShape2 = s1;
+			s1 = s2;
+			s2 = tempShape2;
+			this.result.feature1 = feature2;
+			this.result.feature2 = feature1;
+		} else {
+			this.result.feature1 = feature1;
+			this.result.feature2 = feature2;
+		}
+		var collided = false;
+		if(s1.typeID == 0) collided = true; else {
+			var _g = s1.typeID | s2.typeID;
+			switch(_g) {
+			case 4:
+				collided = physics.collision.narrowphase.sat.SAT.poly2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+				break;
+			case 5:
+				collided = physics.collision.narrowphase.sat.SAT.circle2poly(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+				break;
+			case 1:
+				collided = physics.collision.narrowphase.sat.SAT.circle2circle(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+				break;
+			case 3:
+				collided = physics.collision.narrowphase.sat.SAT.circle2segment(s1,this.result.feature1.position,s2,this.result.feature2.position,this.result);
+				break;
+			}
+		}
+		console.log("c=" + (collided == null?"null":"" + collided));
+		if(collided) {
+			feature1.body.Wake();
+			feature2.body.Wake();
+			if(this.result.Resolve()) {
+				if(this.bodyContactManager != null) this.bodyContactManager.UpdateContacts(feature1.body,feature2.body);
+				return true;
+			}
+		}
+		return false;
+	}
+	,__class__: physics.collision.narrowphase.sat.SAT
+};
+physics.constraints = {};
+physics.constraints.Constraint = function() {
+};
+$hxClasses["physics.constraints.Constraint"] = physics.constraints.Constraint;
+physics.constraints.Constraint.__name__ = ["physics","constraints","Constraint"];
+physics.constraints.Constraint.prototype = {
+	resolve: function() {
+		return false;
+	}
+	,Destroy: function() {
+		if(this.destroyCallback != null) this.destroyCallback(this);
+		this.body1.RemoveConstraint(this);
+		this.body2.RemoveConstraint(this);
+	}
+	,__class__: physics.constraints.Constraint
+};
+physics.dynamics = {};
+physics.dynamics.Arbiter = function() {
+	this.contacts = new Array();
+	var _g = 0;
+	while(_g < 2) {
+		var i = _g++;
+		this.contacts.push(new physics.dynamics.Contact());
+	}
+	this.contactCount = 0;
+	this.mtdA = new physics.geometry.Vector2D();
+	this.mtdB = new physics.geometry.Vector2D();
+	this.vnA = new physics.geometry.Vector2D();
+	this.vnB = new physics.geometry.Vector2D();
+};
+$hxClasses["physics.dynamics.Arbiter"] = physics.dynamics.Arbiter;
+physics.dynamics.Arbiter.__name__ = ["physics","dynamics","Arbiter"];
+physics.dynamics.Arbiter.prototype = {
+	Reset: function() {
+		this.contactCount = 0;
+	}
+	,AddContact: function(pX,pY,nX,nY,nCoef,dist) {
+		var contact = this.contacts[this.contactCount];
+		contact.point.x = pX;
+		contact.point.y = pY;
+		contact.normal.x = nX * nCoef;
+		contact.normal.y = nY * nCoef;
+		contact.penDist = dist;
+	}
+	,OpposingBody: function(thiz) {
+		if(thiz.id == this.feature1.body.id) return this.feature2.body; else return this.feature1.body;
+	}
+	,Resolve: function() {
+		var bodyA = this.feature1.body;
+		var bodyB = this.feature2.body;
+		this.isSensor = this.feature1.isSensor || this.feature2.isSensor;
+		if(!this.isSensor) {
+			var normal = this.contacts[0].normal;
+			var depth = this.contacts[0].penDist;
+			var mtd = new physics.geometry.Vector2D(normal.x * depth,normal.y * depth);
+			var te = this.feature1.material.elasticity + this.feature2.material.elasticity;
+			var sumInvMass = this.feature1.body.invMass + this.feature2.body.invMass;
+			var tf = utils.Maths.Clamp(1 - (this.feature1.material.friction + this.feature2.material.friction),0,1);
+			var ca_velX = bodyA.position.x - bodyA.prevPosition.x;
+			var ca_velY = bodyA.position.y - bodyA.prevPosition.y;
+			var ca_vdotn = normal.x * ca_velX + normal.y * ca_velY;
+			var ca_vnX = normal.x * ca_vdotn;
+			var ca_vnY = normal.y * ca_vdotn;
+			var ca_vtX = ca_velX - ca_vnX;
+			var ca_vtY = ca_velY - ca_vnY;
+			var cb_velX = bodyB.position.x - bodyB.prevPosition.x;
+			var cb_velY = bodyB.position.y - bodyB.prevPosition.y;
+			var cb_vdotn = normal.x * cb_velX + normal.y * cb_velY;
+			var cb_vnX = normal.x * cb_vdotn;
+			var cb_vnY = normal.y * cb_vdotn;
+			var cb_vtX = cb_velX - cb_vnX;
+			var cb_vtY = cb_velY - cb_vnY;
+			var vnAX = (cb_vnX * ((te + 1) * bodyA.invMass) + ca_vnX * (bodyB.invMass - te * bodyA.invMass)) / sumInvMass;
+			var vnAY = (cb_vnY * ((te + 1) * bodyA.invMass) + ca_vnY * (bodyB.invMass - te * bodyA.invMass)) / sumInvMass;
+			var vnBX = (ca_vnX * ((te + 1) * bodyB.invMass) + cb_vnX * (bodyA.invMass - te * bodyB.invMass)) / sumInvMass;
+			var vnBY = (ca_vnY * ((te + 1) * bodyB.invMass) + cb_vnY * (bodyA.invMass - te * bodyB.invMass)) / sumInvMass;
+			ca_vtX *= tf;
+			ca_vtY *= tf;
+			cb_vtX *= tf;
+			cb_vtY *= tf;
+			var aMassRatio = bodyA.invMass / sumInvMass;
+			this.mtdA.x = mtd.x * aMassRatio;
+			this.mtdA.y = mtd.y * aMassRatio;
+			var bMassRatio = -bodyB.invMass / sumInvMass;
+			this.mtdB.x = mtd.x * bMassRatio;
+			this.mtdB.y = mtd.y * bMassRatio;
+			this.vnA.x = vnAX + ca_vtX;
+			this.vnA.y = vnAY + ca_vtY;
+			this.vnB.x = vnBX + cb_vtX;
+			this.vnB.y = vnBY + cb_vtY;
+			bodyA.RespondToCollision(this,this.mtdA,this.vnA,normal,depth,-1);
+			bodyB.RespondToCollision(this,this.mtdB,this.vnB,normal,depth,1);
+		}
+		if(this.feature1.contactCallback != null) this.feature1.contactCallback(this);
+		if(this.feature2.contactCallback != null) this.feature2.contactCallback(this);
+		return !this.isSensor;
+	}
+	,__class__: physics.dynamics.Arbiter
+};
+physics.dynamics.Body = function() {
+	if(this["transient"]) this.id = ds.IDManager.GetTransientID(); else this.id = ds.IDManager.GetPersistentID();
+	this.aabb = new physics.geometry.AABB();
+	this.averageCenterOffset = new physics.geometry.Vector2D();
+	this.averageCenter = new physics.geometry.Vector2D();
+	this.position = new physics.geometry.Vector2D();
+	this.prevPosition = new physics.geometry.Vector2D();
+	this.tempPosition = new physics.geometry.Vector2D();
+	this.accumulatedForces = new physics.geometry.Vector2D();
+	this.rotation = new physics.geometry.Vector2D();
+	this.features = new Array();
+	this.constraints = new Array();
+	this.SetAngle(0);
+	this.SetMass(1);
+	this.SetMaximumScalarVelocity(20);
+	this.maxAcceleration = 5;
+	this.motion = 10;
+	this.damping = 1;
+	this.masslessForcesFactor = 1;
+	this.radius = this.radiusSqrd = 0;
+	this.group = 0;
+	this.layers = 65535;
+	this.canKeepAlive = true;
+	this.allowedToSleep = true;
+	this.canSleep = true;
+	this.isSleeping = false;
+	this.isStatic = false;
+	this.isKinematic = false;
+	this.isOpaque = false;
+	this.collisionProcessingMask = 0;
+	this.Initalize();
+};
+$hxClasses["physics.dynamics.Body"] = physics.dynamics.Body;
+physics.dynamics.Body.__name__ = ["physics","dynamics","Body"];
+physics.dynamics.Body.HashBodyIDs = function(body1ID,body2ID) {
+	if(body1ID < body2ID) return body1ID << 16 | body2ID; else return body2ID << 16 | body1ID;
+};
+physics.dynamics.Body.prototype = {
+	Initalize: function() {
+	}
+	,Update: function() {
+		if(this.isStatic || this.isSleeping) return;
+		this.accumulatedForces.x += this.engine.masslessForces.x * this.masslessForcesFactor;
+		this.accumulatedForces.y += this.engine.masslessForces.y * this.masslessForcesFactor;
+		this.accumulatedForces.x += this.engine.forces.x * this.invMass;
+		this.accumulatedForces.y += this.engine.forces.y * this.invMass;
+		this.tempPosition.x = this.position.x;
+		this.tempPosition.y = this.position.y;
+		var nvX = this.position.x - this.prevPosition.x + this.accumulatedForces.x * this.engine.physicsDeltaTime;
+		var nvY = this.position.y - this.prevPosition.y + this.accumulatedForces.y * this.engine.physicsDeltaTime;
+		nvX *= this.damping * this.engine.damping;
+		nvY *= this.damping * this.engine.damping;
+		if(this.maxVelocityScalarSqrd > 0) {
+			var scalarVelocitySqr = nvX * nvX + nvY * nvY;
+			if(scalarVelocitySqr > this.maxVelocityScalarSqrd) {
+				var factor = this.maxVelocityScalar / Math.sqrt(scalarVelocitySqr);
+				nvX *= factor;
+				nvY *= factor;
+			}
+		}
+		this.position.x += nvX;
+		this.position.y += nvY;
+		this.prevPosition.x = this.tempPosition.x;
+		this.prevPosition.y = this.tempPosition.y;
+		this.accumulatedForces.x = this.accumulatedForces.y = 0;
+		this.damping = 1;
+		this.motion = 0.99332805041467 * this.motion + 0.00667194958533001703 * (nvX * nvX + nvY * nvY);
+		if(this.motion > 0.009) this.motion = 0.009;
+		this.canSleep = false;
+		if(this.motion < 0.0009) this.canSleep = true;
+		var _g = 0;
+		var _g1 = this.constraints;
+		while(_g < _g1.length) {
+			var constraint = _g1[_g];
+			++_g;
+			if(!constraint.resolve()) constraint.Destroy();
+		}
+		this.averageCenter.x = this.position.x + this.averageCenterOffset.x;
+		this.averageCenter.y = this.position.y + this.averageCenterOffset.y;
+	}
+	,OnStep: function(step) {
+		return true;
+	}
+	,OnPause: function() {
+		return true;
+	}
+	,Sleep: function() {
+		if(this.isSleeping || !this.allowedToSleep) return false;
+		if(this.engine.SleepItem(this)) {
+			this.motion = 0;
+			return true;
+		}
+		return false;
+	}
+	,Wake: function() {
+		if(!this.isSleeping) return false;
+		if(this.engine.WakeItem(this)) {
+			this.motion = 10;
+			return true;
+		}
+		return false;
+	}
+	,GetVelocity: function() {
+		return this.position.minus(this.prevPosition);
+	}
+	,SetVelocity: function(value) {
+		this.prevPosition.x = this.position.x - value.x;
+		this.prevPosition.y = this.position.y - value.y;
+		if(this.isSleeping) this.Wake();
+	}
+	,AddForce: function(force) {
+		this.accumulatedForces.plusEquals(force.mult(this.invMass));
+		if(this.isSleeping) this.Wake();
+	}
+	,AddMasslessForce: function(force) {
+		this.accumulatedForces.plusEquals(force);
+		if(this.isSleeping) this.Wake();
+	}
+	,RespondToCollision: function(collision,mtd,newVelocity,normal,depth,o) {
+		if(this.isStatic) return;
+		this.position.x += mtd.x;
+		this.position.y += mtd.y;
+		this.prevPosition.x = this.position.x - newVelocity.x;
+		this.prevPosition.y = this.position.y - newVelocity.y;
+		if(this.isSleeping) this.Wake();
+		if(this.isSleeping) this.Wake();
+	}
+	,SetAngle: function(angle) {
+		this.angle = angle % 6.28318530717;
+		this.rotation.x = Math.cos(this.angle);
+		this.rotation.y = Math.sin(this.angle);
+		this.UpdateFeatures();
+	}
+	,SetMass: function(mass) {
+		this.mass = mass;
+		this.invMass = 1 / mass;
+	}
+	,MakeStatic: function() {
+		this.isStatic = true;
+		this.isOpaque = true;
+		this.SetMass(Math.POSITIVE_INFINITY);
+	}
+	,SetMaximumScalarVelocity: function(maxVelocity) {
+		this.maxVelocityScalar = maxVelocity;
+		this.maxVelocityScalarSqrd = this.maxVelocityScalar * this.maxVelocityScalar;
+	}
+	,SetStaticPosition: function(position) {
+		this.position.copy(position);
+		this.prevPosition.copy(position);
+		this.averageCenter.x = position.x + this.averageCenterOffset.x;
+		this.averageCenter.y = position.y + this.averageCenterOffset.y;
+		if(this.isSleeping) this.Wake();
+	}
+	,Skew: function(delta) {
+		this.position.plusEquals(delta);
+		this.prevPosition.plusEquals(delta);
+		if(this.isSleeping) this.Wake();
+	}
+	,SetRadius: function(r) {
+		this.radius = r;
+		this.radiusSqrd = r * r;
+	}
+	,AddFeature: function(shape,material) {
+		var feature = new physics.dynamics.Feature(this,shape,material);
+		this.features.push(feature);
+		feature.shape.Update(this.rotation);
+		this.aabb.expand(feature.shape.aabb);
+		this.aabb.setToCenter(this.averageCenterOffset);
+		var rX = this.averageCenterOffset.x - this.aabb.r;
+		var rY = this.averageCenterOffset.y - this.aabb.t;
+		this.radiusSqrd = rX * rX + rY * rY;
+		this.radius = Math.sqrt(this.radiusSqrd);
+		return feature;
+	}
+	,UpdateFeatures: function() {
+		this.aabb.reset();
+		var _g = 0;
+		var _g1 = this.features;
+		while(_g < _g1.length) {
+			var feature = _g1[_g];
+			++_g;
+			feature.shape.Update(this.rotation);
+			this.aabb.expand(feature.shape.aabb);
+		}
+		this.aabb.setToCenter(this.averageCenterOffset);
+		var rX = this.averageCenterOffset.x - this.aabb.r;
+		var rY = this.averageCenterOffset.y - this.aabb.t;
+		this.radiusSqrd = rX * rX + rY * rY;
+		this.radius = Math.sqrt(this.radiusSqrd);
+		if(this.relativePoints != null) this.relativePoints.Update(this.rotation,false);
+	}
+	,AddConstraint: function(constraint) {
+		this.constraints.push(constraint);
+	}
+	,RemoveConstraint: function(constraint) {
+		HxOverrides.remove(this.constraints,constraint);
+	}
+	,OnAddedToEngine: function(engine) {
+		this.engine = engine;
+		this.createdMS = engine.currTime;
+	}
+	,OnStartCollision: function(contact) {
+		console.log("Start " + contact.hash);
+	}
+	,OnCollision: function(contact) {
+	}
+	,OnEndCollision: function(contact) {
+	}
+	,Destroy: function() {
+		this.engine.RemoveBody(this);
+		var _g = 0;
+		var _g1 = this.constraints;
+		while(_g < _g1.length) {
+			var constraint = _g1[_g];
+			++_g;
+			constraint.Destroy();
+		}
+		if(this["transient"]) ds.IDManager.ReleaseTransientID(this.id);
+	}
+	,__class__: physics.dynamics.Body
+};
+physics.dynamics.BodyContact = function() {
+};
+$hxClasses["physics.dynamics.BodyContact"] = physics.dynamics.BodyContact;
+physics.dynamics.BodyContact.__name__ = ["physics","dynamics","BodyContact"];
+physics.dynamics.BodyContact.prototype = {
+	__class__: physics.dynamics.BodyContact
+};
+physics.dynamics.BodyContactManager = function(engine) {
+	this.engine = engine;
+	this.contacts = new haxe.ds.IntMap();
+};
+$hxClasses["physics.dynamics.BodyContactManager"] = physics.dynamics.BodyContactManager;
+physics.dynamics.BodyContactManager.__name__ = ["physics","dynamics","BodyContactManager"];
+physics.dynamics.BodyContactManager.prototype = {
+	UpdateContacts: function(body1,body2) {
+		if(body1.collisionProcessingMask == 0 && body2.collisionProcessingMask == 0) return false;
+		var bodyHash = physics.dynamics.Body.HashBodyIDs(body1.id,body2.id);
+		var bodyContact = this.contacts.get(bodyHash);
+		if(bodyContact != null) {
+			if(bodyContact.stamp < this.engine.update) {
+				bodyContact.contactCount = 0;
+				bodyContact.stamp = this.engine.update;
+			}
+			bodyContact.contactCount++;
+		} else {
+			bodyContact = new physics.dynamics.BodyContact();
+			bodyContact.hash = bodyHash;
+			bodyContact.stamp = this.engine.update;
+			bodyContact.contactCount = 1;
+			bodyContact.startContact = true;
+			bodyContact.endContact = false;
+			bodyContact.bodyA = body1;
+			bodyContact.bodyB = body2;
+			this.contacts.set(bodyHash,bodyContact);
+		}
+		return true;
+	}
+	,ProcessBodyContacts: function() {
+		var contactIter = this.contacts.iterator();
+		var count = 0;
+		while( contactIter.hasNext() ) {
+			var bodyContact = contactIter.next();
+			count++;
+			if(bodyContact.stamp < this.engine.update) bodyContact.endContact = true;
+			if(bodyContact.bodyA.collisionProcessingMask > 0) {
+				if((bodyContact.bodyA.collisionProcessingMask & 1) > 0 && bodyContact.startContact) bodyContact.bodyA.OnStartCollision(bodyContact);
+				if((bodyContact.bodyA.collisionProcessingMask & 2) > 0) bodyContact.bodyA.OnCollision(bodyContact);
+				if((bodyContact.bodyA.collisionProcessingMask & 4) > 0 && bodyContact.endContact) bodyContact.bodyA.OnEndCollision(bodyContact);
+			}
+			if(bodyContact.bodyB.collisionProcessingMask > 0) {
+				if((bodyContact.bodyB.collisionProcessingMask & 1) > 0 && bodyContact.startContact) bodyContact.bodyB.OnStartCollision(bodyContact);
+				if((bodyContact.bodyB.collisionProcessingMask & 2) > 0) bodyContact.bodyB.OnCollision(bodyContact);
+				if((bodyContact.bodyB.collisionProcessingMask & 4) > 0 && bodyContact.endContact) bodyContact.bodyB.OnEndCollision(bodyContact);
+			}
+			bodyContact.startContact = false;
+			if(bodyContact.endContact) this.contacts.remove(bodyContact.hash);
+		}
+		console.log("Count=" + count);
+	}
+	,__class__: physics.dynamics.BodyContactManager
+};
+physics.dynamics.Contact = function() {
+	this.point = new physics.geometry.Vector2D();
+	this.normal = new physics.geometry.Vector2D();
+	this.penDist = 0;
+};
+$hxClasses["physics.dynamics.Contact"] = physics.dynamics.Contact;
+physics.dynamics.Contact.__name__ = ["physics","dynamics","Contact"];
+physics.dynamics.Contact.prototype = {
+	__class__: physics.dynamics.Contact
+};
+physics.dynamics.Feature = function(body,shape,material) {
+	this.body = body;
+	this.shape = shape;
+	this.material = material;
+	this.isSensor = false;
+	this.isCollidable = false;
+	this.position = body.position;
+};
+$hxClasses["physics.dynamics.Feature"] = physics.dynamics.Feature;
+physics.dynamics.Feature.__name__ = ["physics","dynamics","Feature"];
+physics.dynamics.Feature.prototype = {
+	copy: function(feature) {
+		this.body = feature.body;
+		this.shape = feature.shape;
+		this.material = feature.material;
+		this.position = feature.position;
+	}
+	,__class__: physics.dynamics.Feature
+};
+physics.dynamics.Material = function(density,elasticity,friction) {
+	if(friction == null) friction = 0.0;
+	if(elasticity == null) elasticity = 0.3;
+	if(density == null) density = 1;
+	this.density = density;
+	this.elasticity = elasticity;
+	this.friction = friction;
+};
+$hxClasses["physics.dynamics.Material"] = physics.dynamics.Material;
+physics.dynamics.Material.__name__ = ["physics","dynamics","Material"];
+physics.dynamics.Material.prototype = {
+	__class__: physics.dynamics.Material
+};
+physics.geometry = {};
+physics.geometry.AABB = function(l,b,r,t) {
+	if(t == null) t = .0;
+	if(r == null) r = .0;
+	if(b == null) b = .0;
+	if(l == null) l = .0;
+	this.l = l;
+	this.b = b;
+	this.r = r;
+	this.t = t;
+};
+$hxClasses["physics.geometry.AABB"] = physics.geometry.AABB;
+physics.geometry.AABB.__name__ = ["physics","geometry","AABB"];
+physics.geometry.AABB.intersects = function(aabb1,position1,aabb2,position2) {
+	if(aabb1.l + position1.x > aabb2.r + position2.x) return false; else if(aabb1.r + position1.x < aabb2.l + position2.x) return false; else if(aabb1.t + position1.y > aabb2.b + position2.y) return false; else if(aabb1.b + position1.y < aabb2.t + position2.y) return false; else return true;
+};
+physics.geometry.AABB.prototype = {
+	containtsPoint: function(point) {
+		return point.x >= this.l && point.x < this.r && point.y >= this.t && point.y < this.b;
+	}
+	,expand: function(aabb) {
+		if(aabb.l < this.l) this.l = aabb.l;
+		if(aabb.r > this.r) this.r = aabb.r;
+		if(aabb.t < this.t) this.t = aabb.t;
+		if(aabb.b > this.b) this.b = aabb.b;
+	}
+	,reset: function() {
+		this.l = 1e99;
+		this.r = -1e+99;
+		this.t = 1e99;
+		this.b = -1e+99;
+	}
+	,width: function() {
+		return this.r - this.l;
+	}
+	,height: function() {
+		return this.b - this.t;
+	}
+	,area: function() {
+		return (this.r - this.l) * (this.b - this.t);
+	}
+	,setToCenter: function(c) {
+		c.x = (this.r + this.l) / 2;
+		c.y = (this.b + this.t) / 2;
+	}
+	,Union: function(position,aabb,aabbPosition) {
+		return new physics.geometry.AABB(Math.max(this.l + position.x,aabb.l + aabbPosition.x),Math.min(this.b + position.y,aabb.b + aabbPosition.y),Math.min(this.r + position.x,aabb.r + aabbPosition.x),Math.max(this.t + position.y,aabb.t + aabbPosition.y));
+	}
+	,__class__: physics.geometry.AABB
+};
+physics.geometry.Axis = function(n,d) {
+	this.n = n;
+	this.d = d;
+};
+$hxClasses["physics.geometry.Axis"] = physics.geometry.Axis;
+physics.geometry.Axis.__name__ = ["physics","geometry","Axis"];
+physics.geometry.Axis.prototype = {
+	clone: function() {
+		return new physics.geometry.Axis(this.n.clone(),this.d);
+	}
+	,__class__: physics.geometry.Axis
+};
+physics.geometry.GeometricShape = function(typeID,offset) {
+	this.typeID = typeID;
+	this.offset = offset;
+	this.aabb = new physics.geometry.AABB();
+	this.UID = physics.geometry.GeometricShape.nextUID++;
+};
+$hxClasses["physics.geometry.GeometricShape"] = physics.geometry.GeometricShape;
+physics.geometry.GeometricShape.__name__ = ["physics","geometry","GeometricShape"];
+physics.geometry.GeometricShape.prototype = {
+	Update: function(rotation) {
+	}
+	,ContainsPoint: function(point,shapePosition) {
+		return false;
+	}
+	,IntersectRay: function(ray,feature) {
+		return false;
+	}
+	,IntersectSegment: function(a,b,feature) {
+	}
+	,__class__: physics.geometry.GeometricShape
+};
+physics.geometry.Circle = function(radius,offset) {
+	physics.geometry.GeometricShape.call(this,1,offset);
+	this.radius = radius;
+	this.InitShape();
+};
+$hxClasses["physics.geometry.Circle"] = physics.geometry.Circle;
+physics.geometry.Circle.__name__ = ["physics","geometry","Circle"];
+physics.geometry.Circle.__super__ = physics.geometry.GeometricShape;
+physics.geometry.Circle.prototype = $extend(physics.geometry.GeometricShape.prototype,{
+	InitShape: function() {
+		this.centre = this.offset.clone();
+		this.transformedCentre = this.centre.clone();
+		this.area = Math.PI * (this.radius * this.radius);
+	}
+	,Update: function(rotation) {
+		this.transformedCentre.x = this.centre.x * rotation.x - this.centre.y * rotation.y;
+		this.transformedCentre.y = this.centre.x * rotation.y + this.centre.y * rotation.x;
+		this.aabb.l = this.transformedCentre.x - this.radius;
+		this.aabb.r = this.transformedCentre.x + this.radius;
+		this.aabb.t = this.transformedCentre.y - this.radius;
+		this.aabb.b = this.transformedCentre.y + this.radius;
+	}
+	,ContainsPoint: function(point,shapePosition) {
+		var x = this.transformedCentre.x + shapePosition.x - point.x;
+		var y = this.transformedCentre.y + shapePosition.y - point.y;
+		return x * x + y * y <= this.radius * this.radius;
+	}
+	,IntersectRay: function(ray,feature) {
+		var distX = ray.origin.x - (this.transformedCentre.x + feature.position.x);
+		var distY = ray.origin.y - (this.transformedCentre.y + feature.position.y);
+		var b = distX * ray.direction.x + distY * ray.direction.y;
+		if(b > 0) return false;
+		var d = this.radius * this.radius - (distX * distX + distY * distY - b * b);
+		if(d < 0) return false;
+		d = -b - Math.sqrt(d);
+		return ray.ReportResult(feature,d,ray.returnNormal?new physics.geometry.Vector2D(ray.origin.x + ray.direction.x * d - (this.transformedCentre.x + feature.position.x),ray.origin.y + ray.direction.y * d - (this.transformedCentre.y + feature.position.y)).unitEquals():null);
+	}
+	,IntersectSegment: function(a,b,feature) {
+		var tA = a.minus(this.transformedCentre).minus(feature.position);
+		var tB = b.minus(this.transformedCentre).minus(feature.position);
+		var qa = a.x * a.x + a.y * a.y - 2 * (a.x * b.x + a.y * b.y) + (b.x * b.x + b.y * b.y);
+		var qb = -2 * (a.x * a.x + a.y * a.y) + 2 * (a.x * b.x + a.y * b.y);
+		var qc = a.x * a.x + a.y * a.y - this.radius * this.radius;
+		var det = qb * qb - 4 * qa * qc;
+		if(det >= 0.0) {
+			var t = (-qb - Math.sqrt(det)) / (2 * qa);
+			if(0.0 <= t && t <= 1.0) {
+			}
+		}
+	}
+	,__class__: physics.geometry.Circle
+});
+physics.geometry.Polygon = function(vertices,offset) {
+	physics.geometry.GeometricShape.call(this,4,offset);
+	this.InitShape(vertices);
+};
+$hxClasses["physics.geometry.Polygon"] = physics.geometry.Polygon;
+physics.geometry.Polygon.__name__ = ["physics","geometry","Polygon"];
+physics.geometry.Polygon.CreateRectangle = function(w,h) {
+	var rect = new Array();
+	rect.push(new physics.geometry.Vector2D(-w / 2,-h / 2));
+	rect.push(new physics.geometry.Vector2D(-w / 2,h / 2));
+	rect.push(new physics.geometry.Vector2D(w / 2,h / 2));
+	rect.push(new physics.geometry.Vector2D(w / 2,-h / 2));
+	return rect;
+};
+physics.geometry.Polygon.__super__ = physics.geometry.GeometricShape;
+physics.geometry.Polygon.prototype = $extend(physics.geometry.GeometricShape.prototype,{
+	InitShape: function(originalVertices) {
+		var v0;
+		var v1;
+		var v2;
+		var a;
+		var b;
+		var n;
+		var axis;
+		this.vertices = new Array();
+		this.transformedVertices = new Array();
+		this.axes = new Array();
+		this.transformedAxes = new Array();
+		this.vertexCount = originalVertices.length;
+		this.area = 0;
+		var _g1 = 0;
+		var _g = this.vertexCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			v0 = originalVertices[i];
+			v1 = originalVertices[(i + 1) % this.vertexCount];
+			v2 = originalVertices[(i + 2) % this.vertexCount];
+			a = new physics.geometry.Vector2D(v0.x + this.offset.x,v0.y + this.offset.y);
+			b = new physics.geometry.Vector2D(v1.x + this.offset.x,v1.y + this.offset.y);
+			n = new physics.geometry.Vector2D(b.x - a.x,b.y - a.y).rightHandNormal().unit();
+			this.vertices.push(a);
+			this.transformedVertices.push(a.clone());
+			axis = new physics.geometry.Axis(n,n.x * a.x + n.y * a.y);
+			this.axes.push(axis);
+			this.transformedAxes.push(axis.clone());
+			this.area += v1.x * (v2.y - v0.y);
+		}
+		this.area /= -2;
+		originalVertices = null;
+	}
+	,Update: function(rotation) {
+		var v;
+		var tv;
+		this.aabb.l = this.aabb.t = 4294967296;
+		this.aabb.r = this.aabb.b = -4294967296;
+		var _g1 = 0;
+		var _g = this.vertexCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			v = this.vertices[i];
+			tv = this.transformedVertices[i];
+			tv.x = v.x * rotation.x - v.y * rotation.y;
+			tv.y = v.x * rotation.y + v.y * rotation.x;
+			if(tv.x < this.aabb.l) this.aabb.l = tv.x;
+			if(tv.x > this.aabb.r) this.aabb.r = tv.x;
+			if(tv.y < this.aabb.t) this.aabb.t = tv.y;
+			if(tv.y > this.aabb.b) this.aabb.b = tv.y;
+		}
+		var a;
+		var ta;
+		var _g11 = 0;
+		var _g2 = this.vertexCount;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			a = this.axes[i1];
+			ta = this.transformedAxes[i1];
+			ta.n.x = a.n.x * rotation.x - a.n.y * rotation.y;
+			ta.n.y = a.n.x * rotation.y + a.n.y * rotation.x;
+			ta.d = a.d;
+		}
+	}
+	,ContainsPoint: function(point,shapePosition) {
+		var _g = 0;
+		var _g1 = this.transformedAxes;
+		while(_g < _g1.length) {
+			var a = _g1[_g];
+			++_g;
+			if(a.n.x * point.x + a.n.y * point.y - (shapePosition.x * a.n.x + shapePosition.y * a.n.y + a.d) > 0) return false;
+		}
+		return true;
+	}
+	,IntersectRay: function(ray,feature) {
+		var tfar = ray.range;
+		var tnear = 0;
+		var nnear = null;
+		var nfar = null;
+		var ta;
+		var tv;
+		var _g1 = 0;
+		var _g = this.vertexCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			ta = this.transformedAxes[i];
+			tv = this.transformedVertices[i];
+			var Dx = tv.x + feature.position.x - ray.origin.x;
+			var Dy = tv.y + feature.position.y - ray.origin.y;
+			var denom = Dx * ta.n.x + Dy * ta.n.y;
+			var numer = ray.direction.x * ta.n.x + ray.direction.y * ta.n.y;
+			if((numer < 0?-numer:numer) < 0.000000001) {
+				if(denom < 0) return false;
+			} else {
+				var tclip = denom / numer;
+				if(numer < 0) {
+					if(tclip > tfar) return false;
+					if(tclip > tnear) {
+						tnear = tclip;
+						nnear = ta;
+					}
+				} else {
+					if(tclip < tnear) return false;
+					if(tclip < tfar) {
+						tfar = tclip;
+						nfar = ta;
+					}
+				}
+			}
+		}
+		if(nnear == null) return false;
+		var t = -(ray.origin.x * nnear.n.x + ray.origin.y * nnear.n.y - (feature.position.x * nnear.n.x + feature.position.y * nnear.n.y + nnear.d)) / (ray.direction.x * nnear.n.x + ray.direction.y * nnear.n.y);
+		return ray.ReportResult(feature,t,nnear.n);
+	}
+	,IntersectSegment: function(a,b,feature) {
+		var ta;
+		var _g1 = 0;
+		var _g = this.vertexCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			ta = this.transformedAxes[i];
+			var an = a.dot(ta.n);
+			var ad = feature.position.x * ta.n.x + feature.position.y * ta.n.y + ta.d;
+			if(ad > an) continue;
+			var bn = b.dot(ta.n);
+			var t = (ad - an) / (bn - an);
+			if(t < 0.0 || 1.0 < t) continue;
+			var point = a.interpolate(b,t);
+			var dt = -ta.n.cross(point);
+			var dtMin = -ta.n.cross(this.transformedVertices[i]);
+			var dtMax = -ta.n.cross(this.transformedVertices[(i + 1) % this.vertexCount]);
+			if(dtMin <= dt && dt <= dtMax) {
+			}
+		}
+	}
+	,ValueOnAxis: function(a,axisPosition,shapePosition) {
+		var min = 4294967296;
+		var result;
+		var _g = 0;
+		var _g1 = this.transformedVertices;
+		while(_g < _g1.length) {
+			var vertex = _g1[_g];
+			++_g;
+			result = a.n.x * (vertex.x + shapePosition.x) + a.n.y * (vertex.y + shapePosition.y) - (axisPosition.x * a.n.x + axisPosition.y * a.n.y + a.d);
+			if(result < min) min = result;
+		}
+		return min;
+	}
+	,__class__: physics.geometry.Polygon
+});
+physics.geometry.Ray = function() {
+};
+$hxClasses["physics.geometry.Ray"] = physics.geometry.Ray;
+physics.geometry.Ray.__name__ = ["physics","geometry","Ray"];
+physics.geometry.Ray.prototype = {
+	SetParams: function(origin,target,range) {
+		this.origin = origin;
+		this.target = target;
+		this.delta = new physics.geometry.Vector2D(target.x - origin.x,target.y - origin.y);
+		var m = this.delta.length();
+		if(m == 0) m = 0.0000001;
+		this.direction = this.delta.mult(1 / m);
+		this.lastIntersectResult = false;
+		this.lastIntersectDistance = 0;
+		this.lastIntersectFeature = null;
+		this.intersectInRange = false;
+		this.closestIntersectDistance = Math.POSITIVE_INFINITY;
+		this.closestIntersectFeature = null;
+		if(range == 0) this.range = m; else this.range = range;
+		this.rangeSqr = this.range * this.range;
+	}
+	,Seen: function() {
+		return this.lastIntersectFeature == null || this.lastIntersectDistance >= this.range;
+	}
+	,Seen2: function() {
+		return this.lastIntersectDistance >= this.range;
+	}
+	,TestFeature: function(feature) {
+		this.lastIntersectResult = false;
+		return feature.shape.IntersectRay(this,feature);
+	}
+	,ReportResult: function(feature,dist,normal) {
+		if(dist >= this.range) {
+			this.lastIntersectResult = false;
+			return false;
+		}
+		this.intersectInRange = true;
+		this.lastIntersectResult = true;
+		this.lastIntersectDistance = dist;
+		this.lastIntersectFeature = feature;
+		if(dist < this.closestIntersectDistance) {
+			this.closestIntersectDistance = dist;
+			this.closestIntersectFeature = feature;
+			this.closestIntersectNormal = normal;
+		}
+		return true;
+	}
+	,LastIntersectPoint: function() {
+		return new physics.geometry.Vector2D(this.origin.x + this.direction.x * this.lastIntersectDistance,this.origin.y + this.direction.y * this.lastIntersectDistance);
+	}
+	,ClosestIntersectPoint: function() {
+		return new physics.geometry.Vector2D(this.origin.x + this.direction.x * this.closestIntersectDistance,this.origin.y + this.direction.y * this.closestIntersectDistance);
+	}
+	,IntersectBoundingCircle: function(position,radius) {
+		var distX = this.origin.x - position.x;
+		var distY = this.origin.y - position.y;
+		var b = distX * this.direction.x + distY * this.direction.y;
+		if(b > 0) return false;
+		var d = radius * radius - (distX * distX + distY * distY - b * b);
+		if(d < 0) return false;
+		return true;
+	}
+	,__class__: physics.geometry.Ray
+};
+physics.geometry.Segment = function(a,b,radius) {
+	physics.geometry.GeometricShape.call(this,2,null);
+	this.a = a.clone();
+	this.b = b.clone();
+	this.radius = radius;
+	this.InitShape();
+};
+$hxClasses["physics.geometry.Segment"] = physics.geometry.Segment;
+physics.geometry.Segment.__name__ = ["physics","geometry","Segment"];
+physics.geometry.Segment.__super__ = physics.geometry.GeometricShape;
+physics.geometry.Segment.prototype = $extend(physics.geometry.GeometricShape.prototype,{
+	InitShape: function() {
+		this.delta = this.b.minus(this.a);
+		this.n = this.delta.unit().rightHandNormal();
+		this.tA = new physics.geometry.Vector2D();
+		this.tB = new physics.geometry.Vector2D();
+		this.tN = new physics.geometry.Vector2D();
+		this.tNneg = new physics.geometry.Vector2D();
+	}
+	,Update: function(rotation) {
+		this.tA.x = this.a.x * rotation.x - this.a.y * rotation.y;
+		this.tA.y = this.a.x * rotation.y + this.a.y * rotation.x;
+		this.tB.x = this.b.x * rotation.x - this.b.y * rotation.y;
+		this.tB.y = this.b.x * rotation.y + this.b.y * rotation.x;
+		this.tN.x = this.n.x * rotation.x - this.n.y * rotation.y;
+		this.tN.y = this.n.y * rotation.y + this.n.y * rotation.x;
+		this.tNneg.x = -this.tN.x;
+		this.tNneg.y = -this.tN.y;
+		this.tNdottA = this.tN.x * this.tA.x + this.tN.y * this.tA.y;
+		if(this.tA.x < this.tB.x) {
+			this.aabb.l = this.tA.x - this.radius;
+			this.aabb.r = this.tB.x + this.radius;
+		} else {
+			this.aabb.l = this.tB.x - this.radius;
+			this.aabb.r = this.tA.x + this.radius;
+		}
+		if(this.tA.y < this.tB.y) {
+			this.aabb.t = this.tA.y - this.radius;
+			this.aabb.b = this.tB.y + this.radius;
+		} else {
+			this.aabb.t = this.tB.y - this.radius;
+			this.aabb.b = this.tA.y + this.radius;
+		}
+	}
+	,__class__: physics.geometry.Segment
+});
+physics.geometry.Shapes = function() { };
+$hxClasses["physics.geometry.Shapes"] = physics.geometry.Shapes;
+physics.geometry.Shapes.__name__ = ["physics","geometry","Shapes"];
+physics.geometry.Vector2D = function(x,y) {
+	if(y == null) y = .0;
+	if(x == null) x = .0;
+	this.x = x;
+	this.y = y;
+};
+$hxClasses["physics.geometry.Vector2D"] = physics.geometry.Vector2D;
+physics.geometry.Vector2D.__name__ = ["physics","geometry","Vector2D"];
+physics.geometry.Vector2D.fromString = function(str) {
+	if(str == null) return null;
+	var vectorParts = str.split(":");
+	if(vectorParts == null || vectorParts.length != 2) return null;
+	var xVal = Std.parseFloat(vectorParts[0]);
+	var yVal = Std.parseFloat(vectorParts[1]);
+	if(Math.isNaN(xVal) || Math.isNaN(yVal)) return null;
+	return new physics.geometry.Vector2D(xVal,yVal);
+};
+physics.geometry.Vector2D.prototype = {
+	setTo: function(x,y) {
+		this.x = x;
+		this.y = y;
+		return this;
+	}
+	,copy: function(v) {
+		this.x = v.x;
+		this.y = v.y;
+	}
+	,dot: function(v) {
+		return this.x * v.x + this.y * v.y;
+	}
+	,cross: function(v) {
+		return this.x * v.y - this.y * v.x;
+	}
+	,plus: function(v) {
+		return new physics.geometry.Vector2D(this.x + v.x,this.y + v.y);
+	}
+	,plus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x + x,this.y + y);
+	}
+	,plusEquals: function(v) {
+		this.x += v.x;
+		this.y += v.y;
+		return this;
+	}
+	,plusEquals2: function(x,y) {
+		this.x += x;
+		this.y += y;
+		return this;
+	}
+	,minus: function(v) {
+		return new physics.geometry.Vector2D(this.x - v.x,this.y - v.y);
+	}
+	,minus2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x - x,this.y - y);
+	}
+	,minusEquals: function(v) {
+		this.x -= v.x;
+		this.y -= v.y;
+		return this;
+	}
+	,minusEquals2: function(x,y) {
+		this.x -= x;
+		this.y -= y;
+		return this;
+	}
+	,mult: function(s) {
+		return new physics.geometry.Vector2D(this.x * s,this.y * s);
+	}
+	,multEquals: function(s) {
+		this.x *= s;
+		this.y *= s;
+		return this;
+	}
+	,times: function(v) {
+		return new physics.geometry.Vector2D(this.x * v.x,this.y * v.y);
+	}
+	,times2: function(x,y) {
+		return new physics.geometry.Vector2D(this.x * x,this.y * y);
+	}
+	,timesEquals: function(v) {
+		this.x *= v.x;
+		this.y *= v.y;
+		return this;
+	}
+	,timesEquals2: function(x,y) {
+		this.x *= x;
+		this.y *= y;
+		return this;
+	}
+	,div: function(s) {
+		if(s == 0) s = 0.0001;
+		return new physics.geometry.Vector2D(this.x / s,this.y / s);
+	}
+	,divEquals: function(s) {
+		if(s == 0) s = 0.0001;
+		this.x /= s;
+		this.y /= s;
+		return this;
+	}
+	,length: function() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	,lengthSqr: function() {
+		return this.x * this.x + this.y * this.y;
+	}
+	,unit: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		return new physics.geometry.Vector2D(this.x / t,this.y / t);
+	}
+	,unitEquals: function() {
+		var t = Math.sqrt(this.x * this.x + this.y * this.y) + 1e-08;
+		this.x /= t;
+		this.y /= t;
+		return this;
+	}
+	,leftHandNormal: function() {
+		return new physics.geometry.Vector2D(this.y,-this.x);
+	}
+	,leftHandNormalEquals: function() {
+		var t = this.x;
+		this.x = this.y;
+		this.y = -t;
+		return this;
+	}
+	,rightHandNormal: function() {
+		return new physics.geometry.Vector2D(-this.y,this.x);
+	}
+	,rightHandNormalEquals: function() {
+		var t = this.x;
+		this.x = -this.y;
+		this.y = this.x;
+		return this;
+	}
+	,distance: function(v) {
+		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
+		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+	}
+	,distanceSqrd: function(v) {
+		var dX = this.x - v.x;
+		var dY = this.y - v.y;
+		return dX * dX + dY * dY;
+	}
+	,clampMax: function(max) {
+		var l = Math.sqrt(this.x * this.x + this.y * this.y);
+		if(l > max) this.multEquals(max / l);
+		return this;
+	}
+	,interpolate: function(v,t) {
+		return this.mult(1 - t).plus(new physics.geometry.Vector2D(v.x * t,v.y * t));
+	}
+	,rotate: function(angle) {
+		var a = angle * Math.PI / 180;
+		var cos = Math.cos(a);
+		var sin = Math.sin(a);
+		return new physics.geometry.Vector2D(cos * this.x - sin * this.y,cos * this.y + sin * this.x);
+	}
+	,rotateEquals: function(angle) {
+		var a = angle * Math.PI / 180;
+		var cos = Math.cos(a);
+		var sin = Math.sin(a);
+		var rx = cos * this.x - sin * this.y;
+		var ry = cos * this.y + sin * this.x;
+		this.x = rx;
+		this.y = ry;
+		return this;
+	}
+	,isEquals: function(v) {
+		return this.x == v.x && this.y == v.y;
+	}
+	,equalsZero: function() {
+		return this.x == 0 && this.y == 0;
+	}
+	,clone: function() {
+		return new physics.geometry.Vector2D(this.x,this.y);
+	}
+	,toString: function() {
+		return this.x + ":" + this.y;
+	}
+	,__class__: physics.geometry.Vector2D
+};
+physics.geometry.VertexList = function() {
+	this.vertices = new Array();
+	this.transformedVertices = new Array();
+};
+$hxClasses["physics.geometry.VertexList"] = physics.geometry.VertexList;
+physics.geometry.VertexList.__name__ = ["physics","geometry","VertexList"];
+physics.geometry.VertexList.prototype = {
+	AddVertex: function(v) {
+		this.vertices.push(v);
+		var tV = v.clone();
+		this.transformedVertices.push(tV);
+		return tV;
+	}
+	,RemoveVertex: function(v) {
+		var _g1 = 0;
+		var _g = this.transformedVertices.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(this.transformedVertices[i] == v) {
+				this.vertices.splice(i,1);
+				this.transformedVertices.splice(i,1);
+				return;
+			}
+		}
+	}
+	,Update: function(rotation,flipVerticaly) {
+		var vertexCount = this.vertices.length;
+		var _g = 0;
+		while(_g < vertexCount) {
+			var i = _g++;
+			var v = this.vertices[i];
+			var tv = this.transformedVertices[i];
+			tv.x = v.x * rotation.x - v.y * rotation.y;
+			tv.y = v.x * rotation.y + v.y * rotation.x;
+			if(flipVerticaly) {
+				tv.x *= -1;
+				tv.y *= -1;
+			}
+		}
+	}
+	,__class__: physics.geometry.VertexList
+};
+physics.signals = {};
+physics.signals.ChannelSignalData = function() {
+};
+$hxClasses["physics.signals.ChannelSignalData"] = physics.signals.ChannelSignalData;
+physics.signals.ChannelSignalData.__name__ = ["physics","signals","ChannelSignalData"];
+physics.signals.ChannelSignalData.prototype = {
+	__class__: physics.signals.ChannelSignalData
 };
 var utils = {};
 utils.EventTarget = function() {
@@ -4352,6 +5504,14 @@ wgr.renderers.canvas.CanvasDebugView.prototype = {
 	,DrawAABB: function(aabb) {
 		this.ctx.strokeRect(aabb.l,aabb.t,aabb.r - aabb.l,aabb.b - aabb.t);
 	}
+	,DrawPhysicsAABB: function(aabb) {
+		this.ctx.beginPath();
+		this.ctx.moveTo(aabb.l,aabb.t);
+		this.ctx.lineTo(aabb.r,aabb.t);
+		this.ctx.moveTo(aabb.r,aabb.b);
+		this.ctx.lineTo(aabb.l,aabb.b);
+		this.ctx.stroke();
+	}
 	,DrawCross: function(x,y,l) {
 		this.ctx.beginPath();
 		this.ctx.moveTo(x - l,y);
@@ -5058,6 +6218,8 @@ String.prototype.__class__ = $hxClasses.String = String;
 String.__name__ = ["String"];
 $hxClasses.Array = Array;
 Array.__name__ = ["Array"];
+Date.prototype.__class__ = $hxClasses.Date = Date;
+Date.__name__ = ["Date"];
 var Int = $hxClasses.Int = { __name__ : ["Int"]};
 var Dynamic = $hxClasses.Dynamic = { __name__ : ["Dynamic"]};
 var Float = $hxClasses.Float = Number;
@@ -5074,6 +6236,24 @@ Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
 ash.core.Entity.nameCount = 0;
+ds.IDManager.NEXT_PERSISTENT_ID = 0;
+ds.IDManager.TRANSIENT_START_ID = 10000;
+ds.IDManager.TRANSIENT_CACHE_LENGTH = 10000;
+ds.IDManager.TRANSIENT_CACHE = (function($this) {
+	var $r;
+	var cache = new Array();
+	{
+		var _g1 = 0;
+		var _g = ds.IDManager.TRANSIENT_CACHE_LENGTH;
+		while(_g1 < _g) {
+			var i = _g1++;
+			cache.push(ds.IDManager.TRANSIENT_START_ID + i);
+		}
+	}
+	$r = cache;
+	return $r;
+}(this));
+ds.IDManager.TRANSIENT_POINTER = 0;
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 haxe.ds.ObjectMap.count = 0;
 haxe.xml.Parser.escapes = (function($this) {
@@ -5088,6 +6268,22 @@ haxe.xml.Parser.escapes = (function($this) {
 	$r = h;
 	return $r;
 }(this));
+physics.Constants.FMAX = 1e99;
+physics.Constants.SLEEP_BIAS = 0.99332805041467;
+physics.Constants.SLEEP_EPSILON = 0.0009;
+physics.Constants.WAKE_MOTION = 10;
+physics.dynamics.Body.nextBodyID = 0;
+physics.geometry.GeometricShape.nextUID = 0;
+physics.geometry.Ray.MAX_RANGE = 1e100;
+physics.geometry.Shapes.AXIS_ALIGNED_BOX_SHAPE = 0;
+physics.geometry.Shapes.CIRCLE_SHAPE = 1;
+physics.geometry.Shapes.SEGMENT_SHAPE = 2;
+physics.geometry.Shapes.POLYGON_SHAPE = 4;
+physics.geometry.Shapes.POLYGON_POLYGON = 4;
+physics.geometry.Shapes.CIRCLE_POLYGON = 5;
+physics.geometry.Shapes.CIRCLE_CIRCLE = 1;
+physics.geometry.Shapes.CIRCLE_SEGMENT = 3;
+physics.geometry.Shapes.SEGMENT_POLYGON = 6;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 utils.Maths.ZERO_TOLERANCE = 1e-08;
 utils.Maths.RAD_DEG = 57.2957795130823229;

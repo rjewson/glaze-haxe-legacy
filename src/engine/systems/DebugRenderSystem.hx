@@ -4,11 +4,11 @@ package engine.systems;
 import ash.core.Engine;
 import ash.core.NodeList;
 import ash.core.System;
-import engine.components.Collision;
+import engine.components.Physics;
 import engine.components.Position;
 import engine.nodes.DebugRenderNode;
 import engine.nodes.RenderNode;
-import geom.Vector2D;
+import physics.geometry.Vector2D;
 import wgr.display.DisplayObject;
 import wgr.display.DisplayObjectContainer;
 import wgr.renderers.canvas.CanvasDebugView;
@@ -34,10 +34,12 @@ class DebugRenderSystem extends System
         for (node in nodes)
         {
             var position:Vector2D = node.position.position;
-            var collision:Collision = node.collision;
-            //view.DrawRect(position.x,position.y,10,10);
+            var physics:Physics = node.physics;
+            var aabb:physics.geometry.AABB = physics.body.aabb;
+            // var collision:Collision = node.collision;
+            // //view.DrawRect(position.x,position.y,10,10);
             view.DrawCross(position.x,position.y,10);
-            view.DrawRect(position.x-collision.aabb.extents.x,position.y-collision.aabb.extents.y,collision.aabb.extents.x*2,collision.aabb.extents.y*2);
+            view.DrawRect(position.x-aabb.width()/2,position.y-aabb.height()/2,aabb.width(),aabb.height());
         }
     }
 

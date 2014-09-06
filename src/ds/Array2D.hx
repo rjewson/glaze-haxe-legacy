@@ -4,7 +4,7 @@ package ds;
 import js.html.ArrayBuffer;
 import js.html.Uint32Array;
 import js.html.Uint8Array;
-import geom.Vector2D;
+import physics.geometry.Vector2D;
 
 class Array2D 
 {
