@@ -1,5 +1,5 @@
 (function () { "use strict";
-var $hxClasses = {};
+var $hxClasses = {},$estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -163,7 +163,6 @@ Main.main = function() {
 		mainEngine.addSystem(new engine.systems.MotionControlSystem(gameLoop.keyboard),1);
 		mainEngine.addSystem(new engine.systems.CameraControlSystem(view.camera),4);
 		mainEngine.addSystem(new engine.systems.RenderSystem(itemContainer),5);
-		mainEngine.addSystem(new engine.systems.DebugRenderSystem(view.debugRenderer),6);
 		var spr1 = createSprite("character",400,380,0,0,"texturechar1");
 		spr1.scale.x = -1;
 		spr1.pivot.x = 24.;
@@ -2060,7 +2059,7 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 		this.left = this.input.keyMap[65] > 0;
 		this.right = this.input.keyMap[68] > 0;
 		this.up = this.input.keyMap[87] > 0;
-		this.down = this.input.keyMap[87] > 0;
+		this.down = this.input.keyMap[83] > 0;
 		this.force.setTo(0,0);
 		if(this.left) this.force.x -= 10; else this.force.x -= 0;
 		if(this.right) this.force.x += 10; else this.force.x += 0;
@@ -2816,8 +2815,6 @@ physics.PhysicsEngine.prototype = {
 	}
 	,ProcessOnStep: function(step) {
 	}
-	,RenderItems: function(timeStamp,aabb) {
-	}
 	,AddBody: function(body) {
 		body.OnAddedToEngine(this);
 	}
@@ -2946,6 +2943,7 @@ physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
 	this.dynamicItems = new Array();
 	this.sleepingItems = new Array();
 	this.staticItems = new Array();
+	this.adjacentCells = new Array();
 };
 $hxClasses["physics.collision.broadphase.managedgrid.Cell"] = physics.collision.broadphase.managedgrid.Cell;
 physics.collision.broadphase.managedgrid.Cell.__name__ = ["physics","collision","broadphase","managedgrid","Cell"];
@@ -2980,6 +2978,25 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 				this.grid.data.push(new physics.collision.broadphase.managedgrid.Cell(index++,x * this.grid.cellSize,y * this.grid.cellSize,this.grid.cellSize,this.grid.cellSize));
 			}
 		}
+		var _g11 = 0;
+		var _g4 = this.grid.gridWidth;
+		while(_g11 < _g4) {
+			var y1 = _g11++;
+			var _g31 = 0;
+			var _g21 = this.grid.gridHeight;
+			while(_g31 < _g21) {
+				var x1 = _g31++;
+				var cell = this.grid.GetGridSafe(x1,y1);
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 - 1,y1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 - 1,y1 - 1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1,y1 - 1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 + 1,y1 - 1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 + 1,y1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 + 1,y1 + 1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1,y1 + 1));
+				cell.adjacentCells.push(this.grid.GetGridSafe(x1 - 1,y1 + 1));
+			}
+		}
 	}
 	,Update: function() {
 		var _g = 0;
@@ -2992,7 +3009,7 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			while(_g2 < _g3.length) {
 				var body = _g3[_g2];
 				++_g2;
-				body.Update();
+				body.Update(this.step);
 				if(!cell.aabb.containtsPoint(body.position)) {
 					cell.RemoveBody(body);
 					this.AddBodyToCell(body);
@@ -3016,7 +3033,6 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 				while(_g5 < _g4) {
 					var j = _g5++;
 					var bodyB = cell.dynamicItems[j];
-					console.log("a+b");
 					this.narrowphase.CollideBodies(bodyA,bodyB);
 				}
 			}
@@ -3352,6 +3368,7 @@ physics.dynamics.Body = function() {
 	this.isKinematic = false;
 	this.isOpaque = false;
 	this.collisionProcessingMask = 0;
+	this.lastStep = -1;
 	this.Initalize();
 };
 $hxClasses["physics.dynamics.Body"] = physics.dynamics.Body;
@@ -3362,8 +3379,10 @@ physics.dynamics.Body.HashBodyIDs = function(body1ID,body2ID) {
 physics.dynamics.Body.prototype = {
 	Initalize: function() {
 	}
-	,Update: function() {
+	,Update: function(step) {
 		if(this.isStatic || this.isSleeping) return;
+		if(step == this.lastStep) return;
+		this.lastStep = step;
 		this.accumulatedForces.x += this.engine.masslessForces.x * this.masslessForcesFactor;
 		this.accumulatedForces.y += this.engine.masslessForces.y * this.masslessForcesFactor;
 		this.accumulatedForces.x += this.engine.forces.x * this.invMass;

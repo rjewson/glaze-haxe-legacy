@@ -19,6 +19,8 @@ class Cell
     public var sleepingItems:Array<Body>;
     public var staticItems:Array<Body>;
 
+    public var adjacentCells:Array<Cell>;
+
     public function new(index:Int, x:Float, y:Float, w:Float, h:Float) {
         this.index = index;
         this.x = x;
@@ -30,6 +32,8 @@ class Cell
         dynamicItems = new Array<Body>();
         sleepingItems = new Array<Body>();
         staticItems = new Array<Body>();
+
+        adjacentCells = new Array<Cell>();
     }
 
     public function AddBody(body:Body) {

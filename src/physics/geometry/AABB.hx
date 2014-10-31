@@ -38,7 +38,7 @@ class AABB
 	inline public function containtsPoint(point:Vector2D) {
 		return ( point.x >= l && point.x < r && point.y >= t && point.y < b ); 
 	}
-	
+
 	inline public function expand(aabb : AABB) : Void {
 		if (aabb.l < this.l) this.l = aabb.l;
 		if (aabb.r > this.r) this.r = aabb.r;

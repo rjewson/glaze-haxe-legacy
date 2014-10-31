@@ -116,11 +116,7 @@ class PhysicsEngine
 	public function ProcessOnStep(step:Int):Void {
 		
 	}
-	
-	public function RenderItems(timeStamp:Int, aabb:AABB):Void {
 		
-	}
-	
 	public function AddBody(body : Body) : Void {
 		body.OnAddedToEngine(this);
 	}

@@ -30,12 +30,25 @@ class ManagedGrid extends PhysicsEngine
                 grid.data.push(new Cell(index++,x*grid.cellSize,y*grid.cellSize,grid.cellSize,grid.cellSize));
             }
         }
+        for (y in 0...grid.gridWidth) {
+            for (x in 0...grid.gridHeight) {
+                var cell = grid.GetGridSafe(x, y);
+                cell.adjacentCells.push(grid.GetGridSafe(x-1, y));
+                cell.adjacentCells.push(grid.GetGridSafe(x-1, y-1));
+                cell.adjacentCells.push(grid.GetGridSafe(x, y - 1));
+                cell.adjacentCells.push(grid.GetGridSafe(x+1, y - 1));
+                cell.adjacentCells.push(grid.GetGridSafe(x+1, y));
+                cell.adjacentCells.push(grid.GetGridSafe(x+1, y+1));
+                cell.adjacentCells.push(grid.GetGridSafe(x, y + 1));
+                cell.adjacentCells.push(grid.GetGridSafe(x - 1, y + 1));
+            }
+        }
     }
 
     override public function Update() {
         for (cell in grid.data) {        
             for (body in cell.dynamicItems) {
-                body.Update();
+                body.Update(step);
                 if (!cell.aabb.containtsPoint(body.position)) {
                     cell.RemoveBody(body);
                     AddBodyToCell(body);
@@ -50,7 +63,6 @@ class ManagedGrid extends PhysicsEngine
                 var bodyA = cell.dynamicItems[i];
                 for (j in i+1...cell.dynamicItems.length) {
                     var bodyB = cell.dynamicItems[j];
-                    trace("a+b");
                     narrowphase.CollideBodies(bodyA,bodyB);
                 }
             }

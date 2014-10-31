@@ -105,7 +105,7 @@ class Main
             mainEngine.addSystem(new MotionControlSystem(gameLoop.keyboard),1);
             mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
             mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
-            mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
+            // mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
             var spr1 = createSprite("character",400,380,0,0,"texturechar1");
             spr1.scale.x = -1;

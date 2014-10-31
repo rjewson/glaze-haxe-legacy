@@ -35,7 +35,7 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
         left = input.Pressed(65);
         right = input.Pressed(68);
         up = input.Pressed(87);
-        down = input.Pressed(87);
+        down = input.Pressed(83);
 
         force.setTo(0,0);
 

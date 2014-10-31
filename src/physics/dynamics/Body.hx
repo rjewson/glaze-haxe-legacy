@@ -74,6 +74,7 @@ class Body
 	public var relativePoints:VertexList;
 	
 	public var createdMS:Float;
+	public var lastStep:Int;
 	
 	public function new() 
 	{
@@ -114,6 +115,8 @@ class Body
 		isOpaque = false;
 		
 		collisionProcessingMask = 0;
+
+		lastStep = -1;
 		
 		Initalize();
 	}
@@ -122,9 +125,12 @@ class Body
 		
 	}
 	
-	public function Update():Void {
+	public function Update(step:Int):Void {
 		if (isStatic || isSleeping)
 			return;
+		if (step==lastStep)
+			return;
+		lastStep = step;
 		// AddMasslessForce(masslessForces);
 		accumulatedForces.x += engine.masslessForces.x*masslessForcesFactor;
 		accumulatedForces.y += engine.masslessForces.y*masslessForcesFactor;
