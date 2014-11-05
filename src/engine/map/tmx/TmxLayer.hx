@@ -171,6 +171,7 @@ class TmxLayer
         for (xp in 0...layer.width) {
              for (yp in 0...layer.height) {
                 var source = layer.tileGIDs.get(xp,yp);
+// js.Lib.debug();
                 if (source>0) {
                     if (tileSet==null) {
                         tileSet = layer.map.getGidOwner(source);
@@ -186,6 +187,41 @@ class TmxLayer
              }
         }		
         return textureData;
+	}
+
+	public static function layerToCollisionMap(layer:TmxLayer):Array2D {
+		//Assumes all tiles are from same set...function
+		var tileSet:TmxTileSet = null;
+		var collisionMap = new Array2D(layer.width,layer.height);
+
+        for (xp in 0...layer.width) {
+             for (yp in 0...layer.height) {
+                var source = layer.tileGIDs.get(xp,yp);
+                if (source>0) {
+                    if (tileSet==null) {
+                        tileSet = layer.map.getGidOwner(source);
+                    }
+                    // js.Lib.debug();
+                    var relativeID = source-tileSet.firstGID;
+                    var props = tileSet.getPropertiesByGid(source);
+                    // trace(xp,yp);
+                    if (props!=null) {
+                    	var collision = props.resolve("collision");
+                    	if (collision!=null) {
+                    			collisionMap.set(xp,yp,collision);
+                    		} else {
+                    			collisionMap.set(xp,yp,0);
+                    		}
+                    } else {
+                    	collisionMap.set(xp,yp,0);
+                    }   
+                } else {
+                    collisionMap.set(xp,yp,0);
+                }
+             }
+        }		
+        trace(collisionMap);
+        return collisionMap;
 	}
 
 	// private static function base64ToArray(chunk:String, lineWidth:Int, compressed:Bool):Array2D //Array<Array<Int>>

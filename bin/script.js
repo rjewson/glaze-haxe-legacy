@@ -1,5 +1,5 @@
 (function () { "use strict";
-var $hxClasses = {},$estr = function() { return js.Boot.__string_rec(this,''); };
+var $hxClasses = {};
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -127,6 +127,7 @@ Main.main = function() {
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
 		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
 		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
+		var mapCollisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer("Tile Layer 1"));
 		var view = new engine.view.View(800,600,false);
 		var tm = new wgr.texture.TextureManager(view.renderer.gl);
 		tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
@@ -159,7 +160,7 @@ Main.main = function() {
 		itemContainer.id = "itemContainer";
 		view.camera.addChild(itemContainer);
 		var mainEngine = new ash.core.Engine();
-		mainEngine.addSystem(new engine.systems.PhysicsSystem(),0);
+		mainEngine.addSystem(new engine.systems.PhysicsSystem(new worldEngine.WorldData(32,tmxMap,"Tile Layer 1")),0);
 		mainEngine.addSystem(new engine.systems.MotionControlSystem(gameLoop.keyboard),1);
 		mainEngine.addSystem(new engine.systems.CameraControlSystem(view.camera),4);
 		mainEngine.addSystem(new engine.systems.RenderSystem(itemContainer),5);
@@ -173,7 +174,7 @@ Main.main = function() {
 		spr2.scale.x = -1;
 		spr2.pivot.x = 24.;
 		spr2.pivot.y = 36.;
-		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(200,200,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
+		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(100,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
 		mainEngine.addEntity(e2);
 		var tick = function(time) {
 			mainEngine.update(time);
@@ -1542,35 +1543,6 @@ engine.input.DigitalInput.prototype = {
 	,__class__: engine.input.DigitalInput
 };
 engine.map = {};
-engine.map.TileMapMap = function(w,h,data) {
-	this.mapData = new ds.Array2D(w,h,data);
-	this.tiles = new haxe.ds.IntMap();
-};
-$hxClasses["engine.map.TileMapMap"] = engine.map.TileMapMap;
-engine.map.TileMapMap.__name__ = ["engine","map","TileMapMap"];
-engine.map.TileMapMap.prototype = {
-	addTileType: function(index,x,y) {
-		var v = -16777216 | y << 8 | x;
-		this.tiles.set(index,v);
-	}
-	,toTexture: function() {
-		var textureData = new ds.Array2D(this.mapData.w,this.mapData.h);
-		var _g1 = 0;
-		var _g = this.mapData.w;
-		while(_g1 < _g) {
-			var xp = _g1++;
-			var _g3 = 0;
-			var _g2 = this.mapData.h;
-			while(_g3 < _g2) {
-				var yp = _g3++;
-				var source = this.mapData.get(xp,yp);
-				if(source > 0) textureData.set(xp,yp,this.tiles.get(source)); else textureData.data32[yp * textureData.w + xp] = -1;
-			}
-		}
-		return textureData;
-	}
-	,__class__: engine.map.TileMapMap
-};
 engine.map.tmx = {};
 engine.map.tmx.TmxLayer = function(source,parent) {
 	this.properties = new engine.map.tmx.TmxPropertySet();
@@ -1661,6 +1633,32 @@ engine.map.tmx.TmxLayer.layerToCoordTexture = function(layer) {
 		}
 	}
 	return textureData;
+};
+engine.map.tmx.TmxLayer.layerToCollisionMap = function(layer) {
+	var tileSet = null;
+	var collisionMap = new ds.Array2D(layer.width,layer.height);
+	var _g1 = 0;
+	var _g = layer.width;
+	while(_g1 < _g) {
+		var xp = _g1++;
+		var _g3 = 0;
+		var _g2 = layer.height;
+		while(_g3 < _g2) {
+			var yp = _g3++;
+			var source = layer.tileGIDs.get(xp,yp);
+			if(source > 0) {
+				if(tileSet == null) tileSet = layer.map.getGidOwner(source);
+				var relativeID = source - tileSet.firstGID;
+				var props = tileSet.getPropertiesByGid(source);
+				if(props != null) {
+					var collision = props.resolve("collision");
+					if(collision != null) collisionMap.data32[yp * collisionMap.w + xp] = collision; else collisionMap.data32[yp * collisionMap.w + xp] = 0;
+				} else collisionMap.data32[yp * collisionMap.w + xp] = 0;
+			} else collisionMap.data32[yp * collisionMap.w + xp] = 0;
+		}
+	}
+	console.log(collisionMap);
+	return collisionMap;
 };
 engine.map.tmx.TmxLayer.prototype = {
 	__class__: engine.map.tmx.TmxLayer
@@ -2069,9 +2067,10 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 	}
 	,__class__: engine.systems.MotionControlSystem
 });
-engine.systems.PhysicsSystem = function() {
+engine.systems.PhysicsSystem = function(worldData) {
 	ash.core.System.call(this);
-	this.physicsEngine = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),10,10,1000);
+	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),new worldEngine.World(worldData));
+	this.physicsEngine.masslessForces.setTo(0,9);
 };
 $hxClasses["engine.systems.PhysicsSystem"] = engine.systems.PhysicsSystem;
 engine.systems.PhysicsSystem.__name__ = ["engine","systems","PhysicsSystem"];
@@ -3461,8 +3460,8 @@ physics.dynamics.Body.prototype = {
 	}
 	,RespondToCollision: function(collision,mtd,newVelocity,normal,depth,o) {
 		if(this.isStatic) return;
-		this.position.x += mtd.x;
-		this.position.y += mtd.y;
+		this.position.x += mtd.x * 0.99;
+		this.position.y += mtd.y * 0.99;
 		this.prevPosition.x = this.position.x - newVelocity.x;
 		this.prevPosition.y = this.position.y - newVelocity.y;
 		if(this.isSleeping) this.Wake();
@@ -6217,6 +6216,291 @@ wgr.texture.TextureManager.prototype = {
 	}
 	,__class__: wgr.texture.TextureManager
 };
+var worldEngine = {};
+worldEngine.World = function(worldData) {
+	this.worldData = worldData;
+	this.worldBody = new physics.dynamics.Body();
+	this.worldBody.MakeStatic();
+};
+$hxClasses["worldEngine.World"] = worldEngine.World;
+worldEngine.World.__name__ = ["worldEngine","World"];
+worldEngine.World.prototype = {
+	VisibleArea: function(tileBoundary) {
+		return new physics.geometry.AABB(tileBoundary * this.worldData.tileSize,(this.worldData.height - tileBoundary) * this.worldData.tileSize,(this.worldData.width - tileBoundary) * this.worldData.tileSize,tileBoundary * this.worldData.tileSize);
+	}
+	,__class__: worldEngine.World
+};
+worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
+	this.tileSize = tileSize;
+	this.invTileSize = 1 / tileSize;
+	this.tmxMap = tmxMap;
+	this.tileFactory = new worldEngine.tiles.TileFactory();
+	this.collisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer(collisionLayerName));
+	this.width = 1000;
+	this.height = 1000;
+	this.worldCellSize = 1000;
+};
+$hxClasses["worldEngine.WorldData"] = worldEngine.WorldData;
+worldEngine.WorldData.__name__ = ["worldEngine","WorldData"];
+worldEngine.WorldData.prototype = {
+	InitalizeWorld: function() {
+		this.ProcessTiles();
+		this.ProcessObjects();
+		this.ProcessWayPoints();
+	}
+	,Index: function(value) {
+		return value * this.invTileSize | 0;
+	}
+	,ProcessTiles: function() {
+		var _g1 = 0;
+		var _g = this.height;
+		while(_g1 < _g) {
+			var y = _g1++;
+			var _g3 = 0;
+			var _g2 = this.width;
+			while(_g3 < _g2) {
+				var x = _g3++;
+			}
+		}
+	}
+	,ProcessObjects: function() {
+	}
+	,ProcessWayPoints: function() {
+	}
+	,__class__: worldEngine.WorldData
+};
+worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,world) {
+	this.world = world;
+	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,world.worldData.width / world.worldData.worldCellSize | 0,world.worldData.height / world.worldData.worldCellSize | 0,world.worldData.worldCellSize);
+	this.tempFeature = new physics.dynamics.Feature(world.worldBody,null,new physics.dynamics.Material());
+	this.tempFeature.position = new physics.geometry.Vector2D();
+	this.collisionData = world.worldData.collisionData;
+};
+$hxClasses["worldEngine.WorldPhysicsEngine"] = worldEngine.WorldPhysicsEngine;
+worldEngine.WorldPhysicsEngine.__name__ = ["worldEngine","WorldPhysicsEngine"];
+worldEngine.WorldPhysicsEngine.__super__ = physics.collision.broadphase.managedgrid.ManagedGrid;
+worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.managedgrid.ManagedGrid.prototype,{
+	Collide: function() {
+		physics.collision.broadphase.managedgrid.ManagedGrid.prototype.Collide.call(this);
+		var _g = 0;
+		var _g1 = this.grid.data;
+		while(_g < _g1.length) {
+			var cell = _g1[_g];
+			++_g;
+			var _g3 = 0;
+			var _g2 = cell.dynamicItems.length;
+			while(_g3 < _g2) {
+				var i = _g3++;
+				var body = cell.dynamicItems[i];
+				var _g4 = 0;
+				var _g5 = body.features;
+				while(_g4 < _g5.length) {
+					var bodyFeature = _g5[_g4];
+					++_g4;
+					var x1 = ((bodyFeature.shape.aabb.l + body.position.x + 0.5) * this.world.worldData.invTileSize | 0) - 1;
+					var y1 = ((bodyFeature.shape.aabb.t + body.position.y + 0.5) * this.world.worldData.invTileSize | 0) - 1;
+					var x2 = ((bodyFeature.shape.aabb.r + body.position.x - 0.5) * this.world.worldData.invTileSize | 0) + 1;
+					var y2 = ((bodyFeature.shape.aabb.b + body.position.y - 0.5) * this.world.worldData.invTileSize | 0) + 1;
+					var _g6 = x1;
+					while(_g6 < x2) {
+						var x = _g6++;
+						var _g7 = y1;
+						while(_g7 < y2) {
+							var y = _g7++;
+							var tileID = this.collisionData.get(x,y);
+							if(tileID > 0) {
+								this.tempFeature.shape = this.world.worldData.tileFactory.tiles[tileID];
+								this.tempFeature.position.setTo(x * this.world.worldData.tileSize,y * this.world.worldData.tileSize);
+								this.narrowphase.CollideFeatures(this.tempFeature,bodyFeature);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	,__class__: worldEngine.WorldPhysicsEngine
+});
+worldEngine.tiles = {};
+worldEngine.tiles.TileSegment = function(v0,v1,mask) {
+	this.v0 = v0;
+	this.v1 = v1;
+	this.mask = mask;
+};
+$hxClasses["worldEngine.tiles.TileSegment"] = worldEngine.tiles.TileSegment;
+worldEngine.tiles.TileSegment.__name__ = ["worldEngine","tiles","TileSegment"];
+worldEngine.tiles.TileSegment.prototype = {
+	CheckVertexPairAndApplyMask: function(c0,c1) {
+		if(this.v0.isEquals(c0) && this.v1.isEquals(c1) || this.v0.isEquals(c1) && this.v1.isEquals(c0)) return this.mask;
+		return 0;
+	}
+	,__class__: worldEngine.tiles.TileSegment
+};
+worldEngine.tiles.Tile = function(size,originalVertMask,tileID,modifier) {
+	this.modifier = modifier;
+	this.size = size;
+	this.originalVertMask = originalVertMask;
+	this.GetScaledVerts();
+	physics.geometry.Polygon.call(this,this.scaledVerts,new physics.geometry.Vector2D());
+	this.tileWidth = size;
+	this.tileID = tileID;
+	if((modifier & 4) > 0) this.tileID = -2147483648 | this.tileID;
+	if((modifier & 2) > 0) this.tileID = 1073741824 | this.tileID;
+	if((modifier & 1) > 0) this.tileID = 536870912 | this.tileID;
+};
+$hxClasses["worldEngine.tiles.Tile"] = worldEngine.tiles.Tile;
+worldEngine.tiles.Tile.__name__ = ["worldEngine","tiles","Tile"];
+worldEngine.tiles.Tile.__super__ = physics.geometry.Polygon;
+worldEngine.tiles.Tile.prototype = $extend(physics.geometry.Polygon.prototype,{
+	GetScaledVerts: function() {
+		var vertMask = this.originalVertMask;
+		var _g1 = 0;
+		var _g = this.modifier;
+		while(_g1 < _g) {
+			var i = _g1++;
+			vertMask = this.rotateClockwise(vertMask);
+		}
+		this.unscaledVerts = new Array();
+		var _g11 = 0;
+		var _g2 = vertMask.length;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			if(vertMask[i1] == 1) this.unscaledVerts.push(worldEngine.tiles.Tile.VERTS[i1].clone());
+		}
+		var numVerts = this.unscaledVerts.length;
+		var _g3 = 0;
+		while(_g3 < numVerts) {
+			var i2 = _g3++;
+			var v0 = this.unscaledVerts[i2];
+			var v1 = this.unscaledVerts[(i2 + 1) % numVerts];
+			var n = new physics.geometry.Vector2D(v1.x - v0.x,v1.y - v0.y).rightHandNormal().unit();
+			var _g12 = 0;
+			var _g21 = worldEngine.tiles.Tile.VERT_TO_SEG_DEF;
+			while(_g12 < _g21.length) {
+				var segment = _g21[_g12];
+				++_g12;
+				var mask = segment.CheckVertexPairAndApplyMask(v0,v1);
+				if(mask > 0) {
+					this.edges |= mask;
+					if(n.y < 0 || n.x == -1 && n.y == 0) this.edgeUp |= mask;
+					break;
+				}
+			}
+		}
+		if((this.edges & worldEngine.tiles.Tile.SEG_7) > 0 && (this.edges & worldEngine.tiles.Tile.SEG_8) > 0) this.edgeT = 1; else this.edgeT = 4;
+		if((this.edges & worldEngine.tiles.Tile.SEG_5) > 0 && (this.edges & worldEngine.tiles.Tile.SEG_6) > 0) this.edgeR = 1; else this.edgeR = 4;
+		if((this.edges & worldEngine.tiles.Tile.SEG_3) > 0 && (this.edges & worldEngine.tiles.Tile.SEG_4) > 0) this.edgeB = 1; else this.edgeB = 4;
+		if((this.edges & worldEngine.tiles.Tile.SEG_1) > 0 && (this.edges & worldEngine.tiles.Tile.SEG_2) > 0) this.edgeL = 1; else this.edgeL = 4;
+		this.scaledVerts = new Array();
+		var _g4 = 0;
+		var _g13 = this.unscaledVerts;
+		while(_g4 < _g13.length) {
+			var v = _g13[_g4];
+			++_g4;
+			this.scaledVerts.push(v.mult(this.size));
+		}
+	}
+	,CheckVertexPair: function(v0,v1,c0,c1) {
+		return v0.x == c0.x && v0.y == c0.y && (v1.x == c1.x && v1.y == c1.y) || v0.x == c1.x && v0.y == c1.y && (v1.x == c0.x && v1.y == c0.y);
+	}
+	,rotateClockwise: function(verts) {
+		var result = [];
+		result[0] = verts[6];
+		result[1] = verts[7];
+		result[2] = verts[0];
+		result[3] = verts[1];
+		result[4] = verts[2];
+		result[5] = verts[3];
+		result[6] = verts[4];
+		result[7] = verts[5];
+		result[8] = verts[8];
+		return result;
+	}
+	,__class__: worldEngine.tiles.Tile
+});
+worldEngine.tiles.TileFactory = function() {
+	this.tiles = new Array();
+	this.tilesDict = new haxe.ds.IntMap();
+	this.tileTypes = new haxe.ds.StringMap();
+	this.Initalize();
+};
+$hxClasses["worldEngine.tiles.TileFactory"] = worldEngine.tiles.TileFactory;
+worldEngine.tiles.TileFactory.__name__ = ["worldEngine","tiles","TileFactory"];
+worldEngine.tiles.TileFactory.prototype = {
+	Initalize: function() {
+		var idInc = 0;
+		var _g = new haxe.ds.StringMap();
+		_g.set("empty",[0,0,0,0,0,0,0,0,0]);
+		_g.set("full",[1,0,1,0,1,0,1,0,0]);
+		_g.set("half45",[1,0,1,0,1,0,0,0,0]);
+		_g.set("half",[1,0,1,1,0,0,0,1,0]);
+		_g.set("half22",[1,0,1,1,0,0,0,0,0]);
+		_g.set("half66",[0,1,1,0,1,0,0,0,0]);
+		_g.set("full22",[1,0,1,0,1,0,0,1,0]);
+		_g.set("full66",[1,0,1,0,1,1,0,0,0]);
+		this.tileTypes = _g;
+		var $it0 = this.tileTypes.iterator();
+		while( $it0.hasNext() ) {
+			var tileType = $it0.next();
+			var modifierCount;
+			if(idInc < 2) modifierCount = 1; else modifierCount = 4;
+			var _g1 = 0;
+			while(_g1 < modifierCount) {
+				var modifier = _g1++;
+				this.tiles.push(new worldEngine.tiles.Tile(32,tileType,idInc++,modifier));
+			}
+		}
+		console.log(this.tiles);
+	}
+	,__class__: worldEngine.tiles.TileFactory
+};
+worldEngine.tiles.TileFeature = function(tile) {
+	this.tile = tile;
+	this.data = 2;
+	if(tile.vertices.length > 0) this.data |= 1; else this.data &= -2;
+};
+$hxClasses["worldEngine.tiles.TileFeature"] = worldEngine.tiles.TileFeature;
+worldEngine.tiles.TileFeature.__name__ = ["worldEngine","tiles","TileFeature"];
+worldEngine.tiles.TileFeature.prototype = {
+	HasFlagBool: function(flag) {
+		return (this.data & flag) > 0;
+	}
+	,SetFlagBool: function(flag,state) {
+		if(state) this.data |= flag; else this.data &= ~flag;
+	}
+	,SetRandomData: function(random) {
+		this.data |= random << 24;
+	}
+	,GetRandomData: function() {
+		return this.data >> 24 & 255;
+	}
+	,SetStyleData: function(style) {
+		this.data |= style << 16;
+	}
+	,GetStyleData: function() {
+		return this.data >> 16 & 255;
+	}
+	,SetEdgeData: function(left,up,right,down) {
+		if(!((this.data & 1) > 0)) return;
+		if(left != null && (left.data & 1) > 0) {
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_1) > 0 && (left.tile.edges & worldEngine.tiles.Tile.SEG_6) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_1;
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_2) > 0 && (left.tile.edges & worldEngine.tiles.Tile.SEG_5) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_2;
+		}
+		if(right != null && (right.data & 1) > 0) {
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_6) > 0 && (right.tile.edges & worldEngine.tiles.Tile.SEG_1) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_6;
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_5) > 0 && (right.tile.edges & worldEngine.tiles.Tile.SEG_2) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_5;
+		}
+		if(up != null && (up.data & 1) > 0) {
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_8) > 0 && (up.tile.edges & worldEngine.tiles.Tile.SEG_3) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_8;
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_7) > 0 && (up.tile.edges & worldEngine.tiles.Tile.SEG_4) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_7;
+		}
+		if(down != null && (down.data & 1) > 0) {
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_3) > 0 && (down.tile.edges & worldEngine.tiles.Tile.SEG_8) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_3;
+			if((this.tile.edges & worldEngine.tiles.Tile.SEG_4) > 0 && (down.tile.edges & worldEngine.tiles.Tile.SEG_7) > 0) this.edgeData |= worldEngine.tiles.Tile.SEG_4;
+		}
+	}
+	,__class__: worldEngine.tiles.TileFeature
+};
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
@@ -6323,6 +6607,61 @@ wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump fl
 wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
 wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["precision mediump float;","attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
 wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
+worldEngine.tiles.Tile.ZERO = 0;
+worldEngine.tiles.Tile.HALF = 0.5;
+worldEngine.tiles.Tile.ONE = 1;
+worldEngine.tiles.Tile.TOP_LEFT_0 = new physics.geometry.Vector2D(0,0);
+worldEngine.tiles.Tile.MIDDLE_LEFT_1 = new physics.geometry.Vector2D(0,0.5);
+worldEngine.tiles.Tile.BOTTOM_LEFT_2 = new physics.geometry.Vector2D(0,1);
+worldEngine.tiles.Tile.BOTTOM_MIDDLE_3 = new physics.geometry.Vector2D(0.5,1);
+worldEngine.tiles.Tile.BOTTOM_RIGHT_4 = new physics.geometry.Vector2D(1,1);
+worldEngine.tiles.Tile.MIDDLE_RIGHT_5 = new physics.geometry.Vector2D(1,0.5);
+worldEngine.tiles.Tile.TOP_RIGHT_6 = new physics.geometry.Vector2D(1,0);
+worldEngine.tiles.Tile.TOP_MIDDLE_7 = new physics.geometry.Vector2D(0.5,0);
+worldEngine.tiles.Tile.MIDDLE_MIDDLE_8 = new physics.geometry.Vector2D(0.5,0.5);
+worldEngine.tiles.Tile.VERTS = [worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.MIDDLE_MIDDLE_8];
+worldEngine.tiles.Tile.EDGE_STATE_OFF = 0;
+worldEngine.tiles.Tile.EDGE_STATE_FULL = 1;
+worldEngine.tiles.Tile.EDGE_STATE_INTERESTING = 4;
+worldEngine.tiles.Tile.EDGE_TOP = 0;
+worldEngine.tiles.Tile.EDGE_RIGHT = 1;
+worldEngine.tiles.Tile.EDGE_BOTTOM = 2;
+worldEngine.tiles.Tile.EDGE_LEFT = 3;
+worldEngine.tiles.Tile.SEG_1 = 1;
+worldEngine.tiles.Tile.SEG_2 = 2;
+worldEngine.tiles.Tile.SEG_3 = 4;
+worldEngine.tiles.Tile.SEG_4 = 8;
+worldEngine.tiles.Tile.SEG_5 = 16;
+worldEngine.tiles.Tile.SEG_6 = 32;
+worldEngine.tiles.Tile.SEG_7 = 64;
+worldEngine.tiles.Tile.SEG_8 = 128;
+worldEngine.tiles.Tile.SEG_9 = 256;
+worldEngine.tiles.Tile.SEG_10 = 512;
+worldEngine.tiles.Tile.SEG_11 = 1024;
+worldEngine.tiles.Tile.SEG_12 = 2048;
+worldEngine.tiles.Tile.SEG_13 = 4096;
+worldEngine.tiles.Tile.SEG_14 = 8192;
+worldEngine.tiles.Tile.SEG_15 = 16384;
+worldEngine.tiles.Tile.SEG_16 = 32768;
+worldEngine.tiles.Tile.SEG_17 = 65536;
+worldEngine.tiles.Tile.SEG_18 = 131072;
+worldEngine.tiles.Tile.SEG_19 = 262144;
+worldEngine.tiles.Tile.SEG_20 = 524288;
+worldEngine.tiles.Tile.SEG_21 = 1048576;
+worldEngine.tiles.Tile.SEG_22 = 2097152;
+worldEngine.tiles.Tile.SEG_23 = 4194304;
+worldEngine.tiles.Tile.SEG_24 = 8388608;
+worldEngine.tiles.Tile.SEG_25 = 16777216;
+worldEngine.tiles.Tile.SEG_26 = 33554432;
+worldEngine.tiles.Tile.SEG_27 = 67108864;
+worldEngine.tiles.Tile.SEG_28 = 134217728;
+worldEngine.tiles.Tile.SEG_UP = 0;
+worldEngine.tiles.Tile.EDGE_SEGMENT_MASK = 255;
+worldEngine.tiles.Tile.VERT_TO_SEG_DEF = [new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.SEG_1),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.SEG_1 | worldEngine.tiles.Tile.SEG_2),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.SEG_2),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.SEG_3),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.SEG_3 | worldEngine.tiles.Tile.SEG_4),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.SEG_4),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.SEG_5),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_5 | worldEngine.tiles.Tile.SEG_6),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_6),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.SEG_7),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.SEG_7 | worldEngine.tiles.Tile.SEG_8),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.SEG_8),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.SEG_9),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.SEG_9 | worldEngine.tiles.Tile.SEG_12),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.SEG_12),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.SEG_10),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.SEG_10 | worldEngine.tiles.Tile.SEG_11),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.SEG_11),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.SEG_13),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.SEG_14),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_14 | worldEngine.tiles.Tile.SEG_15),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_15),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.SEG_16),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.SEG_18),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.SEG_17),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.SEG_17 | worldEngine.tiles.Tile.SEG_20),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_MIDDLE_8,worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.SEG_20),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.SEG_19),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.SEG_21),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_22),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_MIDDLE_3,worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.SEG_23),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.TOP_MIDDLE_7,worldEngine.tiles.Tile.SEG_24),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.TOP_RIGHT_6,worldEngine.tiles.Tile.SEG_25),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_LEFT_2,worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.SEG_26),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.MIDDLE_RIGHT_5,worldEngine.tiles.Tile.TOP_LEFT_0,worldEngine.tiles.Tile.SEG_27),new worldEngine.tiles.TileSegment(worldEngine.tiles.Tile.BOTTOM_RIGHT_4,worldEngine.tiles.Tile.MIDDLE_LEFT_1,worldEngine.tiles.Tile.SEG_28)];
+worldEngine.tiles.TileFeature.COLLIDABLE = 1;
+worldEngine.tiles.TileFeature.DRAWABLE = 2;
+worldEngine.tiles.TileFeature.STYLE_OFFSET = 16;
+worldEngine.tiles.TileFeature.RANDOMDATA_OFFSET = 24;
 Main.main();
 })();
 

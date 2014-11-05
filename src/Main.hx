@@ -9,7 +9,6 @@ import engine.components.MotionControls;
 import engine.components.Physics;
 import engine.components.Position;
 import engine.GameLoop;
-import engine.map.TileMapMap;
 import engine.map.tmx.TmxMap;
 import engine.systems.CameraControlSystem;
 import engine.systems.DebugRenderSystem;
@@ -41,13 +40,13 @@ import wgr.renderers.webgl.WebGLBatch;
 import wgr.renderers.webgl.WebGLRenderer;
 import wgr.texture.Texture;
 import wgr.renderers.webgl.TileMap;
+import worldEngine.WorldData;
 
 class Main 
 {
 
 	public static function main() {
         //var managedGrid = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),10,10,100);
-
         var assets = new utils.AssetLoader();
 
         assets.addEventListener("loaded", function(event){
@@ -57,6 +56,8 @@ class Main
             var tmxMap = new TmxMap(assets.assets.get("data/testMap.tmx"));
             tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
             var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
+
+            var mapCollisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer("Tile Layer 1"));
 
             var view = new engine.view.View(800,600,false);
 
@@ -101,7 +102,7 @@ class Main
                 view.camera.addChild(itemContainer);
 
             var mainEngine = new Engine();
-            mainEngine.addSystem(new PhysicsSystem(),0);            
+            mainEngine.addSystem(new PhysicsSystem(new WorldData(32,tmxMap,"Tile Layer 1")),0);            
             mainEngine.addSystem(new MotionControlSystem(gameLoop.keyboard),1);
             mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
             mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
@@ -128,7 +129,7 @@ class Main
 
             var e2 = new Entity()
             .add(new Position(0,0,0))
-            .add(new Physics(200,200,0,0,[new Polygon(CreateRectangle(48,72),new Vector2D(0,0))]))
+            .add(new Physics(100,100,0,0,[new Polygon(CreateRectangle(48,72),new Vector2D(0,0))]))
             .add(new Display(spr2))
             .add(new DebugDisplay());
             mainEngine.addEntity(e2);

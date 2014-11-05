@@ -8,6 +8,9 @@ import engine.components.Position;
 import engine.nodes.PhysicsNode;
 import physics.collision.broadphase.managedgrid.ManagedGrid;
 import physics.PhysicsEngine;
+import worldEngine.World;
+import worldEngine.WorldData;
+import worldEngine.WorldPhysicsEngine;
 
 class PhysicsSystem extends System
 {
@@ -16,9 +19,10 @@ class PhysicsSystem extends System
 
     public var physicsEngine:PhysicsEngine;
 
-    public function new() {
+    public function new(worldData:WorldData) {
         super();
-        physicsEngine = new ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),10,10,1000);
+        physicsEngine = new WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),new World(worldData));
+        physicsEngine.masslessForces.setTo(0,9);
     }
 
     override public function addToEngine(engine:Engine):Void {
