@@ -59,7 +59,7 @@ class TileFactory
 				tiles.push( new Tile( 32,tileType,idInc++,modifier ) );
 			}
 		}
-		trace(tiles);
+		// trace(tiles);
 	}
 
 }

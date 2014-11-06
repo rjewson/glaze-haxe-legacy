@@ -22,6 +22,9 @@ class WorldPhysicsEngine extends ManagedGrid
 	
 	public var collisionData:Array2D;
 
+	public var collisionOrderX:Array<Int>;
+	public var collisionOrderY:Array<Int>;
+
 	public function new(fps : Int, pps : Int, narrowphase:INarrowphase, world:World) 
 	{
 		this.world = world;
@@ -31,6 +34,9 @@ class WorldPhysicsEngine extends ManagedGrid
 		tempFeature.position = new Vector2D();
 
 		collisionData = world.worldData.collisionData;
+
+		collisionOrderX = [0,-1,1];
+		collisionOrderY = [2,1,0,-1,-2];
 	}
 	
    	override public function Collide() {
@@ -39,16 +45,20 @@ class WorldPhysicsEngine extends ManagedGrid
             for (i in 0...cell.dynamicItems.length) {
            		var body = cell.dynamicItems[i];
 				for (bodyFeature in body.features) {
-					var x1 = world.worldData.Index(bodyFeature.shape.aabb.l+body.position.x+0.5)-1;
-					var y1 = world.worldData.Index(bodyFeature.shape.aabb.t+body.position.y+0.5)-1;
-					var x2 = world.worldData.Index(bodyFeature.shape.aabb.r+body.position.x-0.5)+1;
-					var y2 = world.worldData.Index(bodyFeature.shape.aabb.b+body.position.y-0.5)+1;
-					for( x in x1...x2 ) {
-						for ( y in y1...y2 ) {
-							var tileID = collisionData.get(x,y);
+					
+					// var cx = world.worldData.Index(body.position.x);
+					// var cy = world.worldData.Index(body.position.y);
+					// js.Lib.debug();
+					var cx = world.worldData.Index( ((bodyFeature.shape.aabb.r+bodyFeature.shape.aabb.l)/2) + body.position.x);
+					var cy = world.worldData.Index( ((bodyFeature.shape.aabb.b+bodyFeature.shape.aabb.t)/2) + body.position.y);
+
+					for ( y in collisionOrderY ) {
+						for( x in collisionOrderX ) {	
+							// trace(cx+x,cy+y);
+							var tileID = collisionData.get(cx+x,cy+y);
 							if (tileID>0) {
 								tempFeature.shape = world.worldData.tileFactory.tiles[tileID];
-								tempFeature.position.setTo(x*world.worldData.tileSize,y*world.worldData.tileSize);
+								tempFeature.position.setTo((cx+x)*world.worldData.tileSize,(cy+y)*world.worldData.tileSize);
 								narrowphase.CollideFeatures(tempFeature, bodyFeature);
 							}
 							// tileFeature = world.GetGridSafe(x, y);
@@ -62,6 +72,7 @@ class WorldPhysicsEngine extends ManagedGrid
 				}  
             }
         }
+        // js.Lib.debug();
     }
 	
 }

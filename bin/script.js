@@ -127,7 +127,6 @@ Main.main = function() {
 		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
 		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
 		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
-		var mapCollisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer("Tile Layer 1"));
 		var view = new engine.view.View(800,600,false);
 		var tm = new wgr.texture.TextureManager(view.renderer.gl);
 		tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
@@ -144,8 +143,6 @@ Main.main = function() {
 		var pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(14000,16.6666666666666679);
 		pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
 		view.renderer.AddRenderer(pointParticleEngine.renderer);
-		var lightGrid = new wgr.lighting.ParticleLightGrid();
-		view.renderer.AddRenderer(lightGrid.renderer);
 		var createSprite = function(id,x,y,px,py,tid) {
 			var s = new wgr.display.Sprite();
 			s.id = id;
@@ -164,6 +161,7 @@ Main.main = function() {
 		mainEngine.addSystem(new engine.systems.MotionControlSystem(gameLoop.keyboard),1);
 		mainEngine.addSystem(new engine.systems.CameraControlSystem(view.camera),4);
 		mainEngine.addSystem(new engine.systems.RenderSystem(itemContainer),5);
+		mainEngine.addSystem(new engine.systems.DebugRenderSystem(view.debugRenderer),6);
 		var spr1 = createSprite("character",400,380,0,0,"texturechar1");
 		spr1.scale.x = -1;
 		spr1.pivot.x = 24.;
@@ -174,7 +172,7 @@ Main.main = function() {
 		spr2.scale.x = -1;
 		spr2.pivot.x = 24.;
 		spr2.pivot.y = 36.;
-		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(100,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
+		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(400,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
 		mainEngine.addEntity(e2);
 		var tick = function(time) {
 			mainEngine.update(time);
@@ -2061,7 +2059,7 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 		this.force.setTo(0,0);
 		if(this.left) this.force.x -= 10; else this.force.x -= 0;
 		if(this.right) this.force.x += 10; else this.force.x += 0;
-		if(this.up) this.force.y -= 10; else this.force.y -= 0;
+		if(this.up) this.force.y -= 50; else this.force.y -= 0;
 		if(this.down) this.force.y += 10; else this.force.y += 0;
 		physics.body.AddForce(this.force);
 	}
@@ -3225,7 +3223,6 @@ physics.collision.narrowphase.sat.SAT.prototype = {
 				break;
 			}
 		}
-		console.log("c=" + (collided == null?"null":"" + collided));
 		if(collided) {
 			feature1.body.Wake();
 			feature2.body.Wake();
@@ -3460,8 +3457,8 @@ physics.dynamics.Body.prototype = {
 	}
 	,RespondToCollision: function(collision,mtd,newVelocity,normal,depth,o) {
 		if(this.isStatic) return;
-		this.position.x += mtd.x * 0.99;
-		this.position.y += mtd.y * 0.99;
+		this.position.x += mtd.x * 1.001;
+		this.position.y += mtd.y * 1.001;
 		this.prevPosition.x = this.position.x - newVelocity.x;
 		this.prevPosition.y = this.position.y - newVelocity.y;
 		if(this.isSleeping) this.Wake();
@@ -5300,7 +5297,7 @@ wgr.lighting.ParticleLightGrid = function() {
 	this.renderer = new wgr.renderers.webgl.PointSpriteLightMapRenderer();
 	this.renderer.ResizeBatch(this.width * this.height);
 	this.lights = new Array();
-	this.lights.push(new wgr.lighting.FloodFillLight(25,5,20,255));
+	this.lights.push(new wgr.lighting.FloodFillLight(15,5,20,255));
 	this.SetTileOpacities();
 };
 $hxClasses["wgr.lighting.ParticleLightGrid"] = wgr.lighting.ParticleLightGrid;
@@ -6275,6 +6272,8 @@ worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,world) {
 	this.tempFeature = new physics.dynamics.Feature(world.worldBody,null,new physics.dynamics.Material());
 	this.tempFeature.position = new physics.geometry.Vector2D();
 	this.collisionData = world.worldData.collisionData;
+	this.collisionOrderX = [0,-1,1];
+	this.collisionOrderY = [2,1,0,-1,-2];
 };
 $hxClasses["worldEngine.WorldPhysicsEngine"] = worldEngine.WorldPhysicsEngine;
 worldEngine.WorldPhysicsEngine.__name__ = ["worldEngine","WorldPhysicsEngine"];
@@ -6297,20 +6296,22 @@ worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.
 				while(_g4 < _g5.length) {
 					var bodyFeature = _g5[_g4];
 					++_g4;
-					var x1 = ((bodyFeature.shape.aabb.l + body.position.x + 0.5) * this.world.worldData.invTileSize | 0) - 1;
-					var y1 = ((bodyFeature.shape.aabb.t + body.position.y + 0.5) * this.world.worldData.invTileSize | 0) - 1;
-					var x2 = ((bodyFeature.shape.aabb.r + body.position.x - 0.5) * this.world.worldData.invTileSize | 0) + 1;
-					var y2 = ((bodyFeature.shape.aabb.b + body.position.y - 0.5) * this.world.worldData.invTileSize | 0) + 1;
-					var _g6 = x1;
-					while(_g6 < x2) {
-						var x = _g6++;
-						var _g7 = y1;
-						while(_g7 < y2) {
-							var y = _g7++;
-							var tileID = this.collisionData.get(x,y);
+					var cx = ((bodyFeature.shape.aabb.r + bodyFeature.shape.aabb.l) / 2 + body.position.x) * this.world.worldData.invTileSize | 0;
+					var cy = ((bodyFeature.shape.aabb.b + bodyFeature.shape.aabb.t) / 2 + body.position.y) * this.world.worldData.invTileSize | 0;
+					var _g6 = 0;
+					var _g7 = this.collisionOrderY;
+					while(_g6 < _g7.length) {
+						var y = _g7[_g6];
+						++_g6;
+						var _g8 = 0;
+						var _g9 = this.collisionOrderX;
+						while(_g8 < _g9.length) {
+							var x = _g9[_g8];
+							++_g8;
+							var tileID = this.collisionData.get(cx + x,cy + y);
 							if(tileID > 0) {
 								this.tempFeature.shape = this.world.worldData.tileFactory.tiles[tileID];
-								this.tempFeature.position.setTo(x * this.world.worldData.tileSize,y * this.world.worldData.tileSize);
+								this.tempFeature.position.setTo((cx + x) * this.world.worldData.tileSize,(cy + y) * this.world.worldData.tileSize);
 								this.narrowphase.CollideFeatures(this.tempFeature,bodyFeature);
 							}
 						}
@@ -6450,7 +6451,6 @@ worldEngine.tiles.TileFactory.prototype = {
 				this.tiles.push(new worldEngine.tiles.Tile(32,tileType,idInc++,modifier));
 			}
 		}
-		console.log(this.tiles);
 	}
 	,__class__: worldEngine.tiles.TileFactory
 };

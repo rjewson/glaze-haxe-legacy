@@ -96,7 +96,7 @@ class SAT implements INarrowphase
 					break;*/
 			}
 		}
-		trace("c="+collided);
+		// trace("c="+collided);
 		// The narrow phase reported a collision.
 		if (collided) {
 			feature1.body.Wake();// broadphase.WakeBody(feature1.body);

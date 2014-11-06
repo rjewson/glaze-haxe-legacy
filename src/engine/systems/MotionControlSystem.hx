@@ -42,7 +42,7 @@ class MotionControlSystem extends ListIteratingSystem<MotionControlNode>
         force.x -= left ? 10 : 0;
         force.x += right ? 10 : 0;
 
-        force.y -= up ? 10 : 0;
+        force.y -= up ? 50 : 0;
         force.y += down ? 10 : 0;
 
         physics.body.AddForce( force );

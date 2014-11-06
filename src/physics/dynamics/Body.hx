@@ -245,8 +245,8 @@ class Body
 	
 	public function RespondToCollision(collision : Arbiter, mtd : Vector2D, newVelocity : Vector2D, normal : Vector2D, depth : Float, o : Int) : Void {
 		if (isStatic) return;
-		position.x += mtd.x*0.99;
-		position.y += mtd.y*0.99;
+		position.x += mtd.x*1.001;
+		position.y += mtd.y*1.001;
 		SetVelocity(newVelocity);
 		if (isSleeping)
 			Wake();

@@ -33,7 +33,7 @@ class ParticleLightGrid
         this.renderer = new PointSpriteLightMapRenderer();
         this.renderer.ResizeBatch(width*height);
         this.lights = new Array<ILight>();
-        this.lights.push(new FloodFillLight(25,5,20,255));
+        this.lights.push(new FloodFillLight(15,5,20,255));
         SetTileOpacities();
     }
 

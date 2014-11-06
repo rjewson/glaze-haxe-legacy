@@ -46,7 +46,7 @@ class Main
 {
 
 	public static function main() {
-        //var managedGrid = new physics.collision.broadphase.managedgrid.ManagedGrid(60,60,new physics.collision.narrowphase.sat.SAT(),10,10,100);
+
         var assets = new utils.AssetLoader();
 
         assets.addEventListener("loaded", function(event){
@@ -56,8 +56,6 @@ class Main
             var tmxMap = new TmxMap(assets.assets.get("data/testMap.tmx"));
             tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
             var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
-
-            var mapCollisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer("Tile Layer 1"));
 
             var view = new engine.view.View(800,600,false);
 
@@ -72,7 +70,6 @@ class Main
                 tileMap.tileSize = 16;
                 tileMap.TileScale(2);
 
-
             var spriteRender = new SpriteRenderer();
                 spriteRender.AddStage(view.stage);
                 view.renderer.AddRenderer(spriteRender);
@@ -82,9 +79,9 @@ class Main
                 view.renderer.AddRenderer(pointParticleEngine.renderer);
 
 
-            var lightGrid = new ParticleLightGrid();
-                //tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
-                view.renderer.AddRenderer(lightGrid.renderer);
+            // var lightGrid = new ParticleLightGrid();
+                // tileMapRenderer.renderer.SetSpriteSheet(tm.baseTextures.get("tiles").texture,16,16,22);
+                // view.renderer.AddRenderer(lightGrid.renderer);
 
             function createSprite(id:String,x:Float,y:Float,px:Float,py:Float,tid:String) {
                 var s = new Sprite();
@@ -106,7 +103,7 @@ class Main
             mainEngine.addSystem(new MotionControlSystem(gameLoop.keyboard),1);
             mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
             mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
-            // mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
+            mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
             var spr1 = createSprite("character",400,380,0,0,"texturechar1");
             spr1.scale.x = -1;
@@ -122,6 +119,9 @@ class Main
             .add(new Camera());
             mainEngine.addEntity(e1);
 
+// for (i in 0...200) {
+
+
             var spr2 = createSprite("character",400,380,0,0,"texturechar1");
             spr2.scale.x = -1;
             spr2.pivot.x = 48/2;
@@ -129,18 +129,17 @@ class Main
 
             var e2 = new Entity()
             .add(new Position(0,0,0))
-            .add(new Physics(100,100,0,0,[new Polygon(CreateRectangle(48,72),new Vector2D(0,0))]))
+            .add(new Physics(400,100,0,0,[new Polygon(CreateRectangle(48,72),new Vector2D(0,0))]))
             .add(new Display(spr2))
             .add(new DebugDisplay());
             mainEngine.addEntity(e2);
 
-
+// }
             function tick(time:Float) {
                 mainEngine.update(time);
                 view.renderer.Render(view.camera.viewPortAABB);
-                //lightGrid.renderLightGrid();
-                //lightGrid.draw();
-                //trace(haxe.Timer.stamp());
+                // lightGrid.renderLightGrid();
+                // lightGrid.draw();
             }
 
             gameLoop.updateFunc = tick;
