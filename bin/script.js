@@ -121,81 +121,19 @@ var Main = function() { };
 $hxClasses["Main"] = Main;
 Main.__name__ = ["Main"];
 Main.main = function() {
-	var assets = new utils.AssetLoader();
-	assets.addEventListener("loaded",function(event) {
-		var gameLoop = new engine.GameLoop();
-		var tmxMap = new engine.map.tmx.TmxMap(assets.assets.get("data/testMap.tmx"));
-		tmxMap.tilesets[0].set_image(assets.assets.get("data/spelunky-tiles.png"));
-		var mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
-		var view = new engine.view.View(800,600,false);
-		var tm = new wgr.texture.TextureManager(view.renderer.gl);
-		tm.AddTexturesFromConfig(assets.assets.get("data/textureConfig.xml"),assets.assets);
-		var tileMap = new wgr.renderers.webgl.TileMap();
-		view.renderer.AddRenderer(tileMap);
-		tileMap.SetSpriteSheet(assets.assets.get("data/spelunky-tiles.png"));
-		tileMap.SetTileLayerFromData(mapData,"base",1,1);
-		tileMap.SetTileLayer(assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
-		tileMap.tileSize = 16;
-		tileMap.TileScale(2);
-		var spriteRender = new wgr.renderers.webgl.SpriteRenderer();
-		spriteRender.AddStage(view.stage);
-		view.renderer.AddRenderer(spriteRender);
-		var pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(14000,16.6666666666666679);
-		pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
-		view.renderer.AddRenderer(pointParticleEngine.renderer);
-		var createSprite = function(id,x,y,px,py,tid) {
-			var s = new wgr.display.Sprite();
-			s.id = id;
-			s.texture = tm.textures.get(tid);
-			s.position.x = x;
-			s.position.y = y;
-			s.pivot.x = px;
-			s.pivot.y = py;
-			return s;
-		};
-		var itemContainer = new wgr.display.DisplayObjectContainer();
-		itemContainer.id = "itemContainer";
-		view.camera.addChild(itemContainer);
-		var mainEngine = new ash.core.Engine();
-		mainEngine.addSystem(new engine.systems.PhysicsSystem(new worldEngine.WorldData(32,tmxMap,"Tile Layer 1")),0);
-		mainEngine.addSystem(new engine.systems.MotionControlSystem(gameLoop.keyboard),1);
-		mainEngine.addSystem(new engine.systems.CameraControlSystem(view.camera),4);
-		mainEngine.addSystem(new engine.systems.RenderSystem(itemContainer),5);
-		mainEngine.addSystem(new engine.systems.DebugRenderSystem(view.debugRenderer),6);
-		var spr1 = createSprite("character",400,380,0,0,"texturechar1");
-		spr1.scale.x = -1;
-		spr1.pivot.x = 24.;
-		spr1.pivot.y = 36.;
-		var e1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(0,0,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
-		mainEngine.addEntity(e1);
-		var spr2 = createSprite("character",400,380,0,0,"texturechar1");
-		spr2.scale.x = -1;
-		spr2.pivot.x = 24.;
-		spr2.pivot.y = 36.;
-		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(400,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(48,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
-		mainEngine.addEntity(e2);
-		var tick = function(time) {
-			mainEngine.update(time);
-			view.renderer.Render(view.camera.viewPortAABB);
-		};
-		gameLoop.updateFunc = tick;
-		gameLoop.start();
-		window.document.getElementById("stopbutton").addEventListener("click",function(event1) {
-			gameLoop.stop();
-		});
-		window.document.getElementById("startbutton").addEventListener("click",function(event2) {
-			gameLoop.start();
-		});
-		window.document.getElementById("debugbutton").addEventListener("click",function(event3) {
-		});
-		window.document.getElementById("action1").addEventListener("click",function(event4) {
-			e1.remove(engine.components.Display);
-		});
-		window.document.getElementById("action2").addEventListener("click",function(event5) {
-		});
+	var exile = new game.exile.Exile();
+	window.document.getElementById("stopbutton").addEventListener("click",function(event) {
+		exile.gameLoop.stop();
 	});
-	assets.SetImagesToLoad(["data/textureConfig.xml","data/testMap.tmx","data/1up.png","data/spelunky-tiles.png","data/spelunky0.png","data/spelunky1.png","data/characters.png","data/tilescompressed.png"]);
-	assets.Load();
+	window.document.getElementById("startbutton").addEventListener("click",function(event1) {
+		exile.gameLoop.start();
+	});
+	window.document.getElementById("debugbutton").addEventListener("click",function(event2) {
+	});
+	window.document.getElementById("action1").addEventListener("click",function(event3) {
+	});
+	window.document.getElementById("action2").addEventListener("click",function(event4) {
+	});
 };
 var IMap = function() { };
 $hxClasses["IMap"] = IMap;
@@ -1497,6 +1435,29 @@ engine.components.Position.__name__ = ["engine","components","Position"];
 engine.components.Position.prototype = {
 	__class__: engine.components.Position
 };
+engine.core = {};
+engine.core.BaseGame = function() {
+	this.gameLoop = new engine.GameLoop();
+};
+$hxClasses["engine.core.BaseGame"] = engine.core.BaseGame;
+engine.core.BaseGame.__name__ = ["engine","core","BaseGame"];
+engine.core.BaseGame.prototype = {
+	loadAssets: function(assetList) {
+		this.assets = new utils.AssetLoader();
+		this.assets.addEventListener("loaded",$bind(this,this.prepare));
+		this.assets.SetImagesToLoad(assetList);
+		this.assets.Load();
+	}
+	,prepare: function(event) {
+		this.prepareRenderer();
+		this.prepareEngine();
+	}
+	,prepareEngine: function() {
+	}
+	,prepareRenderer: function() {
+	}
+	,__class__: engine.core.BaseGame
+};
 engine.input = {};
 engine.input.DigitalInput = function() {
 	this.keyMap = new Array();
@@ -2159,6 +2120,82 @@ engine.view.View.__name__ = ["engine","view","View"];
 engine.view.View.prototype = {
 	__class__: engine.view.View
 };
+var game = {};
+game.exile = {};
+game.exile.Exile = function() {
+	engine.core.BaseGame.call(this);
+	this.loadAssets(["data/textureConfig.xml","data/testMap.tmx","data/spelunky0.png","data/spelunky1.png","data/spelunky-tiles.png","data/characters.png"]);
+};
+$hxClasses["game.exile.Exile"] = game.exile.Exile;
+game.exile.Exile.__name__ = ["game","exile","Exile"];
+game.exile.Exile.__super__ = engine.core.BaseGame;
+game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
+	prepareEngine: function() {
+		this.mainEngine = new ash.core.Engine();
+		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(new worldEngine.WorldData(32,this.tmxMap,"Tile Layer 1")),0);
+		this.mainEngine.addSystem(new engine.systems.MotionControlSystem(this.gameLoop.keyboard),1);
+		this.mainEngine.addSystem(new engine.systems.CameraControlSystem(this.view.camera),4);
+		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.itemContainer),5);
+		this.mainEngine.addSystem(new engine.systems.DebugRenderSystem(this.view.debugRenderer),6);
+		this.createEntities();
+		this.gameLoop.updateFunc = $bind(this,this.tick);
+		this.gameLoop.start();
+	}
+	,createEntities: function() {
+		var spr1 = this.createSprite("character",400,380,0,0,"texturechar1");
+		spr1.scale.x = -1;
+		spr1.pivot.x = 24.;
+		spr1.pivot.y = 36.;
+		var e1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(50,50,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+		this.mainEngine.addEntity(e1);
+		var spr2 = this.createSprite("character",400,380,0,0,"texturechar1");
+		spr2.scale.x = -1;
+		spr2.pivot.x = 24.;
+		spr2.pivot.y = 36.;
+		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(400,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
+		this.mainEngine.addEntity(e2);
+	}
+	,tick: function(time) {
+		this.mainEngine.update(time);
+		this.view.renderer.Render(this.view.camera.viewPortAABB);
+		console.log("-");
+	}
+	,prepareRenderer: function() {
+		this.tmxMap = new engine.map.tmx.TmxMap(this.assets.assets.get("data/testMap.tmx"));
+		this.tmxMap.tilesets[0].set_image(this.assets.assets.get("data/spelunky-tiles.png"));
+		this.mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(this.tmxMap.getLayer("Tile Layer 1"));
+		this.view = new engine.view.View(800,600,false);
+		this.tm = new wgr.texture.TextureManager(this.view.renderer.gl);
+		this.tm.AddTexturesFromConfig(this.assets.assets.get("data/textureConfig.xml"),this.assets.assets);
+		this.tileMap = new wgr.renderers.webgl.TileMap();
+		this.view.renderer.AddRenderer(this.tileMap);
+		this.tileMap.SetSpriteSheet(this.assets.assets.get("data/spelunky-tiles.png"));
+		this.tileMap.SetTileLayerFromData(this.mapData,"base",1,1);
+		this.tileMap.SetTileLayer(this.assets.assets.get("data/spelunky1.png"),"bg",0.6,0.6);
+		this.tileMap.tileSize = 16;
+		this.tileMap.TileScale(2);
+		this.spriteRender = new wgr.renderers.webgl.SpriteRenderer();
+		this.spriteRender.AddStage(this.view.stage);
+		this.view.renderer.AddRenderer(this.spriteRender);
+		this.pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(14000,16.6666666666666679);
+		this.pointParticleEngine.renderer.SetSpriteSheet(this.tileMap.spriteSheet,16,8,8);
+		this.view.renderer.AddRenderer(this.pointParticleEngine.renderer);
+		this.itemContainer = new wgr.display.DisplayObjectContainer();
+		this.itemContainer.id = "itemContainer";
+		this.view.camera.addChild(this.itemContainer);
+	}
+	,createSprite: function(id,x,y,px,py,tid) {
+		var s = new wgr.display.Sprite();
+		s.id = id;
+		s.texture = this.tm.textures.get(tid);
+		s.position.x = x;
+		s.position.y = y;
+		s.pivot.x = px;
+		s.pivot.y = py;
+		return s;
+	}
+	,__class__: game.exile.Exile
+});
 var haxe = {};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
@@ -4762,29 +4799,6 @@ wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.protot
 	}
 	,__class__: wgr.display.Camera
 });
-wgr.display.DisplayListIter = function(root) {
-	this.node = root;
-	this.stack = new Array();
-	this.reset();
-};
-$hxClasses["wgr.display.DisplayListIter"] = wgr.display.DisplayListIter;
-wgr.display.DisplayListIter.__name__ = ["wgr","display","DisplayListIter"];
-wgr.display.DisplayListIter.prototype = {
-	reset: function() {
-		this.stack[0] = this.node;
-		this.top = 1;
-	}
-	,hasNext: function() {
-		return this.top > 0;
-	}
-	,next: function() {
-		var thisNode = this.stack[--this.top];
-		if(thisNode.next != null) this.stack[this.top++] = thisNode.next;
-		if(thisNode.head != null) this.stack[this.top++] = thisNode.head;
-		return thisNode;
-	}
-	,__class__: wgr.display.DisplayListIter
-};
 wgr.display.Sprite = function() {
 	wgr.display.DisplayObjectContainer.call(this);
 	this.renderable = true;
@@ -5192,194 +5206,6 @@ wgr.geom.Rectangle.__name__ = ["wgr","geom","Rectangle"];
 wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
 };
-wgr.lighting = {};
-wgr.lighting.ILight = function() { };
-$hxClasses["wgr.lighting.ILight"] = wgr.lighting.ILight;
-wgr.lighting.ILight.__name__ = ["wgr","lighting","ILight"];
-wgr.lighting.ILight.prototype = {
-	__class__: wgr.lighting.ILight
-};
-wgr.lighting.FloodFillLight = function(x,y,range,intensity) {
-	if(intensity == null) intensity = 255;
-	if(range == null) range = 255;
-	this.x = x;
-	this.y = y;
-	this.range = Math.min(255,range);
-	this.range2 = range * 2;
-	this.intensity = Math.min(255,intensity);
-	this.preRenderedLight = new Uint8Array(this.range2 * this.range2);
-	this.renderedLight = new Uint8Array(this.range2 * this.range2);
-	this.workingCells = new Uint32Array(this.range2 * this.range2);
-	this.colour = 16777215;
-	this.preRenderLight();
-};
-$hxClasses["wgr.lighting.FloodFillLight"] = wgr.lighting.FloodFillLight;
-wgr.lighting.FloodFillLight.__name__ = ["wgr","lighting","FloodFillLight"];
-wgr.lighting.FloodFillLight.__interfaces__ = [wgr.lighting.ILight];
-wgr.lighting.FloodFillLight.prototype = {
-	preRenderLight: function() {
-		var _g1 = 0;
-		var _g = this.range2;
-		while(_g1 < _g) {
-			var ypos = _g1++;
-			var _g3 = 0;
-			var _g2 = this.range2;
-			while(_g3 < _g2) {
-				var xpos = _g3++;
-				var dX = ypos - this.range;
-				var dY = xpos - this.range;
-				var dSQR = dX * dX + dY * dY;
-				var cellIntensity = this.intensity * Math.max(0,1 - dSQR / (this.range * this.range));
-				this.preRenderedLight[ypos * this.range2 + xpos] = cellIntensity;
-			}
-		}
-	}
-	,resetRenderedLight: function() {
-		var _g1 = 0;
-		var _g = this.range2;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.range2;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				this.renderedLight[y * this.range2 + x] = 0;
-			}
-		}
-	}
-	,renderLight: function(map,opacityLookup,lightMap) {
-		var cellX = this.x;
-		var cellY = this.y;
-		var encounteredWallness = 0;
-		var cellCount = 0;
-		this.workingCells[cellCount++] = 0 | cellX << 8 | cellY;
-		while(cellCount > 0) {
-			var cellValue = this.workingCells[--cellCount];
-			encounteredWallness = cellValue >> 16 & 255;
-			cellX = cellValue >> 8 & 255;
-			cellY = cellValue & 255;
-			if(cellX >= 0 && this.x < map.w && cellY >= 0 && this.y < map.h) {
-				var relX = this.x - cellX + this.range;
-				var relY = this.y - cellY + this.range;
-				if(relX >= 0 || relX < this.range2 || relY >= 0 || relY <= this.range2) {
-					encounteredWallness += opacityLookup[map.data32[cellY * map.w + cellX]];
-					var newLight = this.preRenderedLight[relY * this.range2 + relX] - encounteredWallness;
-					var currentLight = lightMap.data32[cellY * lightMap.w + cellX];
-					if(newLight > currentLight) {
-						lightMap.data32[cellY * lightMap.w + cellX] = newLight;
-						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX + 1 << 8 | cellY;
-						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX << 8 | cellY + 1;
-						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX - 1 << 8 | cellY;
-						this.workingCells[cellCount++] = encounteredWallness << 16 | cellX << 8 | cellY - 1;
-					}
-				}
-			}
-		}
-	}
-	,getRelativeLight: function(rx,ry) {
-		rx += this.range;
-		ry += this.range;
-		if(rx < 0 || rx > this.range2 - 1 || ry < 0 || ry > this.range2 - 1) return 0;
-		return this.preRenderedLight[ry * this.range2 + rx];
-	}
-	,getIndex: function(x,y) {
-		return y * this.range2 + x;
-	}
-	,__class__: wgr.lighting.FloodFillLight
-};
-wgr.lighting.ParticleLightGrid = function() {
-	this.width = 50;
-	this.height = 40;
-	this.map = new ds.Array2D(this.width,this.height);
-	this.lightMap = new ds.Array2D(this.width,this.height);
-	this.tileSize = 32;
-	this.halfTileSize = this.tileSize / 2;
-	this.renderer = new wgr.renderers.webgl.PointSpriteLightMapRenderer();
-	this.renderer.ResizeBatch(this.width * this.height);
-	this.lights = new Array();
-	this.lights.push(new wgr.lighting.FloodFillLight(15,5,20,255));
-	this.SetTileOpacities();
-};
-$hxClasses["wgr.lighting.ParticleLightGrid"] = wgr.lighting.ParticleLightGrid;
-wgr.lighting.ParticleLightGrid.__name__ = ["wgr","lighting","ParticleLightGrid"];
-wgr.lighting.ParticleLightGrid.prototype = {
-	SetTileOpacities: function() {
-		var leftWall = 20;
-		var rightWall = 30;
-		var _g1 = 0;
-		var _g = this.height - 1;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.width - 1;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				var tileType = 77;
-				if(x == leftWall || x == rightWall) tileType = 80;
-				if(x > leftWall && x < rightWall) tileType = 31;
-				this.map.set(x,y,tileType);
-			}
-		}
-		this.map.set(25,10,80);
-		this.map.set(26,10,80);
-		this.map.set(25,11,80);
-		this.map.set(26,11,80);
-		this.tileOpacities = new Uint8Array(256);
-		var _g11 = 0;
-		var _g4 = this.tileOpacities.length;
-		while(_g11 < _g4) {
-			var i = _g11++;
-			this.tileOpacities[i] = 1;
-		}
-		this.tileOpacities[80] = 40;
-		this.tileOpacities[77] = 30;
-		this.tileOpacities[31] = 5;
-	}
-	,draw: function() {
-		this.reset();
-		this.drawLights();
-		this.renderLightGrid();
-	}
-	,reset: function() {
-		this.renderer.ResetBatch();
-		var _g1 = 0;
-		var _g = this.height - 1;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.width - 1;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				this.lightMap.set(x,y,0);
-			}
-		}
-	}
-	,drawLights: function() {
-		this.count = 0;
-		var _g = 0;
-		var _g1 = this.lights;
-		while(_g < _g1.length) {
-			var light = _g1[_g];
-			++_g;
-			light.renderLight(this.map,this.tileOpacities,this.lightMap);
-		}
-	}
-	,renderLightGrid: function() {
-		var _g1 = 0;
-		var _g = this.height - 1;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.width - 1;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				var light = this.lightMap.get(x,y);
-				this.renderer.AddSpriteToBatch(x * this.tileSize + this.halfTileSize,y * this.tileSize + this.halfTileSize,255 - light,0,0,0);
-			}
-		}
-	}
-	,__class__: wgr.lighting.ParticleLightGrid
-};
 wgr.particle = {};
 wgr.particle.IParticleEngine = function() { };
 $hxClasses["wgr.particle.IParticleEngine"] = wgr.particle.IParticleEngine;
@@ -5543,62 +5369,6 @@ $hxClasses["wgr.renderers.webgl.IRenderer"] = wgr.renderers.webgl.IRenderer;
 wgr.renderers.webgl.IRenderer.__name__ = ["wgr","renderers","webgl","IRenderer"];
 wgr.renderers.webgl.IRenderer.prototype = {
 	__class__: wgr.renderers.webgl.IRenderer
-};
-wgr.renderers.webgl.PointSpriteLightMapRenderer = function() {
-};
-$hxClasses["wgr.renderers.webgl.PointSpriteLightMapRenderer"] = wgr.renderers.webgl.PointSpriteLightMapRenderer;
-wgr.renderers.webgl.PointSpriteLightMapRenderer.__name__ = ["wgr","renderers","webgl","PointSpriteLightMapRenderer"];
-wgr.renderers.webgl.PointSpriteLightMapRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
-wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
-	Init: function(gl,camera) {
-		this.gl = gl;
-		this.camera = camera;
-		this.projection = new wgr.geom.Point();
-		this.pointSpriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_FRAGMENT_SHADER));
-		this.dataBuffer = gl.createBuffer();
-	}
-	,ResizeBatch: function(size) {
-		this.arrayBuffer = new ArrayBuffer(80 * size);
-		this.data = new Float32Array(this.arrayBuffer);
-		this.data8 = new Uint8ClampedArray(this.arrayBuffer);
-		this.ResetBatch();
-	}
-	,Resize: function(width,height) {
-		this.projection.x = width / 2;
-		this.projection.y = height / 2;
-	}
-	,AddStage: function(stage) {
-		this.stage = stage;
-	}
-	,ResetBatch: function() {
-		this.indexRun = 0;
-	}
-	,AddSpriteToBatch: function(x,y,alpha,red,green,blue) {
-		var index = this.indexRun * 3;
-		this.data[index] = x + this.camera.position.x | 0;
-		this.data[index + 1] = y + this.camera.position.y | 0;
-		index *= 4;
-		this.data8[index + 8] = red;
-		this.data8[index + 9] = blue;
-		this.data8[index + 10] = green;
-		this.data8[index + 11] = alpha;
-		this.indexRun++;
-	}
-	,Render: function(clip) {
-		this.gl.enable(3042);
-		this.gl.blendFunc(770,771);
-		this.gl.useProgram(this.pointSpriteShader.program);
-		this.gl.bindBuffer(34962,this.dataBuffer);
-		this.gl.bufferData(34962,this.data,35048);
-		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.position);
-		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.colour);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,12,0);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.colour,4,5121,true,12,8);
-		this.gl.uniform2f(this.pointSpriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.gl.uniform1f(this.pointSpriteShader.uniform.size,32);
-		this.gl.drawArrays(0,0,this.indexRun);
-	}
-	,__class__: wgr.renderers.webgl.PointSpriteLightMapRenderer
 };
 wgr.renderers.webgl.PointSpriteRenderer = function() {
 };
@@ -6558,6 +6328,12 @@ ds.IDManager.TRANSIENT_CACHE = (function($this) {
 }(this));
 ds.IDManager.TRANSIENT_POINTER = 0;
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+game.exile.Exile.TEXTURE_CONFIG = "data/textureConfig.xml";
+game.exile.Exile.MAP_DATA = "data/testMap.tmx";
+game.exile.Exile.TILE_SPRITE_SHEET = "data/spelunky-tiles.png";
+game.exile.Exile.TILE_MAP_DATA_1 = "data/spelunky0.png";
+game.exile.Exile.TILE_MAP_DATA_2 = "data/spelunky1.png";
+game.exile.Exile.CHARACTER_SPRITE_MAP = "data/characters.png";
 haxe.ds.ObjectMap.count = 0;
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
@@ -6599,8 +6375,6 @@ utils.Maths.PI2 = 6.283185307179586;
 utils.Maths.EPS = 1e-6;
 utils.Maths.SQRT2 = 1.414213562373095;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
-wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform vec2 projectionVector;","uniform float size;","attribute vec2 position;","attribute vec4 colour;","varying vec4 vColor;","void main() {","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
-wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec4 vColor;","void main() {","gl_FragColor = vColor;","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
