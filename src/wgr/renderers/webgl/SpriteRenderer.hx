@@ -76,8 +76,7 @@ class SpriteRenderer implements IRenderer
         "varying float vColor;",
         "uniform sampler2D uSampler;",
         "void main(void) {",
-            "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
-            "gl_FragColor = gl_FragColor * vColor;",
+            "gl_FragColor = texture2D(uSampler,vTextureCoord) * vColor;",
         "}"
     ];
 

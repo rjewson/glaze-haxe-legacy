@@ -19,6 +19,7 @@ import engine.systems.MotionControlSystem;
 import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
+import game.exile.entities.EntityFactory;
 import physics.geometry.Polygon;
 import physics.geometry.Vector2D;
 import utils.AssetLoader;
@@ -33,12 +34,12 @@ import worldEngine.WorldData;
 class Exile extends BaseGame
 {
 
-    public static inline var TEXTURE_CONFIG:String = "data/textureConfig.xml";
+    public static inline var TEXTURE_CONFIG:String = "data/sprites.json";
+    public static inline var TEXTURE_DATA:String = "data/sprites.png";
     public static inline var MAP_DATA:String = "data/testMap.tmx";
     public static inline var TILE_SPRITE_SHEET:String = "data/spelunky-tiles.png";
     public static inline var TILE_MAP_DATA_1:String = "data/spelunky0.png";
     public static inline var TILE_MAP_DATA_2:String = "data/spelunky1.png";
-    public static inline var CHARACTER_SPRITE_MAP:String = "data/characters.png";
 
 
     public var tmxMap:TmxMap; 
@@ -55,15 +56,19 @@ class Exile extends BaseGame
 
     public var itemContainer:DisplayObjectContainer;
 
+    public var factory:EntityFactory;
+
     public var mainEngine:Engine;
 
     public function new() {
         super();
-        loadAssets( [TEXTURE_CONFIG,MAP_DATA,TILE_MAP_DATA_1,TILE_MAP_DATA_2,TILE_SPRITE_SHEET,CHARACTER_SPRITE_MAP] );
+        loadAssets( [TEXTURE_CONFIG,TEXTURE_DATA,MAP_DATA,TILE_MAP_DATA_1,TILE_MAP_DATA_2,TILE_SPRITE_SHEET] );
     }
 
 
     override public function prepareEngine() {
+
+        factory = new EntityFactory(tm);
 
         mainEngine = new Engine();
         mainEngine.addSystem(new PhysicsSystem(new WorldData(32,tmxMap,"Tile Layer 1")),0);            
@@ -81,31 +86,10 @@ class Exile extends BaseGame
 
     public function createEntities() {
 
-        var spr1 = createSprite("character",400,380,0,0,"texturechar1");
-        spr1.scale.x = -1;
-        spr1.pivot.x = 48/2;
-        spr1.pivot.y = 72/2;
-
-        var e1 = new Entity()
-        .add(new Position(0,0,0))
-        .add(new Physics(50,50,1,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-        .add(new Display(spr1))
-        .add(new DebugDisplay())
-        .add(new MotionControls())
-        .add(new Camera());
-        mainEngine.addEntity(e1);
-
-        var spr2 = createSprite("character",400,380,0,0,"texturechar1");
-        spr2.scale.x = -1;
-        spr2.pivot.x = 48/2;
-        spr2.pivot.y = 72/2;
-
-        var e2 = new Entity()
-        .add(new Position(0,0,0))
-        .add(new Physics(400,100,0,0,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-        .add(new Display(spr2))
-        .add(new DebugDisplay());
-        mainEngine.addEntity(e2);
+        mainEngine.addEntity(factory.create("player",50,50));
+        mainEngine.addEntity(factory.create("enemy",400,100));
+        
+        mainEngine.addEntity(factory.create("projectile",350,100));
 
     }
 
@@ -115,7 +99,6 @@ class Exile extends BaseGame
         view.renderer.Render(view.camera.viewPortAABB);
         // lightGrid.renderLightGrid();
         // lightGrid.draw();
-        trace("-");
     }
 
     override public function prepareRenderer() {
@@ -127,8 +110,9 @@ class Exile extends BaseGame
         view = new View(800,600,false);
 
         tm  = new TextureManager(view.renderer.gl);
-        tm.AddTexturesFromConfig(assets.assets.get(TEXTURE_CONFIG),assets.assets);
-
+        tm.ParseTexturePackerJSON( assets.assets.get(TEXTURE_CONFIG) , assets.assets.get(TEXTURE_DATA) );
+        // tm.AddTexturesFromConfig(assets.assets.get(TEXTURE_CONFIG),assets.assets);
+js.Lib.debug();
         tileMap = new TileMap();
             view.renderer.AddRenderer(tileMap);
             tileMap.SetSpriteSheet(assets.assets.get(TILE_SPRITE_SHEET));
@@ -148,17 +132,6 @@ class Exile extends BaseGame
         itemContainer = new DisplayObjectContainer();
             itemContainer.id = "itemContainer";
             view.camera.addChild(itemContainer);
-    }
-
-    private function createSprite(id:String,x:Float,y:Float,px:Float,py:Float,tid:String) {
-        var s = new Sprite();
-        s.id = id;
-        s.texture = tm.textures.get(tid);
-        s.position.x = x;
-        s.position.y = y;
-        s.pivot.x = px;
-        s.pivot.y = py;
-        return s;
     }
 
 }

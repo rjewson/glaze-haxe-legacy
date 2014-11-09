@@ -82,14 +82,16 @@ class WebGLBatch
         var frame = sprite.texture.frame;
         var tw = sprite.texture.baseTexture.width;
         var th = sprite.texture.baseTexture.height;
-        
+        var uvs = sprite.texture.uvs;
+
+
         //0
         //Verts
         data[index + 0 ] = sprite.transformedVerts[0]; 
         data[index + 1 ] = sprite.transformedVerts[1];
         //UV
-        data[index + 2 ] = frame.x / tw;
-        data[index + 3 ] = frame.y / th;
+        data[index + 2 ] = uvs[0];//frame.x / tw;
+        data[index + 3 ] = uvs[1];//frame.y / th;
         //Colour
         data[index + 4 ] = sprite.worldAlpha;
 
@@ -98,8 +100,8 @@ class WebGLBatch
         data[index + 5 ] = sprite.transformedVerts[2]; 
         data[index + 6 ] = sprite.transformedVerts[3]; 
         //UV
-        data[index + 7 ] = (frame.x + frame.width) / tw;
-        data[index + 8 ] = frame.y / th;
+        data[index + 7 ] = uvs[2];//(frame.x + frame.width) / tw;
+        data[index + 8 ] = uvs[3];//frame.y / th;
         //Colour
         data[index + 9 ] = sprite.worldAlpha;
 
@@ -108,8 +110,8 @@ class WebGLBatch
         data[index + 10 ] = sprite.transformedVerts[4]; 
         data[index + 11 ] = sprite.transformedVerts[5]; 
         //UV
-        data[index + 12] = (frame.x + frame.width) / tw;
-        data[index + 13] = (frame.y + frame.height) / th; 
+        data[index + 12] = uvs[4];//(frame.x + frame.width) / tw;
+        data[index + 13] = uvs[5];//(frame.y + frame.height) / th; 
         //Colour
         data[index + 14] = sprite.worldAlpha;
 
@@ -118,8 +120,8 @@ class WebGLBatch
         data[index + 15] =  sprite.transformedVerts[6]; 
         data[index + 16] =  sprite.transformedVerts[7];
         //UV
-        data[index + 17] = frame.x / tw;
-        data[index + 18] = (frame.y + frame.height) / th;
+        data[index + 17] = uvs[6];//frame.x / tw;
+        data[index + 18] = uvs[7];//(frame.y + frame.height) / th;
         //Colour
         data[index + 19] = sprite.worldAlpha;
     }

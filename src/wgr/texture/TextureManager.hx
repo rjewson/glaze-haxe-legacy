@@ -5,6 +5,7 @@ import haxe.ds.StringMap;
 import haxe.xml.Fast;
 import js.html.Image;
 import js.html.webgl.RenderingContext;
+import wgr.geom.Point;
 import wgr.geom.Rectangle;
 import wgr.texture.BaseTexture;
 import utils.EventTarget;
@@ -31,25 +32,35 @@ class TextureManager
         return baseTexture;
     }
 
-    public function AddTexturesFromConfig(textureConfig:Dynamic,assets:StringMap<Dynamic>) {   
+    public function ParseTexturePackerJSON(textureConfig:Dynamic,image:Image) {   
         if (!Std.is(textureConfig, String)) 
             return;
-        var source = new Fast(Xml.parse(textureConfig));
-        source = source.node.textureconfig;
-        for (btnode in source.nodes.basetexture) {
-            var id = btnode.att.id;
-            var asset = btnode.att.asset;
-            var baseTextureImage = assets.get(asset);
-            var baseTexture = AddTexture(id,baseTextureImage);
-            for (tnode in btnode.nodes.texture) {
-                var top = Std.parseInt(tnode.att.top);
-                var left = Std.parseInt(tnode.att.left);
-                var width = Std.parseInt(tnode.att.width);
-                var height = Std.parseInt(tnode.att.height);
 
-                textures.set(tnode.att.id,new Texture(baseTexture,new Rectangle(top,left,width,height)));
-            }
+        var baseTexture = AddTexture("1",image);
+
+        var textureData = haxe.Json.parse(textureConfig);
+
+        var fields = Reflect.fields(textureData.frames);
+        for (prop in fields) {
+
+            var frame = Reflect.field(textureData.frames, prop);
+
+            textures.set(prop,
+                new Texture(baseTexture,
+                    new Rectangle(
+                        Std.parseInt(frame.frame.x),
+                        Std.parseInt(frame.frame.y), 
+                        Std.parseInt(frame.frame.w), 
+                        Std.parseInt(frame.frame.h)
+                    ),
+                    new Point(
+                        Std.parseFloat(frame.pivot.x),
+                        Std.parseFloat(frame.pivot.y)
+                    )
+                )
+            );
         }
+
     }
 
 }

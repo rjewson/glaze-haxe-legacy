@@ -12,6 +12,7 @@ class BaseTexture
     public var width:Float;
     public var height:Float;
     public var source:Image;
+    public var resolution:Int;
     public var powerOfTwo:Bool;
 
     public var texture:Texture;
@@ -19,6 +20,7 @@ class BaseTexture
     public function new(source:Image) {
         this.source = source;
         powerOfTwo = false;
+        resolution = 1;
         width = source.width;
         height = source.width;         
     }

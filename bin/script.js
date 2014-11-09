@@ -142,8 +142,25 @@ Math.__name__ = ["Math"];
 var Reflect = function() { };
 $hxClasses["Reflect"] = Reflect;
 Reflect.__name__ = ["Reflect"];
+Reflect.field = function(o,field) {
+	try {
+		return o[field];
+	} catch( e ) {
+		return null;
+	}
+};
 Reflect.setField = function(o,field,value) {
 	o[field] = value;
+};
+Reflect.fields = function(o) {
+	var a = [];
+	if(o != null) {
+		var hasOwnProperty = Object.prototype.hasOwnProperty;
+		for( var f in o ) {
+		if(f != "__id__" && f != "hx__closures__" && hasOwnProperty.call(o,f)) a.push(f);
+		}
+	}
+	return a;
 };
 Reflect.isFunction = function(f) {
 	return typeof(f) == "function" && !(f.__name__ || f.__ename__);
@@ -2124,13 +2141,14 @@ var game = {};
 game.exile = {};
 game.exile.Exile = function() {
 	engine.core.BaseGame.call(this);
-	this.loadAssets(["data/textureConfig.xml","data/testMap.tmx","data/spelunky0.png","data/spelunky1.png","data/spelunky-tiles.png","data/characters.png"]);
+	this.loadAssets(["data/sprites.json","data/sprites.png","data/testMap.tmx","data/spelunky0.png","data/spelunky1.png","data/spelunky-tiles.png"]);
 };
 $hxClasses["game.exile.Exile"] = game.exile.Exile;
 game.exile.Exile.__name__ = ["game","exile","Exile"];
 game.exile.Exile.__super__ = engine.core.BaseGame;
 game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	prepareEngine: function() {
+		this.factory = new game.exile.entities.EntityFactory(this.tm);
 		this.mainEngine = new ash.core.Engine();
 		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(new worldEngine.WorldData(32,this.tmxMap,"Tile Layer 1")),0);
 		this.mainEngine.addSystem(new engine.systems.MotionControlSystem(this.gameLoop.keyboard),1);
@@ -2142,23 +2160,13 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.gameLoop.start();
 	}
 	,createEntities: function() {
-		var spr1 = this.createSprite("character",400,380,0,0,"texturechar1");
-		spr1.scale.x = -1;
-		spr1.pivot.x = 24.;
-		spr1.pivot.y = 36.;
-		var e1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(50,50,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
-		this.mainEngine.addEntity(e1);
-		var spr2 = this.createSprite("character",400,380,0,0,"texturechar1");
-		spr2.scale.x = -1;
-		spr2.pivot.x = 24.;
-		spr2.pivot.y = 36.;
-		var e2 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(400,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.DebugDisplay());
-		this.mainEngine.addEntity(e2);
+		this.mainEngine.addEntity(this.factory.create("player",50,50));
+		this.mainEngine.addEntity(this.factory.create("enemy",400,100));
+		this.mainEngine.addEntity(this.factory.create("projectile",350,100));
 	}
 	,tick: function(time) {
 		this.mainEngine.update(time);
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
-		console.log("-");
 	}
 	,prepareRenderer: function() {
 		this.tmxMap = new engine.map.tmx.TmxMap(this.assets.assets.get("data/testMap.tmx"));
@@ -2166,7 +2174,8 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(this.tmxMap.getLayer("Tile Layer 1"));
 		this.view = new engine.view.View(800,600,false);
 		this.tm = new wgr.texture.TextureManager(this.view.renderer.gl);
-		this.tm.AddTexturesFromConfig(this.assets.assets.get("data/textureConfig.xml"),this.assets.assets);
+		this.tm.ParseTexturePackerJSON(this.assets.assets.get("data/sprites.json"),this.assets.assets.get("data/sprites.png"));
+		debugger;
 		this.tileMap = new wgr.renderers.webgl.TileMap();
 		this.view.renderer.AddRenderer(this.tileMap);
 		this.tileMap.SetSpriteSheet(this.assets.assets.get("data/spelunky-tiles.png"));
@@ -2184,18 +2193,45 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.itemContainer.id = "itemContainer";
 		this.view.camera.addChild(this.itemContainer);
 	}
-	,createSprite: function(id,x,y,px,py,tid) {
+	,__class__: game.exile.Exile
+});
+game.exile.entities = {};
+game.exile.entities.EntityFactory = function(tm) {
+	this.tm = tm;
+};
+$hxClasses["game.exile.entities.EntityFactory"] = game.exile.entities.EntityFactory;
+game.exile.entities.EntityFactory.__name__ = ["game","exile","entities","EntityFactory"];
+game.exile.entities.EntityFactory.prototype = {
+	create: function(name,x,y) {
+		switch(name) {
+		case "player":
+			var spr = this.createSprite("character","character1.png");
+			var player = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+			return player;
+		case "enemy":
+			var spr1 = this.createSprite("character","character2.png");
+			spr1.scale.x = -1;
+			var enemy = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay());
+			return enemy;
+		case "projectile":
+			var spr2 = this.createSprite("character","projectile1.png");
+			var enemy1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2));
+			return enemy1;
+		}
+		return null;
+	}
+	,createSprite: function(id,tid) {
 		var s = new wgr.display.Sprite();
 		s.id = id;
 		s.texture = this.tm.textures.get(tid);
-		s.position.x = x;
-		s.position.y = y;
-		s.pivot.x = px;
-		s.pivot.y = py;
+		s.position.x = 0;
+		s.position.y = 0;
+		s.pivot.x = s.texture.frame.width * s.texture.pivot.x;
+		s.pivot.y = s.texture.frame.height * s.texture.pivot.y;
 		return s;
 	}
-	,__class__: game.exile.Exile
-});
+	,__class__: game.exile.entities.EntityFactory
+};
 var haxe = {};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
@@ -4399,7 +4435,7 @@ utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
 	,LoaderFactory: function(url) {
 		var extention = url.substring(url.length - 3,url.length);
 		if(extention == "png") return new utils.ImageAsset(this);
-		if(extention == "tmx" || extention == "xml") return new utils.BlobAsset(this);
+		if(extention == "tmx" || extention == "xml" || extention == "son") return new utils.BlobAsset(this);
 		return null;
 	}
 	,Load: function() {
@@ -5703,25 +5739,26 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 		var frame = sprite.texture.frame;
 		var tw = sprite.texture.baseTexture.width;
 		var th = sprite.texture.baseTexture.height;
+		var uvs = sprite.texture.uvs;
 		this.data[index] = sprite.transformedVerts[0];
 		this.data[index + 1] = sprite.transformedVerts[1];
-		this.data[index + 2] = frame.x / tw;
-		this.data[index + 3] = frame.y / th;
+		this.data[index + 2] = uvs[0];
+		this.data[index + 3] = uvs[1];
 		this.data[index + 4] = sprite.worldAlpha;
 		this.data[index + 5] = sprite.transformedVerts[2];
 		this.data[index + 6] = sprite.transformedVerts[3];
-		this.data[index + 7] = (frame.x + frame.width) / tw;
-		this.data[index + 8] = frame.y / th;
+		this.data[index + 7] = uvs[2];
+		this.data[index + 8] = uvs[3];
 		this.data[index + 9] = sprite.worldAlpha;
 		this.data[index + 10] = sprite.transformedVerts[4];
 		this.data[index + 11] = sprite.transformedVerts[5];
-		this.data[index + 12] = (frame.x + frame.width) / tw;
-		this.data[index + 13] = (frame.y + frame.height) / th;
+		this.data[index + 12] = uvs[4];
+		this.data[index + 13] = uvs[5];
 		this.data[index + 14] = sprite.worldAlpha;
 		this.data[index + 15] = sprite.transformedVerts[6];
 		this.data[index + 16] = sprite.transformedVerts[7];
-		this.data[index + 17] = frame.x / tw;
-		this.data[index + 18] = (frame.y + frame.height) / th;
+		this.data[index + 17] = uvs[6];
+		this.data[index + 18] = uvs[7];
 		this.data[index + 19] = sprite.worldAlpha;
 	}
 	,Render: function(shader,stage,clip) {
@@ -5903,6 +5940,7 @@ wgr.texture = {};
 wgr.texture.BaseTexture = function(source) {
 	this.source = source;
 	this.powerOfTwo = false;
+	this.resolution = 1;
 	this.width = source.width;
 	this.height = source.width;
 };
@@ -5931,7 +5969,7 @@ wgr.texture.BaseTexture.prototype = {
 	}
 	,__class__: wgr.texture.BaseTexture
 };
-wgr.texture.Texture = function(baseTexture,frame) {
+wgr.texture.Texture = function(baseTexture,frame,pivot) {
 	this.noFrame = false;
 	this.baseTexture = baseTexture;
 	if(frame == null) {
@@ -5939,11 +5977,26 @@ wgr.texture.Texture = function(baseTexture,frame) {
 		this.frame = new wgr.geom.Rectangle(0,0,1,1);
 	} else this.frame = frame;
 	this.trim = new wgr.geom.Point();
+	if(pivot == null) this.pivot = new wgr.geom.Point(); else this.pivot = pivot;
+	this.uvs = new Float32Array(8);
+	this.updateUVS();
 };
 $hxClasses["wgr.texture.Texture"] = wgr.texture.Texture;
 wgr.texture.Texture.__name__ = ["wgr","texture","Texture"];
 wgr.texture.Texture.prototype = {
-	__class__: wgr.texture.Texture
+	updateUVS: function() {
+		var tw = this.baseTexture.width;
+		var th = this.baseTexture.height;
+		this.uvs[0] = this.frame.x / tw;
+		this.uvs[1] = this.frame.y / th;
+		this.uvs[2] = (this.frame.x + this.frame.width) / tw;
+		this.uvs[3] = this.frame.y / th;
+		this.uvs[4] = (this.frame.x + this.frame.width) / tw;
+		this.uvs[5] = (this.frame.y + this.frame.height) / th;
+		this.uvs[6] = this.frame.x / tw;
+		this.uvs[7] = (this.frame.y + this.frame.height) / th;
+	}
+	,__class__: wgr.texture.Texture
 };
 wgr.texture.TextureManager = function(gl) {
 	this.gl = gl;
@@ -5959,26 +6012,17 @@ wgr.texture.TextureManager.prototype = {
 		this.baseTextures.set(id,baseTexture);
 		return baseTexture;
 	}
-	,AddTexturesFromConfig: function(textureConfig,assets) {
+	,ParseTexturePackerJSON: function(textureConfig,image) {
 		if(!(typeof(textureConfig) == "string")) return;
-		var source = new haxe.xml.Fast(Xml.parse(textureConfig));
-		source = source.node.resolve("textureconfig");
-		var $it0 = source.nodes.resolve("basetexture").iterator();
-		while( $it0.hasNext() ) {
-			var btnode = $it0.next();
-			var id = btnode.att.resolve("id");
-			var asset = btnode.att.resolve("asset");
-			var baseTextureImage = assets.get(asset);
-			var baseTexture = this.AddTexture(id,baseTextureImage);
-			var $it1 = btnode.nodes.resolve("texture").iterator();
-			while( $it1.hasNext() ) {
-				var tnode = $it1.next();
-				var top = Std.parseInt(tnode.att.resolve("top"));
-				var left = Std.parseInt(tnode.att.resolve("left"));
-				var width = Std.parseInt(tnode.att.resolve("width"));
-				var height = Std.parseInt(tnode.att.resolve("height"));
-				this.textures.set(tnode.att.resolve("id"),new wgr.texture.Texture(baseTexture,new wgr.geom.Rectangle(top,left,width,height)));
-			}
+		var baseTexture = this.AddTexture("1",image);
+		var textureData = JSON.parse(textureConfig);
+		var fields = Reflect.fields(textureData.frames);
+		var _g = 0;
+		while(_g < fields.length) {
+			var prop = fields[_g];
+			++_g;
+			var frame = Reflect.field(textureData.frames,prop);
+			this.textures.set(prop,new wgr.texture.Texture(baseTexture,new wgr.geom.Rectangle(Std.parseInt(frame.frame.x),Std.parseInt(frame.frame.y),Std.parseInt(frame.frame.w),Std.parseInt(frame.frame.h)),new wgr.geom.Point(Std.parseFloat(frame.pivot.x),Std.parseFloat(frame.pivot.y))));
 		}
 	}
 	,__class__: wgr.texture.TextureManager
@@ -6328,12 +6372,12 @@ ds.IDManager.TRANSIENT_CACHE = (function($this) {
 }(this));
 ds.IDManager.TRANSIENT_POINTER = 0;
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-game.exile.Exile.TEXTURE_CONFIG = "data/textureConfig.xml";
+game.exile.Exile.TEXTURE_CONFIG = "data/sprites.json";
+game.exile.Exile.TEXTURE_DATA = "data/sprites.png";
 game.exile.Exile.MAP_DATA = "data/testMap.tmx";
 game.exile.Exile.TILE_SPRITE_SHEET = "data/spelunky-tiles.png";
 game.exile.Exile.TILE_MAP_DATA_1 = "data/spelunky0.png";
 game.exile.Exile.TILE_MAP_DATA_2 = "data/spelunky1.png";
-game.exile.Exile.CHARACTER_SPRITE_MAP = "data/characters.png";
 haxe.ds.ObjectMap.count = 0;
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
@@ -6378,7 +6422,7 @@ wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];
-wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","gl_FragColor = gl_FragColor * vColor;","}"];
+wgr.renderers.webgl.SpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","gl_FragColor = texture2D(uSampler,vTextureCoord) * vColor;","}"];
 wgr.renderers.webgl.TileMap.TILEMAP_VERTEX_SHADER = ["precision mediump float;","attribute vec2 position;","attribute vec2 texture;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform vec2 viewOffset;","uniform vec2 viewportSize;","uniform vec2 inverseTileTextureSize;","uniform float inverseTileSize;","void main(void) {","   pixelCoord = (texture * viewportSize) + viewOffset;","   texCoord = pixelCoord * inverseTileTextureSize * inverseTileSize;","   gl_Position = vec4(position, 0.0, 1.0);","}"];
 wgr.renderers.webgl.TileMap.TILEMAP_FRAGMENT_SHADER = ["precision mediump float;","varying vec2 pixelCoord;","varying vec2 texCoord;","uniform sampler2D tiles;","uniform sampler2D sprites;","uniform vec2 inverseTileTextureSize;","uniform vec2 inverseSpriteTextureSize;","uniform float tileSize;","void main(void) {","   vec4 tile = texture2D(tiles, texCoord);","   if(tile.x == 1.0 && tile.y == 1.0) { discard; }","   vec2 spriteOffset = floor(tile.xy * 256.0) * tileSize;","   vec2 spriteCoord = mod(pixelCoord, tileSize);","   gl_FragColor = texture2D(sprites, (spriteOffset + spriteCoord) * inverseSpriteTextureSize);","}"];
 worldEngine.tiles.Tile.ZERO = 0;

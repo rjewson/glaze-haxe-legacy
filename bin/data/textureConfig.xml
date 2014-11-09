@@ -5,6 +5,8 @@
     </basetexture> -->
     <basetexture id="char" asset="data/characters.png">
         <texture id="texturechar1" top="0" left="0" width="48" height="72"/>
+        <texture id="texturechar2" top="55" left="0" width="48" height="72"/>
+        <texture id="texturechar3" top="0" left="72" width="48" height="72"/>
     </basetexture>
 <!--     <basetexture id="tiles" asset="data/tilescompressed.png">
         <texture id="something" top="0" left="0" width="50" height="75"/>
