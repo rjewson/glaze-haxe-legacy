@@ -32,11 +32,11 @@ class TextureManager
         return baseTexture;
     }
 
-    public function ParseTexturePackerJSON(textureConfig:Dynamic,image:Image) {   
+    public function ParseTexturePackerJSON(textureConfig:Dynamic,id:String) {   
         if (!Std.is(textureConfig, String)) 
             return;
 
-        var baseTexture = AddTexture("1",image);
+        var baseTexture = baseTextures.get(id);
 
         var textureData = haxe.Json.parse(textureConfig);
 
@@ -60,6 +60,10 @@ class TextureManager
                 )
             );
         }
+
+    }
+
+    public function ParseTexturesFromTiles(tileSize:Int,id:String) {
 
     }
 

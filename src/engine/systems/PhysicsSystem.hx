@@ -5,6 +5,7 @@ import ash.core.Engine;
 import ash.core.NodeList;
 import ash.core.System;
 import engine.components.Position;
+import engine.graphics.StaticLayerDisplayManager;
 import engine.nodes.PhysicsNode;
 import physics.collision.broadphase.managedgrid.ManagedGrid;
 import physics.PhysicsEngine;
@@ -22,6 +23,7 @@ class PhysicsSystem extends System
     public function new(worldData:WorldData) {
         super();
         physicsEngine = new WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),new World(worldData));
+        var staticLayer = new StaticLayerDisplayManager(worldData,600);
         physicsEngine.masslessForces.setTo(0,9);
     }
 

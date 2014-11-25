@@ -2,13 +2,15 @@
 package engine.input;
 
 import js.html.EventTarget;
+import physics.geometry.Vector2D;
 
 class DigitalInput 
 {
 
     public var keyMap : Array<Int>;
-    // public var mousePosition : Vector2D;
-    // public var mousePreviousPosition : Vector2D;
+    public var mousePosition : Vector2D;
+    public var mousePreviousPosition : Vector2D;
+    public var mouseOffset : Vector2D;
     private var frameRef : Int;
     private var target : EventTarget;
 
@@ -17,24 +19,28 @@ class DigitalInput
         for (i in 0...255) {
             keyMap[i] = 0;
         }
-        // mousePosition = new Vector2D();
-        // mousePreviousPosition = new Vector2D();
+        mousePosition = new Vector2D();
+        mousePreviousPosition = new Vector2D();
+        mouseOffset = new Vector2D();
         frameRef = 1;       
     }
     
     public function InputTarget(target : EventTarget) : Void {
+
         this.target = target;
         target.addEventListener("keydown",KeyDown,false);
         target.addEventListener("keyup",KeyUp,false);
-        // target.addEventListener(MouseEvent.MOUSE_DOWN, MouseDown, false, 0, true);
-        // target.addEventListener(MouseEvent.MOUSE_UP, MouseUp, false, 0, true);
+        target.addEventListener("mousedown",MouseDown,false);
+        target.addEventListener("mouseup",MouseUp,false);
+        target.addEventListener("mousemove",MouseMove,false);
         // target.addEventListener(MouseEvent.RIGHT_MOUSE_DOWN, RightMouseDown, false, 0, true);
         // target.addEventListener(MouseEvent.RIGHT_MOUSE_UP, RightMouseUp, false, 0, true);
         
     }
 
-    public function Update() : Void {
-        if ( target == null ) return;
+    public function Update(x:Float,y:Float) : Void {
+        mouseOffset.x = x;
+        mouseOffset.y = y;
         frameRef++;
         // mousePreviousPosition.x = mousePosition.x;
         // mousePreviousPosition.y = mousePosition.y;
@@ -52,13 +58,23 @@ class DigitalInput
         keyMap[event.keyCode] = 0;
     }
 
-    // public function MouseDown(event : MouseEvent) : Void {
-    //     keyMap[200] = frameRef;
-    // }
+    public function MouseDown(event : Dynamic) : Bool {
+        keyMap[200] = frameRef;
+        return false;
+    }
 
-    // public function MouseUp(event : MouseEvent) : Void {
-    //     keyMap[200] = 0;
-    // }
+    public function MouseUp(event : Dynamic) : Bool {
+        keyMap[200] = 0;
+        return false;
+    }
+
+    public function MouseMove(event : Dynamic) : Bool {
+        mousePreviousPosition.x = mousePosition.x;
+        mousePreviousPosition.y = mousePosition.y;
+        mousePosition.x = event.offsetX;
+        mousePosition.y = event.offsetY;
+        return false;
+    }
 
     // public function RightMouseDown(event : MouseEvent) : Void {
     //     keyMap[201] = frameRef;

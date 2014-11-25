@@ -1370,8 +1370,6 @@ ds.IDManager.ReleaseTransientID = function(id) {
 var engine = {};
 engine.GameLoop = function() {
 	this.isRunning = false;
-	this.keyboard = new engine.input.DigitalInput();
-	this.keyboard.InputTarget(window.document);
 };
 $hxClasses["engine.GameLoop"] = engine.GameLoop;
 engine.GameLoop.__name__ = ["engine","GameLoop"];
@@ -1379,7 +1377,6 @@ engine.GameLoop.prototype = {
 	update: function(timestamp) {
 		this.delta = timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
-		this.keyboard.Update();
 		if(this.updateFunc != null) this.updateFunc(this.delta);
 		this.rafID = window.requestAnimationFrame($bind(this,this.update));
 		return false;
@@ -1466,14 +1463,48 @@ engine.core.BaseGame.prototype = {
 		this.assets.Load();
 	}
 	,prepare: function(event) {
+		this.preInit();
 		this.prepareRenderer();
 		this.prepareEngine();
+	}
+	,preInit: function() {
 	}
 	,prepareEngine: function() {
 	}
 	,prepareRenderer: function() {
 	}
 	,__class__: engine.core.BaseGame
+};
+engine.graphics = {};
+engine.graphics.IGameGraphics = function() { };
+$hxClasses["engine.graphics.IGameGraphics"] = engine.graphics.IGameGraphics;
+engine.graphics.IGameGraphics.__name__ = ["engine","graphics","IGameGraphics"];
+engine.graphics.StaticLayerDisplayManager = function(worldData,cellSize) {
+	this.worldData = worldData;
+	this.grid = new ds.Grid2D(Math.ceil(worldData.worldBounds.width() / cellSize),Math.ceil(worldData.worldBounds.height() / cellSize),cellSize);
+	this.hashItems();
+};
+$hxClasses["engine.graphics.StaticLayerDisplayManager"] = engine.graphics.StaticLayerDisplayManager;
+engine.graphics.StaticLayerDisplayManager.__name__ = ["engine","graphics","StaticLayerDisplayManager"];
+engine.graphics.StaticLayerDisplayManager.prototype = {
+	hashItems: function() {
+		var data = this.worldData.tmxMap.getObjectGroup("foreground");
+		var _g = 0;
+		var _g1 = data.objects;
+		while(_g < _g1.length) {
+			var item = _g1[_g];
+			++_g;
+			if(item.gid >= 0) {
+				var tileSet = this.worldData.tmxMap.getGidOwner(item.gid);
+				var props = tileSet.getPropertiesByGid(item.gid);
+				console.log(props);
+			}
+		}
+		console.log(data);
+	}
+	,update: function(viewport) {
+	}
+	,__class__: engine.graphics.StaticLayerDisplayManager
 };
 engine.input = {};
 engine.input.DigitalInput = function() {
@@ -1483,6 +1514,9 @@ engine.input.DigitalInput = function() {
 		var i = _g++;
 		this.keyMap[i] = 0;
 	}
+	this.mousePosition = new physics.geometry.Vector2D();
+	this.mousePreviousPosition = new physics.geometry.Vector2D();
+	this.mouseOffset = new physics.geometry.Vector2D();
 	this.frameRef = 1;
 };
 $hxClasses["engine.input.DigitalInput"] = engine.input.DigitalInput;
@@ -1492,9 +1526,13 @@ engine.input.DigitalInput.prototype = {
 		this.target = target;
 		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
 		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
+		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
+		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
 	}
-	,Update: function() {
-		if(this.target == null) return;
+	,Update: function(x,y) {
+		this.mouseOffset.x = x;
+		this.mouseOffset.y = y;
 		this.frameRef++;
 	}
 	,KeyDown: function(event) {
@@ -1502,6 +1540,21 @@ engine.input.DigitalInput.prototype = {
 	}
 	,KeyUp: function(event) {
 		this.keyMap[event.keyCode] = 0;
+	}
+	,MouseDown: function(event) {
+		this.keyMap[200] = this.frameRef;
+		return false;
+	}
+	,MouseUp: function(event) {
+		this.keyMap[200] = 0;
+		return false;
+	}
+	,MouseMove: function(event) {
+		this.mousePreviousPosition.x = this.mousePosition.x;
+		this.mousePreviousPosition.y = this.mousePosition.y;
+		this.mousePosition.x = event.offsetX;
+		this.mousePosition.y = event.offsetY;
+		return false;
 	}
 	,Pressed: function(keyCode) {
 		return this.keyMap[keyCode] > 0;
@@ -1744,8 +1797,8 @@ engine.map.tmx.TmxObjectGroup = function(source,parent) {
 	this.name = source.att.resolve("name");
 	if(source.has.resolve("x")) this.x = Std.parseInt(source.att.resolve("x")); else this.x = 0;
 	if(source.has.resolve("y")) this.y = Std.parseInt(source.att.resolve("y")); else this.y = 0;
-	this.width = Std.parseInt(source.att.resolve("width"));
-	this.height = Std.parseInt(source.att.resolve("height"));
+	if(source.has.resolve("width")) this.width = Std.parseInt(source.att.resolve("width")); else this.width = 0;
+	if(source.has.resolve("height")) this.height = Std.parseInt(source.att.resolve("height")); else this.height = 0;
 	if(source.has.resolve("visible") && source.att.resolve("visible") == "1") this.visible = true; else this.visible = false;
 	if(source.has.resolve("opacity")) this.opacity = Std.parseFloat(source.att.resolve("opacity")); else this.opacity = 0;
 	var node;
@@ -2046,6 +2099,7 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 engine.systems.PhysicsSystem = function(worldData) {
 	ash.core.System.call(this);
 	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),new worldEngine.World(worldData));
+	var staticLayer = new engine.graphics.StaticLayerDisplayManager(worldData,600);
 	this.physicsEngine.masslessForces.setTo(0,9);
 };
 $hxClasses["engine.systems.PhysicsSystem"] = engine.systems.PhysicsSystem;
@@ -2121,16 +2175,15 @@ engine.systems.RenderSystem.prototype = $extend(ash.core.System.prototype,{
 	,__class__: engine.systems.RenderSystem
 });
 engine.view = {};
-engine.view.View = function(width,height,debug) {
+engine.view.View = function(width,height,camera,debug) {
 	this.stage = new wgr.display.Stage();
-	this.camera = new wgr.display.Camera();
-	this.stage.addChild(this.camera);
+	this.camera = camera;
+	this.stage.addChild(camera);
 	this.canvasView = js.Boot.__cast(window.document.getElementById("view") , HTMLCanvasElement);
-	this.renderer = new wgr.renderers.webgl.WebGLRenderer(this.stage,this.camera,this.canvasView,width,height);
+	this.renderer = new wgr.renderers.webgl.WebGLRenderer(this.stage,camera,this.canvasView,width,height);
 	this.debugView = js.Boot.__cast(window.document.getElementById("viewDebug") , HTMLCanvasElement);
-	this.debugRenderer = new wgr.renderers.canvas.CanvasDebugView(this.debugView,this.camera,width,height);
-	this.camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
-	this.camera.Resize(this.renderer.width,this.renderer.height);
+	this.debugRenderer = new wgr.renderers.canvas.CanvasDebugView(this.debugView,camera,width,height);
+	camera.Resize(this.renderer.width,this.renderer.height);
 };
 $hxClasses["engine.view.View"] = engine.view.View;
 engine.view.View.__name__ = ["engine","view","View"];
@@ -2148,10 +2201,11 @@ game.exile.Exile.__name__ = ["game","exile","Exile"];
 game.exile.Exile.__super__ = engine.core.BaseGame;
 game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	prepareEngine: function() {
-		this.factory = new game.exile.entities.EntityFactory(this.tm);
 		this.mainEngine = new ash.core.Engine();
-		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(new worldEngine.WorldData(32,this.tmxMap,"Tile Layer 1")),0);
-		this.mainEngine.addSystem(new engine.systems.MotionControlSystem(this.gameLoop.keyboard),1);
+		this.factory = new game.exile.entities.EntityFactory(this.tm);
+		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(this.worldData),0);
+		this.mainEngine.addSystem(new engine.systems.MotionControlSystem(this.digitalInput),1);
+		this.mainEngine.addSystem(new game.exile.systems.PlayerSystem(this.digitalInput,this.factory),1);
 		this.mainEngine.addSystem(new engine.systems.CameraControlSystem(this.view.camera),4);
 		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.itemContainer),5);
 		this.mainEngine.addSystem(new engine.systems.DebugRenderSystem(this.view.debugRenderer),6);
@@ -2162,20 +2216,28 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,createEntities: function() {
 		this.mainEngine.addEntity(this.factory.create("player",50,50));
 		this.mainEngine.addEntity(this.factory.create("enemy",400,100));
-		this.mainEngine.addEntity(this.factory.create("projectile",350,100));
 	}
 	,tick: function(time) {
+		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 		this.mainEngine.update(time);
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
 	}
-	,prepareRenderer: function() {
+	,preInit: function() {
+		this.digitalInput = new engine.input.DigitalInput();
+		this.digitalInput.InputTarget(window.document);
 		this.tmxMap = new engine.map.tmx.TmxMap(this.assets.assets.get("data/testMap.tmx"));
 		this.tmxMap.tilesets[0].set_image(this.assets.assets.get("data/spelunky-tiles.png"));
+		this.worldData = new worldEngine.WorldData(32,this.tmxMap,"Tile Layer 1");
+		this.camera = new wgr.display.Camera();
+		this.camera.worldExtentsAABB = new wgr.geom.AABB(this.worldData.worldBounds.t,this.worldData.worldBounds.r,this.worldData.worldBounds.b,this.worldData.worldBounds.l);
+		this.camera.worldExtentsAABB.shrink(this.worldData.tileSize);
+		this.view = new engine.view.View(800,600,this.camera,false);
+	}
+	,prepareRenderer: function() {
 		this.mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(this.tmxMap.getLayer("Tile Layer 1"));
-		this.view = new engine.view.View(800,600,false);
 		this.tm = new wgr.texture.TextureManager(this.view.renderer.gl);
-		this.tm.ParseTexturePackerJSON(this.assets.assets.get("data/sprites.json"),this.assets.assets.get("data/sprites.png"));
-		debugger;
+		this.tm.AddTexture("data/sprites.png",this.assets.assets.get("data/sprites.png"));
+		this.tm.ParseTexturePackerJSON(this.assets.assets.get("data/sprites.json"),"data/sprites.png");
 		this.tileMap = new wgr.renderers.webgl.TileMap();
 		this.view.renderer.AddRenderer(this.tileMap);
 		this.tileMap.SetSpriteSheet(this.assets.assets.get("data/spelunky-tiles.png"));
@@ -2195,6 +2257,14 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	}
 	,__class__: game.exile.Exile
 });
+game.exile.components = {};
+game.exile.components.Player = function() {
+};
+$hxClasses["game.exile.components.Player"] = game.exile.components.Player;
+game.exile.components.Player.__name__ = ["game","exile","components","Player"];
+game.exile.components.Player.prototype = {
+	__class__: game.exile.components.Player
+};
 game.exile.entities = {};
 game.exile.entities.EntityFactory = function(tm) {
 	this.tm = tm;
@@ -2206,7 +2276,9 @@ game.exile.entities.EntityFactory.prototype = {
 		switch(name) {
 		case "player":
 			var spr = this.createSprite("character","character1.png");
-			var player = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+			var player = new ash.core.Entity().add(new game.exile.components.Player()).add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
+			var physics1 = player.components.h.get(Type.getClassName(engine.components.Physics));
+			physics1.body.group = 1;
 			return player;
 		case "enemy":
 			var spr1 = this.createSprite("character","character2.png");
@@ -2232,6 +2304,59 @@ game.exile.entities.EntityFactory.prototype = {
 	}
 	,__class__: game.exile.entities.EntityFactory
 };
+game.exile.nodes = {};
+game.exile.nodes.PlayerNode = function() { };
+$hxClasses["game.exile.nodes.PlayerNode"] = game.exile.nodes.PlayerNode;
+game.exile.nodes.PlayerNode.__name__ = ["game","exile","nodes","PlayerNode"];
+game.exile.nodes.PlayerNode._getComponents = function() {
+	if(game.exile.nodes.PlayerNode._components == null) {
+		game.exile.nodes.PlayerNode._components = new ash.ClassMap();
+		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(game.exile.components.Player),"player");
+		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(engine.components.Position),"position");
+		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
+	}
+	return game.exile.nodes.PlayerNode._components;
+};
+game.exile.nodes.PlayerNode.__super__ = ash.core.Node;
+game.exile.nodes.PlayerNode.prototype = $extend(ash.core.Node.prototype,{
+	__class__: game.exile.nodes.PlayerNode
+});
+game.exile.systems = {};
+game.exile.systems.PlayerSystem = function(input,entityFactory) {
+	this.input = input;
+	this.entityFactory = entityFactory;
+	ash.core.System.call(this);
+};
+$hxClasses["game.exile.systems.PlayerSystem"] = game.exile.systems.PlayerSystem;
+game.exile.systems.PlayerSystem.__name__ = ["game","exile","systems","PlayerSystem"];
+game.exile.systems.PlayerSystem.__super__ = ash.core.System;
+game.exile.systems.PlayerSystem.prototype = $extend(ash.core.System.prototype,{
+	update: function(time) {
+		var player = this.nodes.head;
+		if(this.input.JustPressed(200)) {
+			console.log("fire");
+			var position = player.position.position;
+			var projectile = this.entityFactory.create("projectile",position.x,position.y);
+			var physics = projectile.components.h.get(Type.getClassName(engine.components.Physics));
+			physics.body.SetMass(0.1);
+			physics.body.group = 1;
+			var viewPos = this.input.mousePosition.plus(this.input.mouseOffset);
+			physics.body.SetVelocity(((function($this) {
+				var $r;
+				viewPos.x -= position.x;
+				viewPos.y -= position.y;
+				$r = viewPos;
+				return $r;
+			}(this))).unitEquals().multEquals(10));
+			this.engine.addEntity(projectile);
+		}
+	}
+	,addToEngine: function(engine) {
+		this.nodes = engine.getNodeList(game.exile.nodes.PlayerNode);
+		this.engine = engine;
+	}
+	,__class__: game.exile.systems.PlayerSystem
+});
 var haxe = {};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
@@ -3782,6 +3907,9 @@ physics.geometry.AABB.prototype = {
 	,Union: function(position,aabb,aabbPosition) {
 		return new physics.geometry.AABB(Math.max(this.l + position.x,aabb.l + aabbPosition.x),Math.min(this.b + position.y,aabb.b + aabbPosition.y),Math.min(this.r + position.x,aabb.r + aabbPosition.x),Math.max(this.t + position.y,aabb.t + aabbPosition.y));
 	}
+	,clone: function() {
+		return new physics.geometry.AABB(this.l,this.b,this.r,this.t);
+	}
 	,__class__: physics.geometry.AABB
 };
 physics.geometry.Axis = function(n,d) {
@@ -4991,6 +5119,12 @@ wgr.geom.AABB.prototype = {
 		this.t += delatHeight / 2;
 		this.b -= delatHeight / 2;
 	}
+	,shrink: function(i) {
+		this.l += i;
+		this.r -= i;
+		this.t += i;
+		this.b -= i;
+	}
 	,__class__: wgr.geom.AABB
 };
 wgr.geom.Matrix3 = function() { };
@@ -6012,9 +6146,9 @@ wgr.texture.TextureManager.prototype = {
 		this.baseTextures.set(id,baseTexture);
 		return baseTexture;
 	}
-	,ParseTexturePackerJSON: function(textureConfig,image) {
+	,ParseTexturePackerJSON: function(textureConfig,id) {
 		if(!(typeof(textureConfig) == "string")) return;
-		var baseTexture = this.AddTexture("1",image);
+		var baseTexture = this.baseTextures.get(id);
 		var textureData = JSON.parse(textureConfig);
 		var fields = Reflect.fields(textureData.frames);
 		var _g = 0;
@@ -6024,6 +6158,8 @@ wgr.texture.TextureManager.prototype = {
 			var frame = Reflect.field(textureData.frames,prop);
 			this.textures.set(prop,new wgr.texture.Texture(baseTexture,new wgr.geom.Rectangle(Std.parseInt(frame.frame.x),Std.parseInt(frame.frame.y),Std.parseInt(frame.frame.w),Std.parseInt(frame.frame.h)),new wgr.geom.Point(Std.parseFloat(frame.pivot.x),Std.parseFloat(frame.pivot.y))));
 		}
+	}
+	,ParseTexturesFromTiles: function(tileSize,id) {
 	}
 	,__class__: wgr.texture.TextureManager
 };
@@ -6036,10 +6172,7 @@ worldEngine.World = function(worldData) {
 $hxClasses["worldEngine.World"] = worldEngine.World;
 worldEngine.World.__name__ = ["worldEngine","World"];
 worldEngine.World.prototype = {
-	VisibleArea: function(tileBoundary) {
-		return new physics.geometry.AABB(tileBoundary * this.worldData.tileSize,(this.worldData.height - tileBoundary) * this.worldData.tileSize,(this.worldData.width - tileBoundary) * this.worldData.tileSize,tileBoundary * this.worldData.tileSize);
-	}
-	,__class__: worldEngine.World
+	__class__: worldEngine.World
 };
 worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
 	this.tileSize = tileSize;
@@ -6047,9 +6180,8 @@ worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
 	this.tmxMap = tmxMap;
 	this.tileFactory = new worldEngine.tiles.TileFactory();
 	this.collisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer(collisionLayerName));
-	this.width = 1000;
-	this.height = 1000;
-	this.worldCellSize = 1000;
+	this.worldBounds = new physics.geometry.AABB(0,this.collisionData.h * tileSize,this.collisionData.w * tileSize,0);
+	this.worldCellSize = this.worldBounds.width();
 };
 $hxClasses["worldEngine.WorldData"] = worldEngine.WorldData;
 worldEngine.WorldData.__name__ = ["worldEngine","WorldData"];
@@ -6063,16 +6195,6 @@ worldEngine.WorldData.prototype = {
 		return value * this.invTileSize | 0;
 	}
 	,ProcessTiles: function() {
-		var _g1 = 0;
-		var _g = this.height;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.width;
-			while(_g3 < _g2) {
-				var x = _g3++;
-			}
-		}
 	}
 	,ProcessObjects: function() {
 	}
@@ -6082,7 +6204,7 @@ worldEngine.WorldData.prototype = {
 };
 worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,world) {
 	this.world = world;
-	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,world.worldData.width / world.worldData.worldCellSize | 0,world.worldData.height / world.worldData.worldCellSize | 0,world.worldData.worldCellSize);
+	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,Math.ceil(world.worldData.worldBounds.width() / world.worldData.worldCellSize),Math.ceil(world.worldData.worldBounds.height() / world.worldData.worldCellSize),world.worldData.worldCellSize);
 	this.tempFeature = new physics.dynamics.Feature(world.worldBody,null,new physics.dynamics.Material());
 	this.tempFeature.position = new physics.geometry.Vector2D();
 	this.collisionData = world.worldData.collisionData;

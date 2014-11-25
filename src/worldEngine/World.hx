@@ -35,9 +35,9 @@ class World
 		
 	}
 
-	public function VisibleArea(tileBoundary:Int):AABB {
-		return new AABB(tileBoundary * worldData.tileSize, (worldData.height - tileBoundary) * worldData.tileSize, (worldData.width - tileBoundary) * worldData.tileSize, tileBoundary * worldData.tileSize);
-	}
+	// public function VisibleArea(tileBoundary:Int):AABB {
+	// 	return new AABB(tileBoundary * worldData.tileSize, (worldData.height - tileBoundary) * worldData.tileSize, (worldData.width - tileBoundary) * worldData.tileSize, tileBoundary * worldData.tileSize);
+	// }
 
 	
 /*	

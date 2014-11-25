@@ -17,9 +17,9 @@ class View
     public var debugView:CanvasElement;
     public var debugRenderer:CanvasDebugView;
 
-    public function new(width:Int,height:Int,debug:Bool) {
+    public function new(width:Int,height:Int,camera:Camera,debug:Bool) {
         this.stage = new Stage();
-        this.camera = new Camera();
+        this.camera = camera;
         this.stage.addChild(camera);
 
         this.canvasView = cast(Browser.document.getElementById("view"),CanvasElement);
@@ -28,7 +28,6 @@ class View
         this.debugView = cast(Browser.document.getElementById("viewDebug"),CanvasElement);
         this.debugRenderer = new CanvasDebugView(debugView,camera,width,height);
 
-        camera.worldExtentsAABB = new wgr.geom.AABB(0,2000,2000,0);
         camera.Resize(renderer.width,renderer.height);
     }
 

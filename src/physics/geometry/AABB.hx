@@ -45,7 +45,7 @@ class AABB
 		if (aabb.t < this.t) this.t = aabb.t;
 		if (aabb.b > this.b) this.b = aabb.b;
 	}
-	
+
 	inline public function reset() : Void {
 		l = Constants.FMAX; 
 		r = -Constants.FMAX; 
@@ -76,6 +76,10 @@ class AABB
 			Math.min(this.b+position.y, aabb.b+aabbPosition.y),
 			Math.min(this.r+position.x, aabb.r+aabbPosition.x),
 			Math.max(this.t+position.y, aabb.t+aabbPosition.y));
+	}
+
+	public function clone():physics.geometry.AABB {
+		return new physics.geometry.AABB(l,b,r,t);
 	}
 	
 }

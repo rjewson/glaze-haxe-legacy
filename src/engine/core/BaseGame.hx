@@ -24,10 +24,14 @@ class BaseGame
     }
 
     public function prepare(event) {
+        preInit();
         prepareRenderer();
         prepareEngine();
     }
 
+    public function preInit() {
+
+    }
 
     public function prepareEngine() {
 

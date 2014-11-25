@@ -14,21 +14,16 @@ class GameLoop
     public var delta:Float;
     private var rafID:Int;
 
-    public var keyboard:DigitalInput;
-
     public var updateFunc:Float->Void;
 
     public function new() {
         isRunning = false;
-        keyboard = new DigitalInput();
-        keyboard.InputTarget(Browser.document);
     }
 
     public function update(timestamp:Float):Bool {
         //Do stuff
         delta = timestamp - prevAnimationTime;
         prevAnimationTime = timestamp;
-        keyboard.Update();
         if (updateFunc!=null)
             updateFunc(delta);
         rafID = Browser.window.requestAnimationFrame(update);

@@ -76,4 +76,11 @@ class AABB
         b -= delatHeight/2;
     }
 
+    public function shrink(i:Float) {
+        l+=i;
+        r-=i;
+        t+=i;
+        b-=i;
+    }
+
 }

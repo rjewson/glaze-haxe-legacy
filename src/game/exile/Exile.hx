@@ -11,6 +11,8 @@ import engine.components.MotionControls;
 import engine.components.Physics;
 import engine.components.Position;
 import engine.core.BaseGame;
+import engine.graphics.StaticLayerDisplayManager;
+import engine.input.DigitalInput;
 import engine.map.tmx.TmxLayer;
 import engine.map.tmx.TmxMap;
 import engine.systems.CameraControlSystem;
@@ -20,9 +22,12 @@ import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
 import game.exile.entities.EntityFactory;
+import game.exile.systems.PlayerSystem;
+import js.Browser;
 import physics.geometry.Polygon;
 import physics.geometry.Vector2D;
 import utils.AssetLoader;
+import wgr.display.Camera;
 import wgr.display.DisplayObjectContainer;
 import wgr.display.Sprite;
 import wgr.particle.PointSpriteParticleEngine;
@@ -48,6 +53,8 @@ class Exile extends BaseGame
     public var view:View;
     public var tm:TextureManager;
 
+    public var digitalInput:DigitalInput;
+
     public var tileMap:TileMap;
 
     public var spriteRender:SpriteRenderer;
@@ -60,19 +67,24 @@ class Exile extends BaseGame
 
     public var mainEngine:Engine;
 
+    public var worldData:WorldData;
+
+    public var camera:Camera;
+
     public function new() {
         super();
         loadAssets( [TEXTURE_CONFIG,TEXTURE_DATA,MAP_DATA,TILE_MAP_DATA_1,TILE_MAP_DATA_2,TILE_SPRITE_SHEET] );
     }
 
-
     override public function prepareEngine() {
+
+        mainEngine = new Engine();
 
         factory = new EntityFactory(tm);
 
-        mainEngine = new Engine();
-        mainEngine.addSystem(new PhysicsSystem(new WorldData(32,tmxMap,"Tile Layer 1")),0);            
-        mainEngine.addSystem(new MotionControlSystem(gameLoop.keyboard),1);
+        mainEngine.addSystem(new PhysicsSystem(worldData),0);  
+        mainEngine.addSystem(new MotionControlSystem(digitalInput),1);
+        mainEngine.addSystem(new PlayerSystem(digitalInput,factory),1);
         mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
         mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
         mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
@@ -85,34 +97,43 @@ class Exile extends BaseGame
     }
 
     public function createEntities() {
-
         mainEngine.addEntity(factory.create("player",50,50));
         mainEngine.addEntity(factory.create("enemy",400,100));
-        
-        mainEngine.addEntity(factory.create("projectile",350,100));
-
     }
 
 
     public function tick(time:Float) {
+        digitalInput.Update(-camera.position.x,-camera.position.y);
         mainEngine.update(time);
         view.renderer.Render(view.camera.viewPortAABB);
         // lightGrid.renderLightGrid();
         // lightGrid.draw();
     }
 
-    override public function prepareRenderer() {
+    override public function preInit() {
+
+        digitalInput = new DigitalInput();
+        digitalInput.InputTarget(Browser.document);
+
         tmxMap = new TmxMap(assets.assets.get(MAP_DATA));
         tmxMap.tilesets[0].set_image(assets.assets.get(TILE_SPRITE_SHEET));
-        
+        worldData = new WorldData(32,tmxMap,"Tile Layer 1");
+
+        camera = new Camera();
+        camera.worldExtentsAABB = new wgr.geom.AABB( worldData.worldBounds.t , worldData.worldBounds.r , worldData.worldBounds.b , worldData.worldBounds.l );
+        camera.worldExtentsAABB.shrink(worldData.tileSize);
+
+        view = new View(800,600,camera,false);
+    }
+
+    override public function prepareRenderer() {
+
         mapData = engine.map.tmx.TmxLayer.layerToCoordTexture(tmxMap.getLayer("Tile Layer 1"));
 
-        view = new View(800,600,false);
-
         tm  = new TextureManager(view.renderer.gl);
-        tm.ParseTexturePackerJSON( assets.assets.get(TEXTURE_CONFIG) , assets.assets.get(TEXTURE_DATA) );
-        // tm.AddTexturesFromConfig(assets.assets.get(TEXTURE_CONFIG),assets.assets);
-js.Lib.debug();
+        tm.AddTexture(TEXTURE_DATA, assets.assets.get(TEXTURE_DATA) );
+        tm.ParseTexturePackerJSON( assets.assets.get(TEXTURE_CONFIG) , TEXTURE_DATA );
+
         tileMap = new TileMap();
             view.renderer.AddRenderer(tileMap);
             tileMap.SetSpriteSheet(assets.assets.get(TILE_SPRITE_SHEET));

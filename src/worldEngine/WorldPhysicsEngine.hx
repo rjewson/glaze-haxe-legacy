@@ -28,7 +28,8 @@ class WorldPhysicsEngine extends ManagedGrid
 	public function new(fps : Int, pps : Int, narrowphase:INarrowphase, world:World) 
 	{
 		this.world = world;
-		super(fps,pps,narrowphase,Std.int(world.worldData.width / world.worldData.worldCellSize), Std.int(world.worldData.height / world.worldData.worldCellSize), world.worldData.worldCellSize);
+
+		super(fps,pps,narrowphase,Math.ceil(world.worldData.worldBounds.width()/world.worldData.worldCellSize), Math.ceil(world.worldData.worldBounds.height()/world.worldData.worldCellSize), world.worldData.worldCellSize);
 
 		tempFeature = new Feature(world.worldBody, null, new Material());
 		tempFeature.position = new Vector2D();
