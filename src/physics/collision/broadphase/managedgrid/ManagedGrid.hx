@@ -1,6 +1,7 @@
 
 package physics.collision.broadphase.managedgrid;
 
+import ds.AABBTree;
 import ds.Grid2D;
 import physics.collision.broadphase.managedgrid.Cell;
 import physics.collision.narrowphase.INarrowphase;
@@ -13,11 +14,15 @@ class ManagedGrid extends PhysicsEngine
     public var grid:Grid2D<Cell>;
     public var worldExtents:physics.geometry.AABB;
 
+    // public var tree:AABBTree<Body>;
+
     public function new(fps : Int, pps : Int, narrowphase:INarrowphase, worldGridWidth:Int, worldGridHeight:Int, cellSize:Int) 
     {
         super(fps, pps, narrowphase);
         
         grid = new Grid2D<Cell>(worldGridWidth, worldGridHeight, cellSize);
+
+        // tree = new ds.AABBTree<Body>(10, new ds.aabbtree.InsertStrategyArea());
 
         init();
     }
@@ -55,6 +60,11 @@ class ManagedGrid extends PhysicsEngine
                 }
             }
         }
+        // var ids = tree.getLeavesIds();
+        // for (id in ids) {
+        //     var e = tree.getData(id);
+        //     tree.updateLeaf(id, e.position.x,e.position.y,e.aabb.width(),e.aabb.height() );
+        // }
     }
 
    override public function Collide() {
@@ -72,6 +82,7 @@ class ManagedGrid extends PhysicsEngine
     override public function AddBody(body : Body) : Void {
         super.AddBody(body);
         AddBodyToCell(body);
+        // tree.insertLeaf(body,body.position.x,body.position.y,body.aabb.width(),body.aabb.height());
     }
 
     public function AddBodyToCell(body:Body) {

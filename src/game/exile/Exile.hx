@@ -30,6 +30,7 @@ import utils.AssetLoader;
 import wgr.display.Camera;
 import wgr.display.DisplayObjectContainer;
 import wgr.display.Sprite;
+import wgr.particle.BlockSpriteParticleEngine;
 import wgr.particle.PointSpriteParticleEngine;
 import wgr.renderers.webgl.SpriteRenderer;
 import wgr.renderers.webgl.TileMap;
@@ -60,6 +61,7 @@ class Exile extends BaseGame
     public var spriteRender:SpriteRenderer;
 
     public var pointParticleEngine:PointSpriteParticleEngine;
+    public var blockParticleEngine:BlockSpriteParticleEngine;
 
     public var itemContainer:DisplayObjectContainer;
 
@@ -87,7 +89,7 @@ class Exile extends BaseGame
         mainEngine.addSystem(new PlayerSystem(digitalInput,factory),1);
         mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
         mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
-        mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
+        // mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
         createEntities();
 
@@ -105,6 +107,13 @@ class Exile extends BaseGame
     public function tick(time:Float) {
         digitalInput.Update(-camera.position.x,-camera.position.y);
         mainEngine.update(time);
+
+        blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,6,255,255,0,0);
+        blockParticleEngine.Update();
+        //pointParticleEngine.EmitParticle(100,100,0,0,0,0,10000,1,false,false,null,0,64,64,0,0);
+        // pointParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,0,64,64);
+        //pointParticleEngine.Update();
+
         view.renderer.Render(view.camera.viewPortAABB);
         // lightGrid.renderLightGrid();
         // lightGrid.draw();
@@ -146,9 +155,12 @@ class Exile extends BaseGame
             spriteRender.AddStage(view.stage);
             view.renderer.AddRenderer(spriteRender);
 
-        pointParticleEngine = new PointSpriteParticleEngine(14000,1000/60);
-            pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
-            view.renderer.AddRenderer(pointParticleEngine.renderer);
+        // pointParticleEngine = new PointSpriteParticleEngine(14000,1000/60);
+        //     pointParticleEngine.renderer.SetSpriteSheet(tileMap.spriteSheet,16,8,8);
+        //     view.renderer.AddRenderer(pointParticleEngine.renderer);
+
+        blockParticleEngine = new BlockSpriteParticleEngine(4000,1000/60);
+            view.renderer.AddRenderer(blockParticleEngine.renderer);
 
         itemContainer = new DisplayObjectContainer();
             itemContainer.id = "itemContainer";

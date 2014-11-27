@@ -2,19 +2,19 @@
 package wgr.particle;
 
 import wgr.geom.Point;
-import wgr.particle.PointSpriteParticle;
+import wgr.particle.BlockSpriteParticle;
 import wgr.renderers.webgl.PointSpriteLightMapRenderer;
 import wgr.renderers.webgl.PointSpriteRenderer;
 
-class PointSpriteParticleEngine implements IParticleEngine
+class BlockSpriteParticleEngine implements IParticleEngine
 {
     public var particleCount:Int;
     public var deltaTime:Float;
     public var invDeltaTime:Float;
-    public var activeParticles:PointSpriteParticle;
-    public var cachedParticles:PointSpriteParticle;
+    public var activeParticles:BlockSpriteParticle;
+    public var cachedParticles:BlockSpriteParticle;
         
-    public var renderer:PointSpriteRenderer;
+    public var renderer:PointSpriteLightMapRenderer;
     public var ZERO_FORCE:Point;
 
     public function new(particleCount:Int, deltaTime:Float) 
@@ -24,11 +24,11 @@ class PointSpriteParticleEngine implements IParticleEngine
         this.invDeltaTime = deltaTime / 1000;
         ZERO_FORCE = new Point();
         for (i in 0...particleCount) {
-            var p = new PointSpriteParticle();
+            var p = new BlockSpriteParticle();
             p.next = cachedParticles;
             cachedParticles = p;
         }
-        this.renderer = new PointSpriteRenderer();
+        this.renderer = new PointSpriteLightMapRenderer();
         this.renderer.ResizeBatch(particleCount);
     }
     
@@ -49,7 +49,7 @@ class PointSpriteParticleEngine implements IParticleEngine
             activeParticles = particle;
         }
         
-        particle.Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce!=null?externalForce:ZERO_FORCE, data1, data2, data3, data4);
+        particle.Initalize(x, y, vX, vY, fX, fY, ttl, damping, decayable ? deltaTime/ttl : 0, top, externalForce!=null?externalForce:ZERO_FORCE, data1, data2, data3, data4, data5);
 
         return true;
     }
@@ -73,7 +73,7 @@ class PointSpriteParticleEngine implements IParticleEngine
                                 
                 particle = next;
             } else {
-                renderer.AddSpriteToBatch(Std.int(particle.type),particle.pX,particle.pY,particle.size,Std.int(particle.alpha*255),0xFF,0xFF,0xFF);
+                renderer.AddSpriteToBatch(particle.pX,particle.pY,Std.int(particle.alpha*255),particle.red,particle.green,particle.blue);
                 particle = particle.next;
             }
         }

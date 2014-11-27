@@ -176,6 +176,9 @@ Std.__name__ = ["Std"];
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
 };
+Std["int"] = function(x) {
+	return x | 0;
+};
 Std.parseInt = function(x) {
 	var v = parseInt(x,10);
 	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
@@ -1237,6 +1240,670 @@ ash.tools.ListIteratingSystem.prototype = $extend(ash.core.System.prototype,{
 	,__class__: ash.tools.ListIteratingSystem
 });
 var ds = {};
+ds.AABB = function(x,y,width,height) {
+	if(height == null) height = 0;
+	if(width == null) width = 0;
+	if(y == null) y = 0;
+	if(x == null) x = 0;
+	this.minX = x;
+	this.minY = y;
+	this.maxX = x + width;
+	this.maxY = y + height;
+};
+$hxClasses["ds.AABB"] = ds.AABB;
+ds.AABB.__name__ = ["ds","AABB"];
+ds.AABB.prototype = {
+	get_x: function() {
+		return this.minX;
+	}
+	,set_x: function(value) {
+		this.maxX += value - this.minX;
+		return this.minX = value;
+	}
+	,get_y: function() {
+		return this.minY;
+	}
+	,set_y: function(value) {
+		this.maxY += value - this.minY;
+		return this.minY = value;
+	}
+	,get_width: function() {
+		return this.maxX - this.minX;
+	}
+	,set_width: function(value) {
+		return this.maxX = this.minX + value;
+	}
+	,get_height: function() {
+		return this.maxY - this.minY;
+	}
+	,set_height: function(value) {
+		return this.maxY = this.minY + value;
+	}
+	,setTo: function(x,y,width,height) {
+		if(height == null) height = 0;
+		if(width == null) width = 0;
+		this.minX = x;
+		this.minY = y;
+		this.maxX = x + width;
+		this.maxY = y + height;
+	}
+	,inflate: function(deltaX,deltaY) {
+		this.minX -= deltaX;
+		this.minY -= deltaY;
+		this.maxX += deltaX;
+		this.maxY += deltaY;
+		return this;
+	}
+	,getPerimeter: function() {
+		return 2 * (this.maxX - this.minX + (this.maxY - this.minY));
+	}
+	,getArea: function() {
+		return (this.maxX - this.minX) * (this.maxY - this.minY);
+	}
+	,getCenterX: function() {
+		return this.minX + .5 * (this.maxX - this.minX);
+	}
+	,getCenterY: function() {
+		return this.minY + .5 * (this.maxY - this.minY);
+	}
+	,union: function(aabb) {
+		this.minX = Math.min(this.minX,aabb.minX);
+		this.minY = Math.min(this.minY,aabb.minY);
+		this.maxX = Math.max(this.maxX,aabb.maxX);
+		this.maxY = Math.max(this.maxY,aabb.maxY);
+		return this;
+	}
+	,asUnionOf: function(aabb1,aabb2) {
+		this.minX = Math.min(aabb1.minX,aabb2.minX);
+		this.minY = Math.min(aabb1.minY,aabb2.minY);
+		this.maxX = Math.max(aabb1.maxX,aabb2.maxX);
+		this.maxY = Math.max(aabb1.maxY,aabb2.maxY);
+		return this;
+	}
+	,overlaps: function(aabb) {
+		return !(this.minX > aabb.maxX || this.maxX < aabb.minX || this.minY > aabb.maxY || this.maxY < aabb.minY);
+	}
+	,contains: function(aabb) {
+		return aabb.minX >= this.minX && aabb.maxX <= this.maxX && aabb.minY >= this.minY && aabb.maxY <= this.maxY;
+	}
+	,getIntersection: function(aabb) {
+		var intersection = this.clone();
+		intersection.minX = Math.max(this.minX,aabb.minX);
+		intersection.maxX = Math.min(this.maxX,aabb.maxX);
+		intersection.minY = Math.max(this.minY,aabb.minY);
+		intersection.maxY = Math.min(this.maxY,aabb.maxY);
+		if(intersection.minX > intersection.maxX || intersection.minY > intersection.maxY) return null; else return intersection;
+	}
+	,clone: function() {
+		return new ds.AABB(this.minX,this.minY,this.maxX - this.minX,this.maxY - this.minY);
+	}
+	,fromAABB: function(aabb) {
+		this.minX = aabb.minX;
+		this.minY = aabb.minY;
+		this.maxX = aabb.maxX;
+		this.maxY = aabb.maxY;
+		return this;
+	}
+	,toString: function() {
+		return "[x:" + this.minX + " y:" + this.minY + " w:" + (this.maxX - this.minX) + " h:" + (this.maxY - this.minY) + "]";
+	}
+	,__class__: ds.AABB
+};
+ds.HitBehaviour = { __ename__ : true, __constructs__ : ["SKIP","INCLUDE","INCLUDE_AND_STOP","STOP"] };
+ds.HitBehaviour.SKIP = ["SKIP",0];
+ds.HitBehaviour.SKIP.__enum__ = ds.HitBehaviour;
+ds.HitBehaviour.INCLUDE = ["INCLUDE",1];
+ds.HitBehaviour.INCLUDE.__enum__ = ds.HitBehaviour;
+ds.HitBehaviour.INCLUDE_AND_STOP = ["INCLUDE_AND_STOP",2];
+ds.HitBehaviour.INCLUDE_AND_STOP.__enum__ = ds.HitBehaviour;
+ds.HitBehaviour.STOP = ["STOP",3];
+ds.HitBehaviour.STOP.__enum__ = ds.HitBehaviour;
+ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowthFactor) {
+	if(poolGrowthFactor == null) poolGrowthFactor = 2;
+	if(initialPoolCapacity == null) initialPoolCapacity = 64;
+	if(fattenDelta == null) fattenDelta = 10;
+	this.root = null;
+	this.maxId = 0;
+	this.numLeaves = 0;
+	this.numNodes = 0;
+	this.isValidationEnabled = true;
+	this.fattenDelta = fattenDelta;
+	if(insertStrategy != null) this.insertStrategy = insertStrategy; else this.insertStrategy = new ds.aabbtree.InsertStrategyPerimeter();
+	this.pool = new ds.aabbtree.NodePool(initialPoolCapacity,poolGrowthFactor);
+	this.unusedIds = [];
+	this.nodes = [];
+	this.leaves = new haxe.ds.IntMap();
+};
+$hxClasses["ds.AABBTree"] = ds.AABBTree;
+ds.AABBTree.__name__ = ["ds","AABBTree"];
+ds.AABBTree.segmentIntersect = function(p0x,p0y,p1x,p1y,q0x,q0y,q1x,q1y) {
+	var intX;
+	var intY;
+	var a1;
+	var a2;
+	var b1;
+	var b2;
+	var c1;
+	var c2;
+	a1 = p1y - p0y;
+	b1 = p0x - p1x;
+	c1 = p1x * p0y - p0x * p1y;
+	a2 = q1y - q0y;
+	b2 = q0x - q1x;
+	c2 = q1x * q0y - q0x * q1y;
+	var denom = a1 * b2 - a2 * b1;
+	if(denom == 0) return false;
+	intX = (b1 * c2 - b2 * c1) / denom;
+	intY = (a2 * c1 - a1 * c2) / denom;
+	if(ds.AABBTree.sqr(intX - p1x) + ds.AABBTree.sqr(intY - p1y) > ds.AABBTree.sqr(p0x - p1x) + ds.AABBTree.sqr(p0y - p1y)) return false;
+	if(ds.AABBTree.sqr(intX - p0x) + ds.AABBTree.sqr(intY - p0y) > ds.AABBTree.sqr(p0x - p1x) + ds.AABBTree.sqr(p0y - p1y)) return false;
+	if(ds.AABBTree.sqr(intX - q1x) + ds.AABBTree.sqr(intY - q1y) > ds.AABBTree.sqr(q0x - q1x) + ds.AABBTree.sqr(q0y - q1y)) return false;
+	if(ds.AABBTree.sqr(intX - q0x) + ds.AABBTree.sqr(intY - q0y) > ds.AABBTree.sqr(q0x - q1x) + ds.AABBTree.sqr(q0y - q1y)) return false;
+	return true;
+};
+ds.AABBTree.distanceSquared = function(px,py,qx,qy) {
+	return ds.AABBTree.sqr(px - qx) + ds.AABBTree.sqr(py - qy);
+};
+ds.AABBTree.sqr = function(x) {
+	return x * x;
+};
+ds.AABBTree.assert = function(cond) {
+	if(!cond) throw "ASSERT FAILED!";
+};
+ds.AABBTree.prototype = {
+	get_numNodes: function() {
+		return this.nodes.length;
+	}
+	,get_height: function() {
+		if(this.root != null) return this.root.invHeight; else return -1;
+	}
+	,iterator: function() {
+		return new ds.AABBTreeIterator(this);
+	}
+	,insertLeaf: function(data,x,y,width,height) {
+		if(height == null) height = 0;
+		if(width == null) width = 0;
+		var leafNode = this.pool.get(x,y,width,height,data,null,this.getNextId());
+		leafNode.aabb.inflate(this.fattenDelta,this.fattenDelta);
+		leafNode.invHeight = 0;
+		this.nodes[leafNode.id] = leafNode;
+		var v = leafNode.id;
+		this.leaves.set(leafNode.id,v);
+		v;
+		this.numLeaves++;
+		if(this.root == null) {
+			this.root = leafNode;
+			return leafNode.id;
+		}
+		var leafAABB = leafNode.aabb;
+		var combinedAABB = new ds.AABB();
+		var left;
+		var right;
+		var node = this.root;
+		try {
+			while(!(node.left == null)) {
+				var _g = this.insertStrategy.choose(leafAABB,node);
+				switch(_g[1]) {
+				case 0:
+					throw "__break__";
+					break;
+				case 1:
+					node = node.left;
+					break;
+				case 2:
+					node = node.right;
+					break;
+				}
+			}
+		} catch( e ) { if( e != "__break__" ) throw e; }
+		var sibling = node;
+		var oldParent = sibling.parent;
+		combinedAABB.asUnionOf(leafAABB,sibling.aabb);
+		var newParent = this.pool.get(combinedAABB.minX,combinedAABB.minY,combinedAABB.maxX - combinedAABB.minX,combinedAABB.maxY - combinedAABB.minY,null,oldParent,this.getNextId());
+		newParent.invHeight = sibling.invHeight + 1;
+		this.nodes[newParent.id] = newParent;
+		if(oldParent != null) {
+			if(oldParent.left == sibling) oldParent.left = newParent; else oldParent.right = newParent;
+		} else this.root = newParent;
+		newParent.left = sibling;
+		newParent.right = leafNode;
+		sibling.parent = newParent;
+		leafNode.parent = newParent;
+		node = leafNode.parent;
+		while(node != null) {
+			node = this.nodes[this.balance(node.id)];
+			left = node.left;
+			right = node.right;
+			ds.AABBTree.assert(left != null);
+			ds.AABBTree.assert(right != null);
+			node.invHeight = 1 + Std["int"](Math.max(left.invHeight,right.invHeight));
+			node.aabb.asUnionOf(left.aabb,right.aabb);
+			node = node.parent;
+		}
+		this.validate();
+		return leafNode.id;
+	}
+	,updateLeaf: function(leafId,x,y,width,height,dx,dy) {
+		if(dy == null) dy = 0;
+		if(dx == null) dx = 0;
+		if(height == null) height = 0;
+		if(width == null) width = 0;
+		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
+		var newAABB = new ds.AABB(x,y,width,height);
+		if(leafNode.aabb.contains(newAABB)) return false;
+		var data = leafNode.data;
+		this.removeLeaf(leafId);
+		dx *= 2;
+		dy *= 2;
+		if(dx < 0) {
+			x += dx;
+			width -= dx;
+		} else width += dx;
+		if(dy < 0) {
+			y += dy;
+			height -= dy;
+		} else height += dy;
+		var newId = this.insertLeaf(data,x,y,width,height);
+		ds.AABBTree.assert(newId == leafId);
+		return true;
+	}
+	,removeLeaf: function(leafId) {
+		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
+		this.leaves.remove(leafId);
+		if(leafNode == this.root) {
+			this.disposeNode(leafId);
+			this.root = null;
+			return;
+		}
+		var parent = leafNode.parent;
+		var grandParent = parent.parent;
+		var sibling;
+		if(parent.left == leafNode) sibling = parent.right; else sibling = parent.left;
+		if(grandParent != null) {
+			if(grandParent.left == parent) grandParent.left = sibling; else grandParent.right = sibling;
+			sibling.parent = grandParent;
+			var node = grandParent;
+			while(node != null) {
+				node = this.nodes[this.balance(node.id)];
+				var left = node.left;
+				var right = node.right;
+				node.aabb.asUnionOf(left.aabb,right.aabb);
+				node.invHeight = 1 + Std["int"](Math.max(left.invHeight,right.invHeight));
+				node = node.parent;
+			}
+		} else {
+			this.root = sibling;
+			this.root.parent = null;
+		}
+		ds.AABBTree.assert(parent.id != -1);
+		this.disposeNode(parent.id);
+		this.disposeNode(leafId);
+		ds.AABBTree.assert(this.numLeaves == ((function($this) {
+			var $r;
+			var _g = [];
+			var $it0 = $this.leaves.keys();
+			while( $it0.hasNext() ) {
+				var k = $it0.next();
+				_g.push(k);
+			}
+			$r = _g;
+			return $r;
+		}(this))).length);
+		this.validate();
+	}
+	,clear: function(resetPool) {
+		if(resetPool == null) resetPool = false;
+		var count = this.get_numNodes();
+		while(count > 0) {
+			var node = this.nodes[count - 1];
+			if(node != null) this.disposeNode(node.id);
+			count--;
+		}
+		this.root = null;
+		this.nodes = [];
+		this.leaves = new haxe.ds.IntMap();
+		this.unusedIds = [];
+		this.maxId = 0;
+		if(resetPool) this.pool.reset();
+		ds.AABBTree.assert(this.get_numNodes() == 0);
+	}
+	,rebuild: function() {
+		if(this.root == null) return;
+		var _g = 0;
+		var _g1 = this.nodes;
+		while(_g < _g1.length) {
+			var node = _g1[_g];
+			++_g;
+			if(node == null) continue;
+			if(!(node.left == null)) this.disposeNode(node.id); else node.parent = null;
+		}
+		var leafIds;
+		var _g2 = [];
+		var $it0 = this.leaves.keys();
+		while( $it0.hasNext() ) {
+			var id = $it0.next();
+			_g2.push(id);
+		}
+		leafIds = _g2;
+		var aabb = new ds.AABB();
+		var count = leafIds.length;
+		while(count > 1) {
+			var minCost = Math.POSITIVE_INFINITY;
+			var iMin = -1;
+			var jMin = -1;
+			var _g11 = 0;
+			while(_g11 < count) {
+				var i = _g11++;
+				var iAABB = this.nodes[leafIds[i]].aabb;
+				var _g21 = i + 1;
+				while(_g21 < count) {
+					var j = _g21++;
+					var jAABB = this.nodes[leafIds[j]].aabb;
+					aabb.asUnionOf(iAABB,jAABB);
+					var cost = aabb.getPerimeter();
+					if(cost < minCost) {
+						iMin = i;
+						jMin = j;
+						minCost = cost;
+					}
+				}
+			}
+			var left = this.nodes[leafIds[iMin]];
+			var right = this.nodes[leafIds[jMin]];
+			aabb.asUnionOf(left.aabb,right.aabb);
+			var parent = this.pool.get(aabb.minX,aabb.minY,aabb.maxX - aabb.minX,aabb.maxY - aabb.minY,null,null,this.getNextId());
+			parent.left = left;
+			parent.right = right;
+			parent.invHeight = Std["int"](1 + Math.max(left.invHeight,right.invHeight));
+			this.nodes[parent.id] = parent;
+			left.parent = parent;
+			right.parent = parent;
+			leafIds[iMin] = parent.id;
+			leafIds[jMin] = leafIds[count - 1];
+			count--;
+		}
+		this.root = this.nodes[leafIds[0]];
+		this.validate();
+	}
+	,getLeavesData: function(into) {
+		var res;
+		if(into != null) res = into; else res = [];
+		var $it0 = this.leaves.keys();
+		while( $it0.hasNext() ) {
+			var id = $it0.next();
+			res.push(this.nodes[id].data);
+		}
+		return res;
+	}
+	,getLeavesIds: function(into) {
+		var res;
+		if(into != null) res = into; else res = [];
+		var $it0 = this.leaves.keys();
+		while( $it0.hasNext() ) {
+			var id = $it0.next();
+			res.push(id);
+		}
+		return res;
+	}
+	,getData: function(leafId) {
+		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
+		return leafNode.data;
+	}
+	,getFatAABB: function(leafId) {
+		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
+		return leafNode.aabb.clone();
+	}
+	,query: function(x,y,width,height,strictMode,into,callback) {
+		if(strictMode == null) strictMode = false;
+		if(height == null) height = 0;
+		if(width == null) width = 0;
+		var res;
+		if(into != null) res = into; else res = new Array();
+		if(this.root == null) return res;
+		var stack = [this.root];
+		var queryAABB = new ds.AABB(x,y,width,height);
+		var cnt = 0;
+		while(stack.length > 0) {
+			var node = stack.pop();
+			cnt++;
+			if(queryAABB.overlaps(node.aabb)) {
+				if(node.left == null && (!strictMode || strictMode && queryAABB.contains(node.aabb))) {
+					if(callback != null) {
+						var hitBehaviour = callback(node.data,node.id);
+						if(hitBehaviour == ds.HitBehaviour.INCLUDE || hitBehaviour == ds.HitBehaviour.INCLUDE_AND_STOP) res.push(node.data);
+						if(hitBehaviour == ds.HitBehaviour.STOP || hitBehaviour == ds.HitBehaviour.INCLUDE_AND_STOP) break;
+					} else res.push(node.data);
+				} else {
+					if(node.left != null) stack.push(node.left);
+					if(node.right != null) stack.push(node.right);
+				}
+			}
+		}
+		return res;
+	}
+	,queryPoint: function(x,y,into,callback) {
+		return this.query(x,y,0,0,false,into,callback);
+	}
+	,rayCast: function(fromX,fromY,toX,toY,into,callback) {
+		var _g = this;
+		var res;
+		if(into != null) res = into; else res = new Array();
+		if(this.root == null) return res;
+		var queryAABBResultsIds = [];
+		var rayAABBCallback = function(data,id) {
+			var node = _g.nodes[id];
+			var aabb = node.aabb;
+			var fromPointAABB = new ds.AABB(fromX,fromY);
+			var toPointAABB = new ds.AABB(toX,toY);
+			var hit = false;
+			var _g1 = 0;
+			while(_g1 < 4) {
+				var i = _g1++;
+				switch(i) {
+				case 0:
+					hit = ds.AABBTree.segmentIntersect(fromX,fromY,toX,toY,aabb.minX,aabb.minY,aabb.maxX,aabb.minY);
+					break;
+				case 1:
+					hit = ds.AABBTree.segmentIntersect(fromX,fromY,toX,toY,aabb.minX,aabb.minY,aabb.minX,aabb.maxY);
+					break;
+				case 2:
+					hit = ds.AABBTree.segmentIntersect(fromX,fromY,toX,toY,aabb.minX,aabb.maxY,aabb.maxX,aabb.maxY);
+					break;
+				case 3:
+					hit = ds.AABBTree.segmentIntersect(fromX,fromY,toX,toY,aabb.maxX,aabb.minY,aabb.maxX,aabb.maxY);
+					break;
+				default:
+				}
+				if(hit) break;
+			}
+			if(hit || !hit && aabb.contains(fromPointAABB)) queryAABBResultsIds.push(id);
+			return ds.HitBehaviour.SKIP;
+		};
+		var tmp;
+		var rayAABB = new ds.AABB(fromX,fromY,toX - fromX,toY - fromY);
+		if(rayAABB.minX > rayAABB.maxX) {
+			tmp = rayAABB.maxX;
+			rayAABB.maxX = rayAABB.minX;
+			rayAABB.minX = tmp;
+		}
+		if(rayAABB.minY > rayAABB.maxY) {
+			tmp = rayAABB.maxY;
+			rayAABB.maxY = rayAABB.minY;
+			rayAABB.minY = tmp;
+		}
+		this.query(rayAABB.minX,rayAABB.minY,rayAABB.maxX - rayAABB.minX,rayAABB.maxY - rayAABB.minY,false,null,rayAABBCallback);
+		var _g2 = 0;
+		while(_g2 < queryAABBResultsIds.length) {
+			var id1 = queryAABBResultsIds[_g2];
+			++_g2;
+			var node1 = this.nodes[id1];
+			if(callback != null) {
+				var hitBehaviour = callback(node1.data,node1.id);
+				if(hitBehaviour == ds.HitBehaviour.INCLUDE || hitBehaviour == ds.HitBehaviour.INCLUDE_AND_STOP) res.push(node1.data);
+				if(hitBehaviour == ds.HitBehaviour.STOP || hitBehaviour == ds.HitBehaviour.INCLUDE_AND_STOP) break;
+			} else res.push(node1.data);
+		}
+		return res;
+	}
+	,getNextId: function() {
+		var newId;
+		if(this.unusedIds.length > 0 && this.unusedIds[this.unusedIds.length - 1] < this.maxId) newId = this.unusedIds.pop(); else newId = this.maxId++;
+		return newId;
+	}
+	,disposeNode: function(id) {
+		ds.AABBTree.assert(this.nodes[id] != null);
+		var node = this.nodes[id];
+		if(node.left == null) this.numLeaves--;
+		this.nodes[node.id] = null;
+		this.unusedIds.push(node.id);
+		this.pool.put(node);
+	}
+	,balance: function(nodeId) {
+		var A = this.nodes[nodeId];
+		ds.AABBTree.assert(A != null);
+		if(A.left == null || A.invHeight < 2) return A.id;
+		var B = A.left;
+		var C = A.right;
+		var balanceValue = C.invHeight - B.invHeight;
+		if(balanceValue > 1) return this.rotateLeft(A,B,C);
+		if(balanceValue < -1) return this.rotateRight(A,B,C);
+		return A.id;
+	}
+	,getMaxBalance: function() {
+		var maxBalance = 0;
+		var _g1 = 0;
+		var _g = this.nodes.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var node = this.nodes[i];
+			if(node.invHeight <= 1 || node == null) continue;
+			ds.AABBTree.assert(!(node.left == null));
+			var left = node.left;
+			var right = node.right;
+			var balance = Math.abs(right.invHeight - left.invHeight);
+			maxBalance = Std["int"](Math.max(maxBalance,balance));
+		}
+		return maxBalance;
+	}
+	,rotateLeft: function(parentNode,leftNode,rightNode) {
+		var F = rightNode.left;
+		var G = rightNode.right;
+		rightNode.left = parentNode;
+		rightNode.parent = parentNode.parent;
+		parentNode.parent = rightNode;
+		if(rightNode.parent != null) {
+			if(rightNode.parent.left == parentNode) rightNode.parent.left = rightNode; else {
+				ds.AABBTree.assert(rightNode.parent.right == parentNode);
+				rightNode.parent.right = rightNode;
+			}
+		} else this.root = rightNode;
+		if(F.invHeight > G.invHeight) {
+			rightNode.right = F;
+			parentNode.right = G;
+			G.parent = parentNode;
+			parentNode.aabb.asUnionOf(leftNode.aabb,G.aabb);
+			rightNode.aabb.asUnionOf(parentNode.aabb,F.aabb);
+			parentNode.invHeight = 1 + Std["int"](Math.max(leftNode.invHeight,G.invHeight));
+			rightNode.invHeight = 1 + Std["int"](Math.max(parentNode.invHeight,F.invHeight));
+		} else {
+			rightNode.right = G;
+			parentNode.right = F;
+			F.parent = parentNode;
+			parentNode.aabb.asUnionOf(leftNode.aabb,F.aabb);
+			rightNode.aabb.asUnionOf(parentNode.aabb,G.aabb);
+			parentNode.invHeight = 1 + Std["int"](Math.max(leftNode.invHeight,F.invHeight));
+			rightNode.invHeight = 1 + Std["int"](Math.max(parentNode.invHeight,G.invHeight));
+		}
+		return rightNode.id;
+	}
+	,rotateRight: function(parentNode,leftNode,rightNode) {
+		var D = leftNode.left;
+		var E = leftNode.right;
+		leftNode.left = parentNode;
+		leftNode.parent = parentNode.parent;
+		parentNode.parent = leftNode;
+		if(leftNode.parent != null) {
+			if(leftNode.parent.left == parentNode) leftNode.parent.left = leftNode; else {
+				ds.AABBTree.assert(leftNode.parent.right == parentNode);
+				leftNode.parent.right = leftNode;
+			}
+		} else this.root = leftNode;
+		if(D.invHeight > E.invHeight) {
+			leftNode.right = D;
+			parentNode.left = E;
+			E.parent = parentNode;
+			parentNode.aabb.asUnionOf(rightNode.aabb,E.aabb);
+			leftNode.aabb.asUnionOf(parentNode.aabb,D.aabb);
+			parentNode.invHeight = 1 + Std["int"](Math.max(rightNode.invHeight,E.invHeight));
+			leftNode.invHeight = 1 + Std["int"](Math.max(parentNode.invHeight,D.invHeight));
+		} else {
+			leftNode.right = E;
+			parentNode.left = D;
+			D.parent = parentNode;
+			parentNode.aabb.asUnionOf(rightNode.aabb,D.aabb);
+			leftNode.aabb.asUnionOf(parentNode.aabb,E.aabb);
+			parentNode.invHeight = 1 + Std["int"](Math.max(rightNode.invHeight,D.invHeight));
+			leftNode.invHeight = 1 + Std["int"](Math.max(parentNode.invHeight,E.invHeight));
+		}
+		return leftNode.id;
+	}
+	,getNode: function(id) {
+		ds.AABBTree.assert(id >= 0 && this.nodes[id] != null);
+		return this.nodes[id];
+	}
+	,validateNode: function(id) {
+		var aabb = new ds.AABB();
+		var root = this.nodes[id];
+		var stack = [root];
+		while(stack.length > 0) {
+			var node = stack.pop();
+			ds.AABBTree.assert(node != null);
+			var left = node.left;
+			var right = node.right;
+			if(node.left == null) {
+				ds.AABBTree.assert(left == null);
+				ds.AABBTree.assert(right == null);
+				node.invHeight = 0;
+				ds.AABBTree.assert(this.leaves.get(node.id) >= 0);
+				continue;
+			}
+			ds.AABBTree.assert(left.id >= 0);
+			ds.AABBTree.assert(right.id >= 0);
+			ds.AABBTree.assert(node.invHeight == 1 + Math.max(left.invHeight,right.invHeight));
+			aabb.asUnionOf(left.aabb,right.aabb);
+			ds.AABBTree.assert(Math.abs(node.aabb.minX - aabb.minX) < 0.000001);
+			ds.AABBTree.assert(Math.abs(node.aabb.minY - aabb.minY) < 0.000001);
+			ds.AABBTree.assert(Math.abs(node.aabb.maxX - aabb.maxX) < 0.000001);
+			ds.AABBTree.assert(Math.abs(node.aabb.maxY - aabb.maxY) < 0.000001);
+		}
+	}
+	,validate: function() {
+		if(this.root != null) this.validateNode(this.root.id);
+		ds.AABBTree.assert(this.numLeaves >= 0 && this.numLeaves <= this.get_numNodes());
+	}
+	,__class__: ds.AABBTree
+};
+ds.AABBTreeIterator = function(tree) {
+	this.tree = tree;
+	this.it = 0;
+	this.length = tree.numLeaves;
+	this.ids = tree.getLeavesIds();
+};
+$hxClasses["ds.AABBTreeIterator"] = ds.AABBTreeIterator;
+ds.AABBTreeIterator.__name__ = ["ds","AABBTreeIterator"];
+ds.AABBTreeIterator.prototype = {
+	hasNext: function() {
+		return this.it < this.length;
+	}
+	,next: function() {
+		return this.tree.nodes[this.ids[this.it++]].data;
+	}
+	,__class__: ds.AABBTreeIterator
+};
 ds.Array2D = function(width,height,buffer) {
 	this.w = width;
 	this.h = height;
@@ -1366,6 +2033,152 @@ ds.IDManager.GetTransientID = function() {
 ds.IDManager.ReleaseTransientID = function(id) {
 	ds.IDManager.TRANSIENT_POINTER--;
 	ds.IDManager.TRANSIENT_CACHE[ds.IDManager.TRANSIENT_POINTER] = id;
+};
+ds.aabbtree = {};
+ds.aabbtree.IDebugRenderer = function() { };
+$hxClasses["ds.aabbtree.IDebugRenderer"] = ds.aabbtree.IDebugRenderer;
+ds.aabbtree.IDebugRenderer.__name__ = ["ds","aabbtree","IDebugRenderer"];
+ds.aabbtree.IDebugRenderer.prototype = {
+	__class__: ds.aabbtree.IDebugRenderer
+};
+ds.aabbtree.DebugRenderer = function() {
+};
+$hxClasses["ds.aabbtree.DebugRenderer"] = ds.aabbtree.DebugRenderer;
+ds.aabbtree.DebugRenderer.__name__ = ["ds","aabbtree","DebugRenderer"];
+ds.aabbtree.DebugRenderer.__interfaces__ = [ds.aabbtree.IDebugRenderer];
+ds.aabbtree.DebugRenderer.prototype = {
+	drawAABB: function(aabb,isLeaf,level) {
+	}
+	,drawNode: function(node,isLeaf,level) {
+		this.drawAABB(node.aabb,node.left == null,level);
+	}
+	,drawTree: function(tree) {
+		if(tree.root == null) return;
+		var height;
+		if(tree.root != null) height = tree.root.invHeight; else height = -1;
+		var stack = [tree.root];
+		while(stack.length > 0) {
+			var node = stack.pop();
+			if(!(node.left == null)) {
+				stack.push(node.left);
+				stack.push(node.right);
+			}
+			this.drawNode(node,node.left == null,height - node.invHeight);
+		}
+	}
+	,__class__: ds.aabbtree.DebugRenderer
+};
+ds.aabbtree.InsertChoice = { __ename__ : true, __constructs__ : ["PARENT","DESCEND_LEFT","DESCEND_RIGHT"] };
+ds.aabbtree.InsertChoice.PARENT = ["PARENT",0];
+ds.aabbtree.InsertChoice.PARENT.__enum__ = ds.aabbtree.InsertChoice;
+ds.aabbtree.InsertChoice.DESCEND_LEFT = ["DESCEND_LEFT",1];
+ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
+ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
+ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
+ds.aabbtree.IInsertStrategy = function() { };
+$hxClasses["ds.aabbtree.IInsertStrategy"] = ds.aabbtree.IInsertStrategy;
+ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
+ds.aabbtree.IInsertStrategy.prototype = {
+	__class__: ds.aabbtree.IInsertStrategy
+};
+ds.aabbtree.InsertStrategyPerimeter = function() {
+	this.combinedAABB = new ds.AABB();
+};
+$hxClasses["ds.aabbtree.InsertStrategyPerimeter"] = ds.aabbtree.InsertStrategyPerimeter;
+ds.aabbtree.InsertStrategyPerimeter.__name__ = ["ds","aabbtree","InsertStrategyPerimeter"];
+ds.aabbtree.InsertStrategyPerimeter.__interfaces__ = [ds.aabbtree.IInsertStrategy];
+ds.aabbtree.InsertStrategyPerimeter.prototype = {
+	choose: function(leafAABB,parent,extraData) {
+		var left = parent.left;
+		var right = parent.right;
+		var perimeter = parent.aabb.getPerimeter();
+		this.combinedAABB.asUnionOf(parent.aabb,leafAABB);
+		var combinedPerimeter = this.combinedAABB.getPerimeter();
+		var costParent = 2 * combinedPerimeter;
+		var costDescend = 2 * (combinedPerimeter - perimeter);
+		this.combinedAABB.asUnionOf(leafAABB,left.aabb);
+		var costLeft = this.combinedAABB.getPerimeter() + costDescend;
+		if(!(left.left == null)) costLeft -= left.aabb.getPerimeter();
+		this.combinedAABB.asUnionOf(leafAABB,right.aabb);
+		var costRight = this.combinedAABB.getPerimeter() + costDescend;
+		if(!(right.left == null)) costRight -= right.aabb.getPerimeter();
+		if(costParent < costLeft && costParent < costRight) return ds.aabbtree.InsertChoice.PARENT;
+		if(costLeft < costRight) return ds.aabbtree.InsertChoice.DESCEND_LEFT; else return ds.aabbtree.InsertChoice.DESCEND_RIGHT;
+	}
+	,__class__: ds.aabbtree.InsertStrategyPerimeter
+};
+ds.aabbtree.Node = function(aabb,data,parent,id) {
+	if(id == null) id = -1;
+	this.id = -1;
+	this.invHeight = -1;
+	this.parent = null;
+	this.right = null;
+	this.left = null;
+	this.aabb = aabb;
+	this.data = data;
+	this.parent = parent;
+	this.id = id;
+};
+$hxClasses["ds.aabbtree.Node"] = ds.aabbtree.Node;
+ds.aabbtree.Node.__name__ = ["ds","aabbtree","Node"];
+ds.aabbtree.Node.prototype = {
+	isLeaf: function() {
+		return this.left == null;
+	}
+	,__class__: ds.aabbtree.Node
+};
+ds.aabbtree.NodePool = function(capacity,growthFactor) {
+	if(growthFactor == null) growthFactor = 2;
+	this.capacity = capacity;
+	this.growthFactor = growthFactor;
+	this.freeNodes = new Array();
+	var _g = 0;
+	while(_g < capacity) {
+		var i = _g++;
+		this.freeNodes.push(new ds.aabbtree.Node(new ds.AABB(),null));
+	}
+};
+$hxClasses["ds.aabbtree.NodePool"] = ds.aabbtree.NodePool;
+ds.aabbtree.NodePool.__name__ = ["ds","aabbtree","NodePool"];
+ds.aabbtree.NodePool.prototype = {
+	get: function(x,y,width,height,data,parent,id) {
+		if(id == null) id = -1;
+		if(height == null) height = 0;
+		if(width == null) width = 0;
+		var newNode;
+		if(this.freeNodes.length > 0) {
+			newNode = this.freeNodes.pop();
+			newNode.aabb.setTo(x,y,width,height);
+			newNode.data = data;
+			newNode.parent = parent;
+			newNode.id = id;
+		} else {
+			newNode = new ds.aabbtree.Node(new ds.AABB(x,y,width,height),data,parent,id);
+			this.capacity = this.capacity * this.growthFactor | 0;
+			this.grow(this.capacity);
+		}
+		return newNode;
+	}
+	,put: function(node) {
+		this.freeNodes.push(node);
+		node.parent = node.left = node.right = null;
+		node.id = -1;
+		node.invHeight = -1;
+		node.data = null;
+	}
+	,reset: function() {
+		if(this.freeNodes.length > this.capacity) this.freeNodes.splice(this.capacity,this.freeNodes.length - this.capacity);
+	}
+	,grow: function(n) {
+		var len = this.freeNodes.length;
+		if(n <= len) return;
+		var _g = len;
+		while(_g < n) {
+			var i = _g++;
+			this.freeNodes.push(new ds.aabbtree.Node(new ds.AABB(),null));
+		}
+	}
+	,__class__: ds.aabbtree.NodePool
 };
 var engine = {};
 engine.GameLoop = function() {
@@ -2208,7 +3021,6 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.mainEngine.addSystem(new game.exile.systems.PlayerSystem(this.digitalInput,this.factory),1);
 		this.mainEngine.addSystem(new engine.systems.CameraControlSystem(this.view.camera),4);
 		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.itemContainer),5);
-		this.mainEngine.addSystem(new engine.systems.DebugRenderSystem(this.view.debugRenderer),6);
 		this.createEntities();
 		this.gameLoop.updateFunc = $bind(this,this.tick);
 		this.gameLoop.start();
@@ -2220,6 +3032,8 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,tick: function(time) {
 		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 		this.mainEngine.update(time);
+		this.blockParticleEngine.EmitParticle(100,100,Math.random() * 20 + -10,Math.random() * 20 + -10,0,0,10000,1,false,false,null,6,255,255,0,0);
+		this.blockParticleEngine.Update();
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
 	}
 	,preInit: function() {
@@ -2248,9 +3062,8 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.spriteRender = new wgr.renderers.webgl.SpriteRenderer();
 		this.spriteRender.AddStage(this.view.stage);
 		this.view.renderer.AddRenderer(this.spriteRender);
-		this.pointParticleEngine = new wgr.particle.PointSpriteParticleEngine(14000,16.6666666666666679);
-		this.pointParticleEngine.renderer.SetSpriteSheet(this.tileMap.spriteSheet,16,8,8);
-		this.view.renderer.AddRenderer(this.pointParticleEngine.renderer);
+		this.blockParticleEngine = new wgr.particle.BlockSpriteParticleEngine(4000,16.6666666666666679);
+		this.view.renderer.AddRenderer(this.blockParticleEngine.renderer);
 		this.itemContainer = new wgr.display.DisplayObjectContainer();
 		this.itemContainer.id = "itemContainer";
 		this.view.camera.addChild(this.itemContainer);
@@ -2334,7 +3147,6 @@ game.exile.systems.PlayerSystem.prototype = $extend(ash.core.System.prototype,{
 	update: function(time) {
 		var player = this.nodes.head;
 		if(this.input.JustPressed(200)) {
-			console.log("fire");
 			var position = player.position.position;
 			var projectile = this.entityFactory.create("projectile",position.x,position.y);
 			var physics = projectile.components.h.get(Type.getClassName(engine.components.Physics));
@@ -2347,7 +3159,7 @@ game.exile.systems.PlayerSystem.prototype = $extend(ash.core.System.prototype,{
 				viewPos.y -= position.y;
 				$r = viewPos;
 				return $r;
-			}(this))).unitEquals().multEquals(10));
+			}(this))).unitEquals().multEquals(15));
 			this.engine.addEntity(projectile);
 		}
 	}
@@ -4680,6 +5492,9 @@ utils.Base64.Decode = function(input) {
 	}
 	return ab;
 };
+utils.Limits = function() { };
+$hxClasses["utils.Limits"] = utils.Limits;
+utils.Limits.__name__ = ["utils","Limits"];
 utils.Maths = function() { };
 $hxClasses["utils.Maths"] = utils.Maths;
 utils.Maths.__name__ = ["utils","Maths"];
@@ -4698,6 +5513,44 @@ utils.Maths.ScaleRectangleWithRatio = function(containerRect,itemRect) {
 	var rD = containerRect.x / containerRect.y;
 	var rR = itemRect.x / itemRect.y;
 	if(rD < rR) return sX; else return sY;
+};
+utils.Random = function() { };
+$hxClasses["utils.Random"] = utils.Random;
+utils.Random.__name__ = ["utils","Random"];
+utils.Random.SetPseudoRandomSeed = function(seed) {
+	utils.Random.PseudoRandomSeed = seed;
+};
+utils.Random.RandomFloat = function(min,max) {
+	return Math.random() * (max - min) + min;
+};
+utils.Random.RandomBoolean = function(chance) {
+	if(chance == null) chance = 0.5;
+	return Math.random() < chance;
+};
+utils.Random.RandomSign = function(chance) {
+	if(chance == null) chance = 0.5;
+	if(Math.random() < chance) return 1; else return -1;
+};
+utils.Random.RandomInteger = function(min,max) {
+	return Math.floor(Math.random() * (max - min) + min);
+};
+utils.Random.PseudoInteger = function(n) {
+	if(n == null) n = 2147483647;
+	if(n > 0) return Std["int"]((function($this) {
+		var $r;
+		utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
+		$r = utils.Random.PseudoRandomSeed / 233280.0;
+		return $r;
+	}(this)) * n); else return Std["int"]((function($this) {
+		var $r;
+		utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
+		$r = utils.Random.PseudoRandomSeed / 233280.0;
+		return $r;
+	}(this)));
+};
+utils.Random.PseudoFloat = function() {
+	utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
+	return utils.Random.PseudoRandomSeed / 233280.0;
 };
 var wgr = {};
 wgr.display = {};
@@ -5377,18 +6230,12 @@ wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
 };
 wgr.particle = {};
-wgr.particle.IParticleEngine = function() { };
-$hxClasses["wgr.particle.IParticleEngine"] = wgr.particle.IParticleEngine;
-wgr.particle.IParticleEngine.__name__ = ["wgr","particle","IParticleEngine"];
-wgr.particle.IParticleEngine.prototype = {
-	__class__: wgr.particle.IParticleEngine
+wgr.particle.BlockSpriteParticle = function() {
 };
-wgr.particle.PointSpriteParticle = function() {
-};
-$hxClasses["wgr.particle.PointSpriteParticle"] = wgr.particle.PointSpriteParticle;
-wgr.particle.PointSpriteParticle.__name__ = ["wgr","particle","PointSpriteParticle"];
-wgr.particle.PointSpriteParticle.prototype = {
-	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,type,data1,data2) {
+$hxClasses["wgr.particle.BlockSpriteParticle"] = wgr.particle.BlockSpriteParticle;
+wgr.particle.BlockSpriteParticle.__name__ = ["wgr","particle","BlockSpriteParticle"];
+wgr.particle.BlockSpriteParticle.prototype = {
+	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,data1,data2,data3,data4,data5) {
 		this.pX = x;
 		this.pY = y;
 		this.vX = vX;
@@ -5400,9 +6247,118 @@ wgr.particle.PointSpriteParticle.prototype = {
 		this.damping = damping;
 		this.decay = decay;
 		this.externalForce = externalForce;
-		this.type = type;
 		this.size = data1;
-		this.colour = data2;
+		this.alpha = data2 * 0.00392156862745098;
+		this.red = data3;
+		this.green = data4;
+		this.blue = data5;
+	}
+	,Update: function(deltaTime,invDeltaTime) {
+		this.vX += this.fX + this.externalForce.x;
+		this.vY += this.fY + this.externalForce.y;
+		this.vX *= this.damping;
+		this.vY *= this.damping;
+		this.pX += this.vX * invDeltaTime;
+		this.pY += this.vY * invDeltaTime;
+		this.age -= deltaTime;
+		this.alpha -= this.decay;
+		return this.age > 0;
+	}
+	,__class__: wgr.particle.BlockSpriteParticle
+};
+wgr.particle.IParticleEngine = function() { };
+$hxClasses["wgr.particle.IParticleEngine"] = wgr.particle.IParticleEngine;
+wgr.particle.IParticleEngine.__name__ = ["wgr","particle","IParticleEngine"];
+wgr.particle.IParticleEngine.prototype = {
+	__class__: wgr.particle.IParticleEngine
+};
+wgr.particle.BlockSpriteParticleEngine = function(particleCount,deltaTime) {
+	this.particleCount = particleCount;
+	this.deltaTime = deltaTime;
+	this.invDeltaTime = deltaTime / 1000;
+	this.ZERO_FORCE = new wgr.geom.Point();
+	var _g = 0;
+	while(_g < particleCount) {
+		var i = _g++;
+		var p = new wgr.particle.BlockSpriteParticle();
+		p.next = this.cachedParticles;
+		this.cachedParticles = p;
+	}
+	this.renderer = new wgr.renderers.webgl.PointSpriteLightMapRenderer();
+	this.renderer.ResizeBatch(particleCount);
+};
+$hxClasses["wgr.particle.BlockSpriteParticleEngine"] = wgr.particle.BlockSpriteParticleEngine;
+wgr.particle.BlockSpriteParticleEngine.__name__ = ["wgr","particle","BlockSpriteParticleEngine"];
+wgr.particle.BlockSpriteParticleEngine.__interfaces__ = [wgr.particle.IParticleEngine];
+wgr.particle.BlockSpriteParticleEngine.prototype = {
+	EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,data1,data2,data3,data4,data5) {
+		if(this.cachedParticles == null) return false;
+		var particle = this.cachedParticles;
+		this.cachedParticles = this.cachedParticles.next;
+		if(this.activeParticles == null) {
+			this.activeParticles = particle;
+			particle.next = particle.prev = null;
+		} else {
+			particle.next = this.activeParticles;
+			particle.prev = null;
+			this.activeParticles.prev = particle;
+			this.activeParticles = particle;
+		}
+		particle.pX = x;
+		particle.pY = y;
+		particle.vX = vX;
+		particle.vY = vY;
+		particle.fX = fX;
+		particle.fY = fY;
+		particle.ttl = ttl;
+		particle.age = ttl;
+		particle.damping = damping;
+		if(decayable) particle.decay = this.deltaTime / ttl; else particle.decay = 0;
+		if(externalForce != null) particle.externalForce = externalForce; else particle.externalForce = this.ZERO_FORCE;
+		particle.size = data1;
+		particle.alpha = data2 * 0.00392156862745098;
+		particle.red = data3;
+		particle.green = data4;
+		particle.blue = data5;
+		return true;
+	}
+	,Update: function() {
+		this.renderer.ResetBatch();
+		var particle = this.activeParticles;
+		while(particle != null) if(!particle.Update(this.deltaTime,this.invDeltaTime)) {
+			var next = particle.next;
+			if(particle.prev == null) this.activeParticles = particle.next; else particle.prev.next = particle.next;
+			if(particle.next != null) particle.next.prev = particle.prev;
+			particle.next = this.cachedParticles;
+			this.cachedParticles = particle;
+			particle = next;
+		} else {
+			this.renderer.AddSpriteToBatch(particle.pX,particle.pY,particle.alpha * 255 | 0,particle.red,particle.green,particle.blue);
+			particle = particle.next;
+		}
+	}
+	,__class__: wgr.particle.BlockSpriteParticleEngine
+};
+wgr.particle.PointSpriteParticle = function() {
+};
+$hxClasses["wgr.particle.PointSpriteParticle"] = wgr.particle.PointSpriteParticle;
+wgr.particle.PointSpriteParticle.__name__ = ["wgr","particle","PointSpriteParticle"];
+wgr.particle.PointSpriteParticle.prototype = {
+	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,data1,data2,data3,data4) {
+		this.pX = x;
+		this.pY = y;
+		this.vX = vX;
+		this.vY = vY;
+		this.fX = fX;
+		this.fY = fY;
+		this.ttl = ttl;
+		this.age = ttl;
+		this.damping = damping;
+		this.decay = decay;
+		this.externalForce = externalForce;
+		this.type = data1;
+		this.size = data2;
+		this.colour = data3;
 		this.alpha = (this.colour & 255) * 0.00392156862745098;
 	}
 	,Update: function(deltaTime,invDeltaTime) {
@@ -5437,7 +6393,7 @@ $hxClasses["wgr.particle.PointSpriteParticleEngine"] = wgr.particle.PointSpriteP
 wgr.particle.PointSpriteParticleEngine.__name__ = ["wgr","particle","PointSpriteParticleEngine"];
 wgr.particle.PointSpriteParticleEngine.__interfaces__ = [wgr.particle.IParticleEngine];
 wgr.particle.PointSpriteParticleEngine.prototype = {
-	EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,type,data1,data2) {
+	EmitParticle: function(x,y,vX,vY,fX,fY,ttl,damping,decayable,top,externalForce,data1,data2,data3,data4,data5) {
 		if(this.cachedParticles == null) return false;
 		var particle = this.cachedParticles;
 		this.cachedParticles = this.cachedParticles.next;
@@ -5461,9 +6417,9 @@ wgr.particle.PointSpriteParticleEngine.prototype = {
 		particle.damping = damping;
 		if(decayable) particle.decay = this.deltaTime / ttl; else particle.decay = 0;
 		if(externalForce != null) particle.externalForce = externalForce; else particle.externalForce = this.ZERO_FORCE;
-		particle.type = type;
-		particle.size = data1;
-		particle.colour = data2;
+		particle.type = data1;
+		particle.size = data2;
+		particle.colour = data3;
 		particle.alpha = (particle.colour & 255) * 0.00392156862745098;
 		return true;
 	}
@@ -5539,6 +6495,62 @@ $hxClasses["wgr.renderers.webgl.IRenderer"] = wgr.renderers.webgl.IRenderer;
 wgr.renderers.webgl.IRenderer.__name__ = ["wgr","renderers","webgl","IRenderer"];
 wgr.renderers.webgl.IRenderer.prototype = {
 	__class__: wgr.renderers.webgl.IRenderer
+};
+wgr.renderers.webgl.PointSpriteLightMapRenderer = function() {
+};
+$hxClasses["wgr.renderers.webgl.PointSpriteLightMapRenderer"] = wgr.renderers.webgl.PointSpriteLightMapRenderer;
+wgr.renderers.webgl.PointSpriteLightMapRenderer.__name__ = ["wgr","renderers","webgl","PointSpriteLightMapRenderer"];
+wgr.renderers.webgl.PointSpriteLightMapRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
+wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
+	Init: function(gl,camera) {
+		this.gl = gl;
+		this.camera = camera;
+		this.projection = new wgr.geom.Point();
+		this.pointSpriteShader = new wgr.renderers.webgl.ShaderWrapper(gl,wgr.renderers.webgl.WebGLShaders.CompileProgram(gl,wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER,wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_FRAGMENT_SHADER));
+		this.dataBuffer = gl.createBuffer();
+	}
+	,ResizeBatch: function(size) {
+		this.arrayBuffer = new ArrayBuffer(80 * size);
+		this.data = new Float32Array(this.arrayBuffer);
+		this.data8 = new Uint8ClampedArray(this.arrayBuffer);
+		this.ResetBatch();
+	}
+	,Resize: function(width,height) {
+		this.projection.x = width / 2;
+		this.projection.y = height / 2;
+	}
+	,AddStage: function(stage) {
+		this.stage = stage;
+	}
+	,ResetBatch: function() {
+		this.indexRun = 0;
+	}
+	,AddSpriteToBatch: function(x,y,alpha,red,green,blue) {
+		var index = this.indexRun * 3;
+		this.data[index] = x + this.camera.position.x | 0;
+		this.data[index + 1] = y + this.camera.position.y | 0;
+		index *= 4;
+		this.data8[index + 8] = red;
+		this.data8[index + 9] = blue;
+		this.data8[index + 10] = green;
+		this.data8[index + 11] = alpha;
+		this.indexRun++;
+	}
+	,Render: function(clip) {
+		this.gl.enable(3042);
+		this.gl.blendFunc(770,771);
+		this.gl.useProgram(this.pointSpriteShader.program);
+		this.gl.bindBuffer(34962,this.dataBuffer);
+		this.gl.bufferData(34962,this.data,35048);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.position);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.colour);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,12,0);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.colour,4,5121,true,12,8);
+		this.gl.uniform2f(this.pointSpriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
+		this.gl.uniform1f(this.pointSpriteShader.uniform.size,32);
+		this.gl.drawArrays(0,0,this.indexRun);
+	}
+	,__class__: wgr.renderers.webgl.PointSpriteLightMapRenderer
 };
 wgr.renderers.webgl.PointSpriteRenderer = function() {
 };
@@ -6530,6 +7542,20 @@ physics.geometry.Shapes.CIRCLE_CIRCLE = 1;
 physics.geometry.Shapes.CIRCLE_SEGMENT = 3;
 physics.geometry.Shapes.SEGMENT_POLYGON = 6;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+utils.Limits.INT8_MIN = -128;
+utils.Limits.INT8_MAX = 127;
+utils.Limits.UINT8_MAX = 255;
+utils.Limits.INT16_MIN = -32768;
+utils.Limits.INT16_MAX = 32767;
+utils.Limits.UINT16_MAX = 65535;
+utils.Limits.INT32_MIN = -2147483648;
+utils.Limits.INT32_MAX = 2147483647;
+utils.Limits.UINT32_MAX = -1;
+utils.Limits.INT_BITS = 32;
+utils.Limits.FLOAT_MAX = 3.40282346638528e+38;
+utils.Limits.FLOAT_MIN = -3.40282346638528e+38;
+utils.Limits.DOUBLE_MAX = 1.79769313486231e+308;
+utils.Limits.DOUBLE_MIN = -1.79769313486231e+308;
 utils.Maths.ZERO_TOLERANCE = 1e-08;
 utils.Maths.RAD_DEG = 57.2957795130823229;
 utils.Maths.DEG_RAD = 0.0174532925199432955;
@@ -6540,7 +7566,11 @@ utils.Maths.PI = 3.141592653589793;
 utils.Maths.PI2 = 6.283185307179586;
 utils.Maths.EPS = 1e-6;
 utils.Maths.SQRT2 = 1.414213562373095;
+utils.Random.PseudoRandomSeed = 3489752;
+wgr.particle.BlockSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
+wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform vec2 projectionVector;","uniform float size;","attribute vec2 position;","attribute vec4 colour;","varying vec4 vColor;","void main() {","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec4 vColor;","void main() {","gl_FragColor = vColor;","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
 wgr.renderers.webgl.SpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","varying vec2 vTextureCoord;","varying float vColor;","void main(void) {","gl_Position = vec4( aVertexPosition.x / projectionVector.x -1.0, aVertexPosition.y / -projectionVector.y + 1.0 , 0.0, 1.0);","vTextureCoord = aTextureCoord;","vColor = aColor;","}"];

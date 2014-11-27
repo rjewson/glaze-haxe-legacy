@@ -28,7 +28,7 @@ class SpriteParticle extends Sprite
         super();
     }
     
-    inline public function Initalize(x:Float, y:Float, vX:Float, vY:Float, fX:Float, fY:Float, ttl:Int, damping:Float, decay:Float, top:Bool, externalForce:Point, type:Int, data1:Int, data2:Int) {
+    inline public function Initalize(x:Float, y:Float, vX:Float, vY:Float, fX:Float, fY:Float, ttl:Int, damping:Float, decay:Float, top:Bool, externalForce:Point, data1:Int, data2:Int, data3:Int,data4:Int) {
         position.x = x;
         position.y = y;
         this.vX = vX;

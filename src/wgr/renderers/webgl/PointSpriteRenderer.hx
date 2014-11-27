@@ -94,6 +94,8 @@ class PointSpriteRenderer implements IRenderer
     }
 
     public function Render(clip:AABB) {
+        // js.Lib.debug();
+
         gl.enable(RenderingContext.BLEND);
         gl.blendFunc(RenderingContext.SRC_ALPHA, RenderingContext.ONE_MINUS_SRC_ALPHA);
 

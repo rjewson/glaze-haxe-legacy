@@ -29,14 +29,13 @@ class PlayerSystem extends System
         var player = nodes.head;
 
         if (input.JustPressed(200)) {
-            trace("fire");
             var position = player.position.position;
             var projectile = entityFactory.create("projectile",position.x,position.y);
             var physics:Physics = projectile.components.get(Physics);
             physics.body.SetMass(0.1);
             physics.body.group = 1;
             var viewPos = input.mousePosition.plus(input.mouseOffset);
-            physics.body.SetVelocity(viewPos.minusEquals(position).unitEquals().multEquals(10));
+            physics.body.SetVelocity(viewPos.minusEquals(position).unitEquals().multEquals(15));
             engine.addEntity(projectile);
 
         }
