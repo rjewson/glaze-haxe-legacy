@@ -33,6 +33,8 @@ class BlockSpriteParticle
     public var next:BlockSpriteParticle;
     public var prev:BlockSpriteParticle;
 
+    public var alphaPerUpdate:Float;
+
     public function new() 
     {
     }
@@ -65,6 +67,7 @@ class BlockSpriteParticle
         pY += vY * invDeltaTime;
         age -= deltaTime;
         alpha -= decay;
+        //trace(decay);
         return age > 0;
     }
     

@@ -108,7 +108,7 @@ class Exile extends BaseGame
         digitalInput.Update(-camera.position.x,-camera.position.y);
         mainEngine.update(time);
 
-        blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,6,255,255,0,0);
+        blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-100,100),utils.Random.RandomFloat(-100,100),0,0,800,0.95,true,false,null,4,255,255,255,255);
         blockParticleEngine.Update();
         //pointParticleEngine.EmitParticle(100,100,0,0,0,0,10000,1,false,false,null,0,64,64,0,0);
         // pointParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,0,64,64);

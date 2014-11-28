@@ -73,7 +73,7 @@ class BlockSpriteParticleEngine implements IParticleEngine
                                 
                 particle = next;
             } else {
-                renderer.AddSpriteToBatch(particle.pX,particle.pY,Std.int(particle.alpha*255),particle.red,particle.green,particle.blue);
+                renderer.AddSpriteToBatch(particle.pX,particle.pY,particle.size,Std.int(particle.alpha*255),particle.red,particle.green,particle.blue);
                 particle = particle.next;
             }
         }

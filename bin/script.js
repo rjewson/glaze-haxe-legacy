@@ -3032,7 +3032,7 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,tick: function(time) {
 		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 		this.mainEngine.update(time);
-		this.blockParticleEngine.EmitParticle(100,100,Math.random() * 20 + -10,Math.random() * 20 + -10,0,0,10000,1,false,false,null,6,255,255,0,0);
+		this.blockParticleEngine.EmitParticle(100,100,Math.random() * 200 + -100,Math.random() * 200 + -100,0,0,800,0.95,true,false,null,4,255,255,255,255);
 		this.blockParticleEngine.Update();
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
 	}
@@ -6333,7 +6333,7 @@ wgr.particle.BlockSpriteParticleEngine.prototype = {
 			this.cachedParticles = particle;
 			particle = next;
 		} else {
-			this.renderer.AddSpriteToBatch(particle.pX,particle.pY,particle.alpha * 255 | 0,particle.red,particle.green,particle.blue);
+			this.renderer.AddSpriteToBatch(particle.pX,particle.pY,particle.size,particle.alpha * 255 | 0,particle.red,particle.green,particle.blue);
 			particle = particle.next;
 		}
 	}
@@ -6525,15 +6525,16 @@ wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
 	,ResetBatch: function() {
 		this.indexRun = 0;
 	}
-	,AddSpriteToBatch: function(x,y,alpha,red,green,blue) {
-		var index = this.indexRun * 3;
+	,AddSpriteToBatch: function(x,y,size,alpha,red,green,blue) {
+		var index = this.indexRun * 4;
 		this.data[index] = x + this.camera.position.x | 0;
 		this.data[index + 1] = y + this.camera.position.y | 0;
+		this.data[index + 2] = size;
 		index *= 4;
-		this.data8[index + 8] = red;
-		this.data8[index + 9] = blue;
-		this.data8[index + 10] = green;
-		this.data8[index + 11] = alpha;
+		this.data8[index + 12] = red;
+		this.data8[index + 13] = blue;
+		this.data8[index + 14] = green;
+		this.data8[index + 15] = alpha;
 		this.indexRun++;
 	}
 	,Render: function(clip) {
@@ -6543,11 +6544,12 @@ wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
 		this.gl.bindBuffer(34962,this.dataBuffer);
 		this.gl.bufferData(34962,this.data,35048);
 		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.position);
+		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.size);
 		this.gl.enableVertexAttribArray(this.pointSpriteShader.attribute.colour);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,12,0);
-		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.colour,4,5121,true,12,8);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.position,2,5126,false,16,0);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.size,1,5126,false,16,8);
+		this.gl.vertexAttribPointer(this.pointSpriteShader.attribute.colour,4,5121,true,16,12);
 		this.gl.uniform2f(this.pointSpriteShader.uniform.projectionVector,this.projection.x,this.projection.y);
-		this.gl.uniform1f(this.pointSpriteShader.uniform.size,32);
 		this.gl.drawArrays(0,0,this.indexRun);
 	}
 	,__class__: wgr.renderers.webgl.PointSpriteLightMapRenderer
@@ -7569,7 +7571,7 @@ utils.Maths.SQRT2 = 1.414213562373095;
 utils.Random.PseudoRandomSeed = 3489752;
 wgr.particle.BlockSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
-wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform vec2 projectionVector;","uniform float size;","attribute vec2 position;","attribute vec4 colour;","varying vec4 vColor;","void main() {","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
+wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute vec4 colour;","varying vec4 vColor;","void main() {","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","varying vec4 vColor;","void main() {","gl_FragColor = vColor;","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform float texTilesWide;","uniform float texTilesHigh;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 projectionVector;","uniform vec2 flip;","attribute vec2 position;","attribute float size;","attribute float tileType;","attribute vec4 colour;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","float t = floor(tileType/texTilesWide);","vTilePos = vec2(tileType-(t*texTilesWide), t);","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
 wgr.renderers.webgl.PointSpriteRenderer.SPRITE_FRAGMENT_SHADER = ["precision mediump float;","uniform sampler2D texture;","uniform float invTexTilesWide;","uniform float invTexTilesHigh;","uniform vec2 flip;","varying vec2 vTilePos;","varying vec4 vColor;","void main() {","vec2 uv = vec2( ((-1.0+(2.0*flip.x))*(flip.x-gl_PointCoord.x))*invTexTilesWide + invTexTilesWide*vTilePos.x, ((-1.0+(2.0*flip.y))*(flip.y-gl_PointCoord.y))*invTexTilesHigh + invTexTilesHigh*vTilePos.y);","gl_FragColor = texture2D( texture, uv ) * vColor;","}"];
