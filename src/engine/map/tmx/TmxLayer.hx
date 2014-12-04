@@ -220,7 +220,6 @@ class TmxLayer
                 }
              }
         }		
-        trace(collisionMap);
         return collisionMap;
 	}
 

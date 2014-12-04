@@ -5,7 +5,7 @@ package worldEngine.tiles;
  * @author rje
  */
 
-class TileFeature 
+class TileFeature
 {
 
 	inline public static var COLLIDABLE:Int = 	1 << 0;

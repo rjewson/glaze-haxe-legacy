@@ -6,6 +6,7 @@ import engine.components.Camera;
 import engine.components.DebugDisplay;
 import engine.components.Display;
 import engine.components.MotionControls;
+import engine.components.Particle;
 import engine.components.Physics;
 import engine.components.Position;
 import game.exile.components.Player;
@@ -55,7 +56,8 @@ class EntityFactory
                 var enemy = new Entity()
                     .add(new Position(0,0,0))
                     .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
-                    .add(new Display(spr));
+                    .add(new Display(spr))
+                    .add(new Particle());
                 return enemy;
 
         }

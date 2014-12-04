@@ -31,6 +31,8 @@ class DigitalInput
         target.addEventListener("keydown",KeyDown,false);
         target.addEventListener("keyup",KeyUp,false);
         target.addEventListener("mousedown",MouseDown,false);
+        //target.addEventListener("touchstart",MouseDown,false);
+
         target.addEventListener("mouseup",MouseUp,false);
         target.addEventListener("mousemove",MouseMove,false);
         // target.addEventListener(MouseEvent.RIGHT_MOUSE_DOWN, RightMouseDown, false, 0, true);

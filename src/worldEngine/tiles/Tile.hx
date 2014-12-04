@@ -321,5 +321,9 @@ class Tile extends Polygon
 
 		return result;
 	}
+
+	public static function IsCollidable(data:Int) : Bool {
+		return true;
+	}
 	
 }

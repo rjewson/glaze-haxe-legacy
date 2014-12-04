@@ -2237,6 +2237,13 @@ engine.components.MotionControls.__name__ = ["engine","components","MotionContro
 engine.components.MotionControls.prototype = {
 	__class__: engine.components.MotionControls
 };
+engine.components.Particle = function() {
+};
+$hxClasses["engine.components.Particle"] = engine.components.Particle;
+engine.components.Particle.__name__ = ["engine","components","Particle"];
+engine.components.Particle.prototype = {
+	__class__: engine.components.Particle
+};
 engine.components.Physics = function(x,y,velocityX,velocityY,shapes) {
 	this.body = new physics.dynamics.Body();
 	this.body.SetStaticPosition(new physics.geometry.Vector2D(x,y));
@@ -2499,7 +2506,6 @@ engine.map.tmx.TmxLayer.layerToCollisionMap = function(layer) {
 			} else collisionMap.data32[yp * collisionMap.w + xp] = 0;
 		}
 	}
-	console.log(collisionMap);
 	return collisionMap;
 };
 engine.map.tmx.TmxLayer.prototype = {
@@ -2807,6 +2813,22 @@ engine.nodes.MotionControlNode.__super__ = ash.core.Node;
 engine.nodes.MotionControlNode.prototype = $extend(ash.core.Node.prototype,{
 	__class__: engine.nodes.MotionControlNode
 });
+engine.nodes.ParticleNode = function() {
+};
+$hxClasses["engine.nodes.ParticleNode"] = engine.nodes.ParticleNode;
+engine.nodes.ParticleNode.__name__ = ["engine","nodes","ParticleNode"];
+engine.nodes.ParticleNode._getComponents = function() {
+	if(engine.nodes.ParticleNode._components == null) {
+		engine.nodes.ParticleNode._components = new ash.ClassMap();
+		engine.nodes.ParticleNode._components.h.set(Type.getClassName(engine.components.Particle),"particle");
+		engine.nodes.ParticleNode._components.h.set(Type.getClassName(engine.components.Position),"position");
+	}
+	return engine.nodes.ParticleNode._components;
+};
+engine.nodes.ParticleNode.__super__ = ash.core.Node;
+engine.nodes.ParticleNode.prototype = $extend(ash.core.Node.prototype,{
+	__class__: engine.nodes.ParticleNode
+});
 engine.nodes.PhysicsNode = function() { };
 $hxClasses["engine.nodes.PhysicsNode"] = engine.nodes.PhysicsNode;
 engine.nodes.PhysicsNode.__name__ = ["engine","nodes","PhysicsNode"];
@@ -2909,9 +2931,35 @@ engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSy
 	}
 	,__class__: engine.systems.MotionControlSystem
 });
+engine.systems.ParticleSystem = function(particleEngine) {
+	ash.core.System.call(this);
+	this.particleEngine = particleEngine;
+};
+$hxClasses["engine.systems.ParticleSystem"] = engine.systems.ParticleSystem;
+engine.systems.ParticleSystem.__name__ = ["engine","systems","ParticleSystem"];
+engine.systems.ParticleSystem.__super__ = ash.core.System;
+engine.systems.ParticleSystem.prototype = $extend(ash.core.System.prototype,{
+	addToEngine: function(engine1) {
+		this.nodes = engine1.getNodeList(engine.nodes.ParticleNode);
+	}
+	,update: function(time) {
+		var _g = new ash.GenericListIterator(this.nodes.head);
+		while(_g.previous.next != null) {
+			var node = _g.next();
+			var position = node.position.position;
+			this.particleEngine.EmitParticle(position.x,position.y,Math.random() * 200 + -100,Math.random() * 200 + -100,0,0,800,0.95,true,false,null,4,255,255,255,255);
+		}
+		this.particleEngine.Update();
+	}
+	,__class__: engine.systems.ParticleSystem
+});
 engine.systems.PhysicsSystem = function(worldData) {
 	ash.core.System.call(this);
-	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),new worldEngine.World(worldData));
+	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),worldData);
+	var ray = new physics.geometry.Ray();
+	ray.SetParams(new physics.geometry.Vector2D(64,64),new physics.geometry.Vector2D(64,100),1000);
+	var result = this.physicsEngine.CastRay(ray);
+	console.log(result);
 	var staticLayer = new engine.graphics.StaticLayerDisplayManager(worldData,600);
 	this.physicsEngine.masslessForces.setTo(0,9);
 };
@@ -3021,6 +3069,7 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.mainEngine.addSystem(new game.exile.systems.PlayerSystem(this.digitalInput,this.factory),1);
 		this.mainEngine.addSystem(new engine.systems.CameraControlSystem(this.view.camera),4);
 		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.itemContainer),5);
+		this.mainEngine.addSystem(new engine.systems.ParticleSystem(this.blockParticleEngine),6);
 		this.createEntities();
 		this.gameLoop.updateFunc = $bind(this,this.tick);
 		this.gameLoop.start();
@@ -3032,8 +3081,6 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,tick: function(time) {
 		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 		this.mainEngine.update(time);
-		this.blockParticleEngine.EmitParticle(100,100,Math.random() * 200 + -100,Math.random() * 200 + -100,0,0,800,0.95,true,false,null,4,255,255,255,255);
-		this.blockParticleEngine.Update();
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
 	}
 	,preInit: function() {
@@ -3100,7 +3147,7 @@ game.exile.entities.EntityFactory.prototype = {
 			return enemy;
 		case "projectile":
 			var spr2 = this.createSprite("character","projectile1.png");
-			var enemy1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2));
+			var enemy1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.Particle());
 			return enemy1;
 		}
 		return null;
@@ -7186,7 +7233,9 @@ worldEngine.World = function(worldData) {
 $hxClasses["worldEngine.World"] = worldEngine.World;
 worldEngine.World.__name__ = ["worldEngine","World"];
 worldEngine.World.prototype = {
-	__class__: worldEngine.World
+	Collide: function(body) {
+	}
+	,__class__: worldEngine.World
 };
 worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
 	this.tileSize = tileSize;
@@ -7216,12 +7265,14 @@ worldEngine.WorldData.prototype = {
 	}
 	,__class__: worldEngine.WorldData
 };
-worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,world) {
-	this.world = world;
-	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,Math.ceil(world.worldData.worldBounds.width() / world.worldData.worldCellSize),Math.ceil(world.worldData.worldBounds.height() / world.worldData.worldCellSize),world.worldData.worldCellSize);
-	this.tempFeature = new physics.dynamics.Feature(world.worldBody,null,new physics.dynamics.Material());
+worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,worldData) {
+	this.worldBody = new physics.dynamics.Body();
+	this.worldBody.MakeStatic();
+	this.worldData = worldData;
+	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,Math.ceil(worldData.worldBounds.width() / worldData.worldCellSize),Math.ceil(worldData.worldBounds.height() / worldData.worldCellSize),worldData.worldCellSize);
+	this.tempFeature = new physics.dynamics.Feature(this.worldBody,null,new physics.dynamics.Material());
 	this.tempFeature.position = new physics.geometry.Vector2D();
-	this.collisionData = world.worldData.collisionData;
+	this.collisionData = worldData.collisionData;
 	this.collisionOrderX = [0,-1,1];
 	this.collisionOrderY = [2,1,0,-1,-2];
 };
@@ -7246,8 +7297,8 @@ worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.
 				while(_g4 < _g5.length) {
 					var bodyFeature = _g5[_g4];
 					++_g4;
-					var cx = ((bodyFeature.shape.aabb.r + bodyFeature.shape.aabb.l) / 2 + body.position.x) * this.world.worldData.invTileSize | 0;
-					var cy = ((bodyFeature.shape.aabb.b + bodyFeature.shape.aabb.t) / 2 + body.position.y) * this.world.worldData.invTileSize | 0;
+					var cx = ((bodyFeature.shape.aabb.r + bodyFeature.shape.aabb.l) / 2 + body.position.x) * this.worldData.invTileSize | 0;
+					var cy = ((bodyFeature.shape.aabb.b + bodyFeature.shape.aabb.t) / 2 + body.position.y) * this.worldData.invTileSize | 0;
 					var _g6 = 0;
 					var _g7 = this.collisionOrderY;
 					while(_g6 < _g7.length) {
@@ -7260,8 +7311,8 @@ worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.
 							++_g8;
 							var tileID = this.collisionData.get(cx + x,cy + y);
 							if(tileID > 0) {
-								this.tempFeature.shape = this.world.worldData.tileFactory.tiles[tileID];
-								this.tempFeature.position.setTo((cx + x) * this.world.worldData.tileSize,(cy + y) * this.world.worldData.tileSize);
+								this.tempFeature.shape = this.worldData.tileFactory.tiles[tileID];
+								this.tempFeature.position.setTo((cx + x) * this.worldData.tileSize,(cy + y) * this.worldData.tileSize);
 								this.narrowphase.CollideFeatures(this.tempFeature,bodyFeature);
 							}
 						}
@@ -7269,6 +7320,104 @@ worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.
 				}
 			}
 		}
+	}
+	,CastRay: function(ray) {
+		var x = ray.origin.x * this.worldData.invTileSize | 0;
+		var y = ray.origin.y * this.worldData.invTileSize | 0;
+		var cpos_x = x * this.worldData.tileSize;
+		var cpos_y = y * this.worldData.tileSize;
+		var d = ray.direction;
+		var p_x = ray.origin.x;
+		var p_y = ray.origin.y;
+		var op_x = ray.origin.x;
+		var op_y = ray.origin.y;
+		var flipFlop = true;
+		var transitionEdge = 0;
+		var out;
+		var stepX;
+		var tMaxX;
+		var tDeltaX;
+		if(d.x < 0) {
+			stepX = -1;
+			tMaxX = (cpos_x - ray.origin.x) / d.x;
+			tDeltaX = this.worldData.tileSize / -d.x;
+		} else if(0 < d.x) {
+			stepX = 1;
+			tMaxX = (cpos_x + this.worldData.tileSize - ray.origin.x) / d.x;
+			tDeltaX = this.worldData.tileSize / d.x;
+		} else {
+			stepX = 0;
+			tMaxX = 100000000;
+			tDeltaX = 0;
+		}
+		var stepY;
+		var tMaxY;
+		var tDeltaY;
+		if(d.y < 0) {
+			stepY = -1;
+			tMaxY = (cpos_y - ray.origin.y) / d.y;
+			tDeltaY = this.worldData.tileSize / -d.y;
+		} else if(0 < d.y) {
+			stepY = 1;
+			tMaxY = (cpos_y + this.worldData.tileSize - ray.origin.y) / d.y;
+			tDeltaY = this.worldData.tileSize / d.y;
+		} else {
+			stepY = 0;
+			tMaxY = 100000000;
+			tDeltaY = 0;
+		}
+		var tileID = this.collisionData.get(x,y);
+		var tile;
+		if(tileID > 0) {
+			tile = this.worldData.tileFactory.tiles[tileID];
+			this.tempFeature.shape = this.worldData.tileFactory.tiles[tileID];
+			this.tempFeature.position.setTo(cpos_x,cpos_y);
+			if(this.tempFeature.shape.IntersectRay(ray,this.tempFeature)) {
+				out = ray.ClosestIntersectPoint();
+				return out;
+			}
+		}
+		while(true) {
+			if(tMaxX < tMaxY) {
+				if(stepX < 0) transitionEdge = 1; else transitionEdge = 3;
+				p_x = ray.origin.x + tMaxX * d.x;
+				p_y = ray.origin.y + tMaxX * d.y;
+				tMaxX = tMaxX + tDeltaX;
+				x = x + stepX;
+			} else {
+				if(stepY < 0) transitionEdge = 2; else transitionEdge = 0;
+				p_x = ray.origin.x + tMaxY * d.x;
+				p_y = ray.origin.y + tMaxY * d.y;
+				tMaxY = tMaxY + tDeltaY;
+				y = y + stepY;
+			}
+			tileID = this.collisionData.get(x,y);
+			var distX = p_x - ray.origin.x;
+			var distY = p_y - ray.origin.y;
+			var currentLen = distX * distX + distY * distY;
+			if(currentLen > ray.rangeSqr) {
+				ray.ReportResult(null,Math.sqrt(currentLen));
+				return null;
+			}
+			if(tileID > 0) {
+				tile = this.worldData.tileFactory.tiles[tileID];
+				this.tempFeature.shape = tile;
+				if(transitionEdge == 0 && tile.edgeT == 1 || transitionEdge == 1 && tile.edgeR == 1 || transitionEdge == 2 && tile.edgeB == 1 || transitionEdge == 3 && tile.edgeL == 1) {
+					out = new physics.geometry.Vector2D(p_x,p_y);
+					ray.ReportResult(this.tempFeature,Math.sqrt(currentLen));
+					return out;
+				} else {
+					this.tempFeature.position.setTo(x * this.worldData.tileSize,y * this.worldData.tileSize);
+					if(this.tempFeature.shape.IntersectRay(ray,this.tempFeature)) {
+						out = ray.ClosestIntersectPoint();
+						return out;
+					}
+				}
+			}
+			op_x = p_x;
+			op_y = p_y;
+		}
+		return null;
 	}
 	,__class__: worldEngine.WorldPhysicsEngine
 });
@@ -7301,6 +7450,9 @@ worldEngine.tiles.Tile = function(size,originalVertMask,tileID,modifier) {
 };
 $hxClasses["worldEngine.tiles.Tile"] = worldEngine.tiles.Tile;
 worldEngine.tiles.Tile.__name__ = ["worldEngine","tiles","Tile"];
+worldEngine.tiles.Tile.IsCollidable = function(data) {
+	return true;
+};
 worldEngine.tiles.Tile.__super__ = physics.geometry.Polygon;
 worldEngine.tiles.Tile.prototype = $extend(physics.geometry.Polygon.prototype,{
 	GetScaledVerts: function() {

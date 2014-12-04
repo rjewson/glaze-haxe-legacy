@@ -18,6 +18,7 @@ import engine.map.tmx.TmxMap;
 import engine.systems.CameraControlSystem;
 import engine.systems.DebugRenderSystem;
 import engine.systems.MotionControlSystem;
+import engine.systems.ParticleSystem;
 import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
@@ -89,6 +90,8 @@ class Exile extends BaseGame
         mainEngine.addSystem(new PlayerSystem(digitalInput,factory),1);
         mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
         mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
+        mainEngine.addSystem(new ParticleSystem( blockParticleEngine ), 6);
+
         // mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
         createEntities();
@@ -108,8 +111,8 @@ class Exile extends BaseGame
         digitalInput.Update(-camera.position.x,-camera.position.y);
         mainEngine.update(time);
 
-        blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-100,100),utils.Random.RandomFloat(-100,100),0,0,800,0.95,true,false,null,4,255,255,255,255);
-        blockParticleEngine.Update();
+        // blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-100,100),utils.Random.RandomFloat(-100,100),0,0,800,0.95,true,false,null,4,255,255,255,255);
+        // blockParticleEngine.Update();
         //pointParticleEngine.EmitParticle(100,100,0,0,0,0,10000,1,false,false,null,0,64,64,0,0);
         // pointParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,0,64,64);
         //pointParticleEngine.Update();
