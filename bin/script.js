@@ -1,5 +1,4 @@
 (function () { "use strict";
-var $hxClasses = {};
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -10,7 +9,6 @@ var EReg = function(r,opt) {
 	opt = opt.split("u").join("");
 	this.r = new RegExp(r,opt);
 };
-$hxClasses["EReg"] = EReg;
 EReg.__name__ = ["EReg"];
 EReg.prototype = {
 	replace: function(s,by) {
@@ -19,7 +17,6 @@ EReg.prototype = {
 	,__class__: EReg
 };
 var HxOverrides = function() { };
-$hxClasses["HxOverrides"] = HxOverrides;
 HxOverrides.__name__ = ["HxOverrides"];
 HxOverrides.cca = function(s,index) {
 	var x = s.charCodeAt(index);
@@ -61,7 +58,6 @@ HxOverrides.iter = function(a) {
 	}};
 };
 var Lambda = function() { };
-$hxClasses["Lambda"] = Lambda;
 Lambda.__name__ = ["Lambda"];
 Lambda.map = function(it,f) {
 	var l = new List();
@@ -85,7 +81,6 @@ Lambda.indexOf = function(it,v) {
 var List = function() {
 	this.length = 0;
 };
-$hxClasses["List"] = List;
 List.__name__ = ["List"];
 List.prototype = {
 	add: function(item) {
@@ -118,7 +113,6 @@ List.prototype = {
 	,__class__: List
 };
 var Main = function() { };
-$hxClasses["Main"] = Main;
 Main.__name__ = ["Main"];
 Main.main = function() {
 	var exile = new game.exile.Exile();
@@ -136,11 +130,9 @@ Main.main = function() {
 	});
 };
 var IMap = function() { };
-$hxClasses["IMap"] = IMap;
 IMap.__name__ = ["IMap"];
 Math.__name__ = ["Math"];
 var Reflect = function() { };
-$hxClasses["Reflect"] = Reflect;
 Reflect.__name__ = ["Reflect"];
 Reflect.field = function(o,field) {
 	try {
@@ -148,9 +140,6 @@ Reflect.field = function(o,field) {
 	} catch( e ) {
 		return null;
 	}
-};
-Reflect.setField = function(o,field,value) {
-	o[field] = value;
 };
 Reflect.fields = function(o) {
 	var a = [];
@@ -171,7 +160,6 @@ Reflect.compareMethods = function(f1,f2) {
 	return f1.scope == f2.scope && f1.method == f2.method && f1.method != null;
 };
 var Std = function() { };
-$hxClasses["Std"] = Std;
 Std.__name__ = ["Std"];
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
@@ -191,7 +179,6 @@ Std.parseFloat = function(x) {
 var StringBuf = function() {
 	this.b = "";
 };
-$hxClasses["StringBuf"] = StringBuf;
 StringBuf.__name__ = ["StringBuf"];
 StringBuf.prototype = {
 	add: function(x) {
@@ -203,7 +190,6 @@ StringBuf.prototype = {
 	,__class__: StringBuf
 };
 var StringTools = function() { };
-$hxClasses["StringTools"] = StringTools;
 StringTools.__name__ = ["StringTools"];
 StringTools.isSpace = function(s,pos) {
 	var c = HxOverrides.cca(s,pos);
@@ -228,7 +214,6 @@ StringTools.fastCodeAt = function(s,index) {
 	return s.charCodeAt(index);
 };
 var Type = function() { };
-$hxClasses["Type"] = Type;
 Type.__name__ = ["Type"];
 Type.getClass = function(o) {
 	if(o == null) return null;
@@ -238,45 +223,9 @@ Type.getClassName = function(c) {
 	var a = c.__name__;
 	return a.join(".");
 };
-Type.resolveClass = function(name) {
-	var cl = $hxClasses[name];
-	if(cl == null || !cl.__name__) return null;
-	return cl;
-};
-Type.createInstance = function(cl,args) {
-	var _g = args.length;
-	switch(_g) {
-	case 0:
-		return new cl();
-	case 1:
-		return new cl(args[0]);
-	case 2:
-		return new cl(args[0],args[1]);
-	case 3:
-		return new cl(args[0],args[1],args[2]);
-	case 4:
-		return new cl(args[0],args[1],args[2],args[3]);
-	case 5:
-		return new cl(args[0],args[1],args[2],args[3],args[4]);
-	case 6:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5]);
-	case 7:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
-	case 8:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
-	default:
-		throw "Too many arguments";
-	}
-	return null;
-};
-Type.createEmptyInstance = function(cl) {
-	function empty() {}; empty.prototype = cl.prototype;
-	return new empty();
-};
 var XmlType = { __ename__ : true, __constructs__ : [] };
 var Xml = function() {
 };
-$hxClasses["Xml"] = Xml;
 Xml.__name__ = ["Xml"];
 Xml.parse = function(str) {
 	return haxe.xml.Parser.parse(str);
@@ -396,849 +345,6 @@ Xml.prototype = {
 	}
 	,__class__: Xml
 };
-var ash = {};
-ash.ClassMap = function() {
-	this.h = new haxe.ds.StringMap();
-};
-$hxClasses["ash.ClassMap"] = ash.ClassMap;
-ash.ClassMap.__name__ = ["ash","ClassMap"];
-ash.ClassMap.__interfaces__ = [IMap];
-ash.ClassMap.prototype = {
-	get: function(k) {
-		return this.h.get(Type.getClassName(k));
-	}
-	,set: function(k,v) {
-		this.h.set(Type.getClassName(k),v);
-	}
-	,exists: function(k) {
-		return this.h.exists(Type.getClassName(k));
-	}
-	,remove: function(k) {
-		return this.h.remove(Type.getClassName(k));
-	}
-	,keys: function() {
-		var i = this.h.keys();
-		return { hasNext : $bind(i,i.hasNext), next : function() {
-			return Type.resolveClass(i.next());
-		}};
-	}
-	,iterator: function() {
-		return this.h.iterator();
-	}
-	,toString: function() {
-		return this.h.toString();
-	}
-	,__class__: ash.ClassMap
-};
-ash.GenericListIterator = function(head) {
-	this.previous = { next : head};
-};
-$hxClasses["ash.GenericListIterator"] = ash.GenericListIterator;
-ash.GenericListIterator.__name__ = ["ash","GenericListIterator"];
-ash.GenericListIterator.prototype = {
-	hasNext: function() {
-		return this.previous.next != null;
-	}
-	,next: function() {
-		var node = this.previous.next;
-		this.previous = node;
-		return node;
-	}
-	,__class__: ash.GenericListIterator
-};
-ash.core = {};
-ash.core.IFamily = function() { };
-$hxClasses["ash.core.IFamily"] = ash.core.IFamily;
-ash.core.IFamily.__name__ = ["ash","core","IFamily"];
-ash.core.IFamily.prototype = {
-	__class__: ash.core.IFamily
-};
-ash.core.ComponentMatchingFamily = function(nodeClass,engine) {
-	this.nodeClass = nodeClass;
-	this.engine = engine;
-	this.init();
-};
-$hxClasses["ash.core.ComponentMatchingFamily"] = ash.core.ComponentMatchingFamily;
-ash.core.ComponentMatchingFamily.__name__ = ["ash","core","ComponentMatchingFamily"];
-ash.core.ComponentMatchingFamily.__interfaces__ = [ash.core.IFamily];
-ash.core.ComponentMatchingFamily.prototype = {
-	init: function() {
-		this.nodeList = new ash.core.NodeList();
-		this.entities = new haxe.ds.ObjectMap();
-		this.components = this.nodeClass._getComponents();
-		this.nodePool = new ash.core.NodePool(this.nodeClass,this.components);
-	}
-	,newEntity: function(entity) {
-		this.addIfMatch(entity);
-	}
-	,componentAddedToEntity: function(entity,componentClass) {
-		this.addIfMatch(entity);
-	}
-	,componentRemovedFromEntity: function(entity,componentClass) {
-		if(this.components.h.exists(Type.getClassName(componentClass))) this.removeIfMatch(entity);
-	}
-	,removeEntity: function(entity) {
-		this.removeIfMatch(entity);
-	}
-	,addIfMatch: function(entity) {
-		if(!(this.entities.h.__keys__[entity.__id__] != null)) {
-			var $it0 = this.components.keys();
-			while( $it0.hasNext() ) {
-				var componentClass = $it0.next();
-				if(!entity.has(componentClass)) return;
-			}
-			var node = this.nodePool.get();
-			node.entity = entity;
-			var $it1 = this.components.keys();
-			while( $it1.hasNext() ) {
-				var componentClass1 = $it1.next();
-				Reflect.setField(node,this.components.h.get(Type.getClassName(componentClass1)),entity.get(componentClass1));
-			}
-			this.entities.set(entity,node);
-			this.nodeList.add(node);
-		}
-	}
-	,removeIfMatch: function(entity) {
-		if(this.entities.h.__keys__[entity.__id__] != null) {
-			var node = this.entities.h[entity.__id__];
-			this.entities.remove(entity);
-			this.nodeList.remove(node);
-			if(this.engine.updating) {
-				this.nodePool.cache(node);
-				this.engine.updateComplete.add($bind(this,this.releaseNodePoolCache));
-			} else this.nodePool.dispose(node);
-		}
-	}
-	,releaseNodePoolCache: function() {
-		this.engine.updateComplete.remove($bind(this,this.releaseNodePoolCache));
-		this.nodePool.releaseCache();
-	}
-	,cleanUp: function() {
-		var _g = new ash.GenericListIterator(this.nodeList.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			this.entities.remove(node.entity);
-		}
-		this.nodeList.removeAll();
-	}
-	,__class__: ash.core.ComponentMatchingFamily
-};
-ash.core.Engine = function() {
-	this.familyClass = ash.core.ComponentMatchingFamily;
-	this.entityList = new ash.core.EntityList();
-	this.entityNames = new haxe.ds.StringMap();
-	this.systemList = new ash.core.SystemList();
-	this.families = new ash.ClassMap();
-	this.entityAdded = new ash.signals.Signal1();
-	this.entityRemoved = new ash.signals.Signal1();
-	this.updateComplete = new ash.signals.Signal0();
-	this.updating = false;
-};
-$hxClasses["ash.core.Engine"] = ash.core.Engine;
-ash.core.Engine.__name__ = ["ash","core","Engine"];
-ash.core.Engine.prototype = {
-	addEntity: function(entity) {
-		if(this.entityNames.exists(entity.name)) throw "The entity name " + entity.name + " is already in use by another entity.";
-		this.entityList.add(entity);
-		this.entityNames.set(entity.name,entity);
-		entity.componentAdded.add($bind(this,this.componentAdded));
-		entity.componentRemoved.add($bind(this,this.componentRemoved));
-		entity.nameChanged.add($bind(this,this.entityNameChanged));
-		var $it0 = this.families.h.iterator();
-		while( $it0.hasNext() ) {
-			var family = $it0.next();
-			family.newEntity(entity);
-		}
-		this.entityAdded.dispatch(entity);
-	}
-	,removeEntity: function(entity) {
-		entity.componentAdded.remove($bind(this,this.componentAdded));
-		entity.componentRemoved.remove($bind(this,this.componentRemoved));
-		entity.nameChanged.remove($bind(this,this.entityNameChanged));
-		var $it0 = this.families.h.iterator();
-		while( $it0.hasNext() ) {
-			var family = $it0.next();
-			family.removeEntity(entity);
-		}
-		this.entityNames.remove(entity.name);
-		this.entityList.remove(entity);
-		this.entityRemoved.dispatch(entity);
-	}
-	,entityNameChanged: function(entity,oldName) {
-		if(this.entityNames.get(oldName) == entity) {
-			this.entityNames.remove(oldName);
-			this.entityNames.set(entity.name,entity);
-		}
-	}
-	,getEntityByName: function(name) {
-		return this.entityNames.get(name);
-	}
-	,removeAllEntities: function() {
-		while(this.entityList.head != null) this.removeEntity(this.entityList.head);
-	}
-	,get_entities: function() {
-		return this.entityList;
-	}
-	,componentAdded: function(entity,componentClass) {
-		var $it0 = this.families.h.iterator();
-		while( $it0.hasNext() ) {
-			var family = $it0.next();
-			family.componentAddedToEntity(entity,componentClass);
-		}
-	}
-	,componentRemoved: function(entity,componentClass) {
-		var $it0 = this.families.h.iterator();
-		while( $it0.hasNext() ) {
-			var family = $it0.next();
-			family.componentRemovedFromEntity(entity,componentClass);
-		}
-	}
-	,getNodeList: function(nodeClass) {
-		if(this.families.h.exists(Type.getClassName(nodeClass))) return this.families.h.get(Type.getClassName(nodeClass)).nodeList;
-		var family = Type.createInstance(this.familyClass,[nodeClass,this]);
-		this.families.h.set(Type.getClassName(nodeClass),family);
-		var _g = new ash.GenericListIterator(this.entityList.head);
-		while(_g.previous.next != null) {
-			var entity = _g.next();
-			family.newEntity(entity);
-		}
-		return family.nodeList;
-	}
-	,releaseNodeList: function(nodeClass) {
-		if(this.families.h.exists(Type.getClassName(nodeClass))) {
-			this.families.h.get(Type.getClassName(nodeClass)).cleanUp();
-			this.families.h.remove(Type.getClassName(nodeClass));
-		}
-	}
-	,addSystem: function(system,priority) {
-		system.priority = priority;
-		system.addToEngine(this);
-		this.systemList.add(system);
-	}
-	,getSystem: function(type) {
-		return this.systemList.get(type);
-	}
-	,get_systems: function() {
-		return this.systemList;
-	}
-	,removeSystem: function(system) {
-		this.systemList.remove(system);
-		system.removeFromEngine(this);
-	}
-	,removeAllSystems: function() {
-		while(this.systemList.head != null) this.removeSystem(this.systemList.head);
-	}
-	,update: function(time) {
-		this.updating = true;
-		var _g = new ash.GenericListIterator(this.systemList.head);
-		while(_g.previous.next != null) {
-			var system = _g.next();
-			system.update(time);
-		}
-		this.updating = false;
-		this.updateComplete.dispatch();
-	}
-	,__class__: ash.core.Engine
-};
-ash.core.Entity = function(name) {
-	if(name == null) name = "";
-	this.componentAdded = new ash.signals.Signal2();
-	this.componentRemoved = new ash.signals.Signal2();
-	this.nameChanged = new ash.signals.Signal2();
-	this.components = new ash.ClassMap();
-	if(name != "") this.set_name(name); else this.set_name("_entity" + ++ash.core.Entity.nameCount);
-};
-$hxClasses["ash.core.Entity"] = ash.core.Entity;
-ash.core.Entity.__name__ = ["ash","core","Entity"];
-ash.core.Entity.prototype = {
-	set_name: function(value) {
-		if(this.name != value) {
-			var previous = this.name;
-			this.name = value;
-			this.nameChanged.dispatch(this,previous);
-		}
-		return value;
-	}
-	,add: function(component,componentClass) {
-		if(componentClass == null) componentClass = Type.getClass(component);
-		if(this.components.h.exists(Type.getClassName(componentClass))) this.remove(componentClass);
-		this.components.h.set(Type.getClassName(componentClass),component);
-		this.componentAdded.dispatch(this,componentClass);
-		return this;
-	}
-	,remove: function(componentClass) {
-		var component = this.components.h.get(Type.getClassName(componentClass));
-		if(component != null) {
-			this.components.h.remove(Type.getClassName(componentClass));
-			this.componentRemoved.dispatch(this,componentClass);
-			return component;
-		}
-		return null;
-	}
-	,get: function(componentClass) {
-		return this.components.h.get(Type.getClassName(componentClass));
-	}
-	,getAll: function() {
-		var componentArray = new Array();
-		var $it0 = this.components.h.iterator();
-		while( $it0.hasNext() ) {
-			var component = $it0.next();
-			componentArray.push(component);
-		}
-		return componentArray;
-	}
-	,has: function(componentClass) {
-		return this.components.h.exists(Type.getClassName(componentClass));
-	}
-	,__class__: ash.core.Entity
-};
-ash.core.EntityList = function() {
-};
-$hxClasses["ash.core.EntityList"] = ash.core.EntityList;
-ash.core.EntityList.__name__ = ["ash","core","EntityList"];
-ash.core.EntityList.prototype = {
-	add: function(entity) {
-		if(this.head == null) {
-			this.head = this.tail = entity;
-			entity.next = entity.previous = null;
-		} else {
-			this.tail.next = entity;
-			entity.previous = this.tail;
-			entity.next = null;
-			this.tail = entity;
-		}
-	}
-	,remove: function(entity) {
-		if(this.head == entity) this.head = this.head.next;
-		if(this.tail == entity) this.tail = this.tail.previous;
-		if(entity.previous != null) entity.previous.next = entity.next;
-		if(entity.next != null) entity.next.previous = entity.previous;
-	}
-	,removeAll: function() {
-		while(this.head != null) {
-			var entity = this.head;
-			this.head = this.head.next;
-			entity.previous = null;
-			entity.next = null;
-		}
-		this.tail = null;
-	}
-	,iterator: function() {
-		return new ash.GenericListIterator(this.head);
-	}
-	,__class__: ash.core.EntityList
-};
-ash.core.Node = function() { };
-$hxClasses["ash.core.Node"] = ash.core.Node;
-ash.core.Node.__name__ = ["ash","core","Node"];
-ash.core.Node.prototype = {
-	__class__: ash.core.Node
-};
-ash.core.NodeList = function() {
-	this.nodeAdded = new ash.signals.Signal1();
-	this.nodeRemoved = new ash.signals.Signal1();
-};
-$hxClasses["ash.core.NodeList"] = ash.core.NodeList;
-ash.core.NodeList.__name__ = ["ash","core","NodeList"];
-ash.core.NodeList.prototype = {
-	add: function(node) {
-		if(this.head == null) {
-			this.head = this.tail = node;
-			node.next = node.previous = null;
-		} else {
-			this.tail.next = node;
-			node.previous = this.tail;
-			node.next = null;
-			this.tail = node;
-		}
-		this.nodeAdded.dispatch(node);
-	}
-	,remove: function(node) {
-		if(this.head == node) this.head = this.head.next;
-		if(this.tail == node) this.tail = this.tail.previous;
-		if(node.previous != null) node.previous.next = node.next;
-		if(node.next != null) node.next.previous = node.previous;
-		this.nodeRemoved.dispatch(node);
-	}
-	,removeAll: function() {
-		while(this.head != null) {
-			var node = this.head;
-			this.head = this.head.next;
-			node.previous = null;
-			node.next = null;
-			this.nodeRemoved.dispatch(node);
-		}
-		this.tail = null;
-	}
-	,get_empty: function() {
-		return this.head == null;
-	}
-	,iterator: function() {
-		return new ash.GenericListIterator(this.head);
-	}
-	,swap: function(node1,node2) {
-		if(node1.previous == node2) {
-			node1.previous = node2.previous;
-			node2.previous = node1;
-			node2.next = node1.next;
-			node1.next = node2;
-		} else if(node2.previous == node1) {
-			node2.previous = node1.previous;
-			node1.previous = node2;
-			node1.next = node2.next;
-			node2.next = node1;
-		} else {
-			var temp = node1.previous;
-			node1.previous = node2.previous;
-			node2.previous = temp;
-			temp = node1.next;
-			node1.next = node2.next;
-			node2.next = temp;
-		}
-		if(this.head == node1) this.head = node2; else if(this.head == node2) this.head = node1;
-		if(this.tail == node1) this.tail = node2; else if(this.tail == node2) this.tail = node1;
-		if(node1.previous != null) node1.previous.next = node1;
-		if(node2.previous != null) node2.previous.next = node2;
-		if(node1.next != null) node1.next.previous = node1;
-		if(node2.next != null) node2.next.previous = node2;
-	}
-	,insertionSort: function(sortFunction) {
-		if(this.head == this.tail) return;
-		var remains = this.head.next;
-		var node = remains;
-		while(node != null) {
-			remains = node.next;
-			var other = node.previous;
-			while(other != null) {
-				if(sortFunction(node,other) >= 0) {
-					if(node != other.next) {
-						if(this.tail == node) this.tail = node.previous;
-						node.previous.next = node.next;
-						if(node.next != null) node.next.previous = node.previous;
-						node.next = other.next;
-						node.previous = other;
-						node.next.previous = node;
-						other.next = node;
-					}
-					break;
-				}
-				other = other.previous;
-			}
-			if(other == null) {
-				if(this.tail == node) this.tail = node.previous;
-				node.previous.next = node.next;
-				if(node.next != null) node.next.previous = node.previous;
-				node.next = this.head;
-				this.head.previous = node;
-				node.previous = null;
-				this.head = node;
-			}
-			node = remains;
-		}
-	}
-	,mergeSort: function(sortFunction) {
-		if(this.head == this.tail) return;
-		var lists = [];
-		var start = this.head;
-		var end;
-		while(start != null) {
-			end = start;
-			while(end.next != null && sortFunction(end,end.next) <= 0) end = end.next;
-			var next = end.next;
-			start.previous = end.next = null;
-			lists.push(start);
-			start = next;
-		}
-		while(lists.length > 1) lists.push(this.merge(lists.shift(),lists.shift(),sortFunction));
-		this.tail = this.head = lists[0];
-		while(this.tail.next != null) this.tail = this.tail.next;
-	}
-	,merge: function(head1,head2,sortFunction) {
-		var node;
-		var head;
-		if(sortFunction(head1,head2) <= 0) {
-			head = node = head1;
-			head1 = head1.next;
-		} else {
-			head = node = head2;
-			head2 = head2.next;
-		}
-		while(head1 != null && head2 != null) if(sortFunction(head1,head2) <= 0) {
-			node.next = head1;
-			head1.previous = node;
-			node = head1;
-			head1 = head1.next;
-		} else {
-			node.next = head2;
-			head2.previous = node;
-			node = head2;
-			head2 = head2.next;
-		}
-		if(head1 != null) {
-			node.next = head1;
-			head1.previous = node;
-		} else {
-			node.next = head2;
-			head2.previous = node;
-		}
-		return head;
-	}
-	,__class__: ash.core.NodeList
-};
-ash.core.NodePool = function(nodeClass,components) {
-	this.nodeClass = nodeClass;
-	this.components = components;
-};
-$hxClasses["ash.core.NodePool"] = ash.core.NodePool;
-ash.core.NodePool.__name__ = ["ash","core","NodePool"];
-ash.core.NodePool.prototype = {
-	get: function() {
-		if(this.tail != null) {
-			var node = this.tail;
-			this.tail = this.tail.previous;
-			node.previous = null;
-			return node;
-		} else return Type.createEmptyInstance(this.nodeClass);
-	}
-	,dispose: function(node) {
-		var $it0 = this.components.h.iterator();
-		while( $it0.hasNext() ) {
-			var componentName = $it0.next();
-			node[componentName] = null;
-		}
-		node.entity = null;
-		node.next = null;
-		node.previous = this.tail;
-		this.tail = node;
-	}
-	,cache: function(node) {
-		node.previous = this.cacheTail;
-		this.cacheTail = node;
-	}
-	,releaseCache: function() {
-		while(this.cacheTail != null) {
-			var node = this.cacheTail;
-			this.cacheTail = node.previous;
-			node.next = null;
-			node.previous = this.tail;
-			this.tail = node;
-		}
-	}
-	,__class__: ash.core.NodePool
-};
-ash.core.System = function() {
-	this.priority = 0;
-};
-$hxClasses["ash.core.System"] = ash.core.System;
-ash.core.System.__name__ = ["ash","core","System"];
-ash.core.System.prototype = {
-	addToEngine: function(engine) {
-	}
-	,removeFromEngine: function(engine) {
-	}
-	,update: function(time) {
-	}
-	,__class__: ash.core.System
-};
-ash.core.SystemList = function() {
-};
-$hxClasses["ash.core.SystemList"] = ash.core.SystemList;
-ash.core.SystemList.__name__ = ["ash","core","SystemList"];
-ash.core.SystemList.prototype = {
-	add: function(system) {
-		if(this.head == null) {
-			this.head = this.tail = system;
-			system.next = system.previous = null;
-		} else {
-			var node = this.tail;
-			while(node != null) {
-				if(node.priority <= system.priority) break;
-				node = node.previous;
-			}
-			if(node == this.tail) {
-				this.tail.next = system;
-				system.previous = this.tail;
-				system.next = null;
-				this.tail = system;
-			} else if(node == null) {
-				system.next = this.head;
-				system.previous = null;
-				this.head.previous = system;
-				this.head = system;
-			} else {
-				system.next = node.next;
-				system.previous = node;
-				node.next.previous = system;
-				node.next = system;
-			}
-		}
-	}
-	,remove: function(system) {
-		if(this.head == system) this.head = this.head.next;
-		if(this.tail == system) this.tail = this.tail.previous;
-		if(system.previous != null) system.previous.next = system.next;
-		if(system.next != null) system.next.previous = system.previous;
-	}
-	,removeAll: function() {
-		while(this.head != null) {
-			var system = this.head;
-			this.head = this.head.next;
-			system.previous = null;
-			system.next = null;
-		}
-		this.tail = null;
-	}
-	,get: function(type) {
-		var system = this.head;
-		while(system != null) {
-			if(js.Boot.__instanceof(system,type)) return system;
-			system = system.next;
-		}
-		return null;
-	}
-	,iterator: function() {
-		return new ash.GenericListIterator(this.head);
-	}
-	,__class__: ash.core.SystemList
-};
-ash.signals = {};
-ash.signals.ListenerNode = function() {
-};
-$hxClasses["ash.signals.ListenerNode"] = ash.signals.ListenerNode;
-ash.signals.ListenerNode.__name__ = ["ash","signals","ListenerNode"];
-ash.signals.ListenerNode.prototype = {
-	__class__: ash.signals.ListenerNode
-};
-ash.signals.ListenerNodePool = function() {
-};
-$hxClasses["ash.signals.ListenerNodePool"] = ash.signals.ListenerNodePool;
-ash.signals.ListenerNodePool.__name__ = ["ash","signals","ListenerNodePool"];
-ash.signals.ListenerNodePool.prototype = {
-	get: function() {
-		if(this.tail != null) {
-			var node = this.tail;
-			this.tail = this.tail.previous;
-			node.previous = null;
-			return node;
-		} else return new ash.signals.ListenerNode();
-	}
-	,dispose: function(node) {
-		node.listener = null;
-		node.once = false;
-		node.next = null;
-		node.previous = this.tail;
-		this.tail = node;
-	}
-	,cache: function(node) {
-		node.listener = null;
-		node.previous = this.cacheTail;
-		this.cacheTail = node;
-	}
-	,releaseCache: function() {
-		while(this.cacheTail != null) {
-			var node = this.cacheTail;
-			this.cacheTail = node.previous;
-			node.next = null;
-			node.previous = this.tail;
-			this.tail = node;
-		}
-	}
-	,__class__: ash.signals.ListenerNodePool
-};
-ash.signals.SignalBase = function() {
-	this.listenerNodePool = new ash.signals.ListenerNodePool();
-	this.numListeners = 0;
-};
-$hxClasses["ash.signals.SignalBase"] = ash.signals.SignalBase;
-ash.signals.SignalBase.__name__ = ["ash","signals","SignalBase"];
-ash.signals.SignalBase.prototype = {
-	startDispatch: function() {
-		this.dispatching = true;
-	}
-	,endDispatch: function() {
-		this.dispatching = false;
-		if(this.toAddHead != null) {
-			if(this.head == null) {
-				this.head = this.toAddHead;
-				this.tail = this.toAddTail;
-			} else {
-				this.tail.next = this.toAddHead;
-				this.toAddHead.previous = this.tail;
-				this.tail = this.toAddTail;
-			}
-			this.toAddHead = null;
-			this.toAddTail = null;
-		}
-		this.listenerNodePool.releaseCache();
-	}
-	,getNode: function(listener) {
-		var node = this.head;
-		while(node != null) {
-			if(Reflect.compareMethods(node.listener,listener)) break;
-			node = node.next;
-		}
-		if(node == null) {
-			node = this.toAddHead;
-			while(node != null) {
-				if(Reflect.compareMethods(node.listener,listener)) break;
-				node = node.next;
-			}
-		}
-		return node;
-	}
-	,nodeExists: function(listener) {
-		return this.getNode(listener) != null;
-	}
-	,add: function(listener) {
-		if(this.getNode(listener) != null) return;
-		var node = this.listenerNodePool.get();
-		node.listener = listener;
-		this.addNode(node);
-	}
-	,addOnce: function(listener) {
-		if(this.getNode(listener) != null) return;
-		var node = this.listenerNodePool.get();
-		node.listener = listener;
-		node.once = true;
-		this.addNode(node);
-	}
-	,addNode: function(node) {
-		if(this.dispatching) {
-			if(this.toAddHead == null) this.toAddHead = this.toAddTail = node; else {
-				this.toAddTail.next = node;
-				node.previous = this.toAddTail;
-				this.toAddTail = node;
-			}
-		} else if(this.head == null) this.head = this.tail = node; else {
-			this.tail.next = node;
-			node.previous = this.tail;
-			this.tail = node;
-		}
-		this.numListeners++;
-	}
-	,remove: function(listener) {
-		var node = this.getNode(listener);
-		if(node != null) {
-			if(this.head == node) this.head = this.head.next;
-			if(this.tail == node) this.tail = this.tail.previous;
-			if(this.toAddHead == node) this.toAddHead = this.toAddHead.next;
-			if(this.toAddTail == node) this.toAddTail = this.toAddTail.previous;
-			if(node.previous != null) node.previous.next = node.next;
-			if(node.next != null) node.next.previous = node.previous;
-			if(this.dispatching) this.listenerNodePool.cache(node); else this.listenerNodePool.dispose(node);
-			this.numListeners--;
-		}
-	}
-	,removeAll: function() {
-		while(this.head != null) {
-			var node = this.head;
-			this.head = this.head.next;
-			this.listenerNodePool.dispose(node);
-		}
-		this.tail = null;
-		this.toAddHead = null;
-		this.toAddTail = null;
-		this.numListeners = 0;
-	}
-	,__class__: ash.signals.SignalBase
-};
-ash.signals.Signal0 = function() {
-	ash.signals.SignalBase.call(this);
-};
-$hxClasses["ash.signals.Signal0"] = ash.signals.Signal0;
-ash.signals.Signal0.__name__ = ["ash","signals","Signal0"];
-ash.signals.Signal0.__super__ = ash.signals.SignalBase;
-ash.signals.Signal0.prototype = $extend(ash.signals.SignalBase.prototype,{
-	dispatch: function() {
-		this.startDispatch();
-		var node = this.head;
-		while(node != null) {
-			node.listener();
-			if(node.once) this.remove(node.listener);
-			node = node.next;
-		}
-		this.endDispatch();
-	}
-	,__class__: ash.signals.Signal0
-});
-ash.signals.Signal1 = function() {
-	ash.signals.SignalBase.call(this);
-};
-$hxClasses["ash.signals.Signal1"] = ash.signals.Signal1;
-ash.signals.Signal1.__name__ = ["ash","signals","Signal1"];
-ash.signals.Signal1.__super__ = ash.signals.SignalBase;
-ash.signals.Signal1.prototype = $extend(ash.signals.SignalBase.prototype,{
-	dispatch: function(object1) {
-		this.startDispatch();
-		var node = this.head;
-		while(node != null) {
-			node.listener(object1);
-			if(node.once) this.remove(node.listener);
-			node = node.next;
-		}
-		this.endDispatch();
-	}
-	,__class__: ash.signals.Signal1
-});
-ash.signals.Signal2 = function() {
-	ash.signals.SignalBase.call(this);
-};
-$hxClasses["ash.signals.Signal2"] = ash.signals.Signal2;
-ash.signals.Signal2.__name__ = ["ash","signals","Signal2"];
-ash.signals.Signal2.__super__ = ash.signals.SignalBase;
-ash.signals.Signal2.prototype = $extend(ash.signals.SignalBase.prototype,{
-	dispatch: function(object1,object2) {
-		this.startDispatch();
-		var node = this.head;
-		while(node != null) {
-			node.listener(object1,object2);
-			if(node.once) this.remove(node.listener);
-			node = node.next;
-		}
-		this.endDispatch();
-	}
-	,__class__: ash.signals.Signal2
-});
-ash.tools = {};
-ash.tools.ListIteratingSystem = function(nodeClass,nodeUpdateFunction,nodeAddedFunction,nodeRemovedFunction) {
-	ash.core.System.call(this);
-	this.nodeClass = nodeClass;
-	this.nodeUpdateFunction = nodeUpdateFunction;
-	this.nodeAddedFunction = nodeAddedFunction;
-	this.nodeRemovedFunction = nodeRemovedFunction;
-};
-$hxClasses["ash.tools.ListIteratingSystem"] = ash.tools.ListIteratingSystem;
-ash.tools.ListIteratingSystem.__name__ = ["ash","tools","ListIteratingSystem"];
-ash.tools.ListIteratingSystem.__super__ = ash.core.System;
-ash.tools.ListIteratingSystem.prototype = $extend(ash.core.System.prototype,{
-	addToEngine: function(engine) {
-		this.nodeList = engine.getNodeList(this.nodeClass);
-		if(this.nodeAddedFunction != null) {
-			var _g = new ash.GenericListIterator(this.nodeList.head);
-			while(_g.previous.next != null) {
-				var node = _g.next();
-				this.nodeAddedFunction(node);
-			}
-			this.nodeList.nodeAdded.add(this.nodeAddedFunction);
-		}
-		if(this.nodeRemovedFunction != null) this.nodeList.nodeRemoved.add(this.nodeRemovedFunction);
-	}
-	,removeFromEngine: function(engine) {
-		if(this.nodeAddedFunction != null) this.nodeList.nodeAdded.remove(this.nodeAddedFunction);
-		if(this.nodeRemovedFunction != null) this.nodeList.nodeRemoved.remove(this.nodeRemovedFunction);
-		this.nodeList = null;
-	}
-	,update: function(time) {
-		if(this.nodeUpdateFunction != null) {
-			var _g = new ash.GenericListIterator(this.nodeList.head);
-			while(_g.previous.next != null) {
-				var node = _g.next();
-				this.nodeUpdateFunction(node,time);
-			}
-		}
-	}
-	,__class__: ash.tools.ListIteratingSystem
-});
 var ds = {};
 ds.AABB = function(x,y,width,height) {
 	if(height == null) height = 0;
@@ -1250,7 +356,6 @@ ds.AABB = function(x,y,width,height) {
 	this.maxX = x + width;
 	this.maxY = y + height;
 };
-$hxClasses["ds.AABB"] = ds.AABB;
 ds.AABB.__name__ = ["ds","AABB"];
 ds.AABB.prototype = {
 	get_x: function() {
@@ -1366,7 +471,7 @@ ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowth
 	this.maxId = 0;
 	this.numLeaves = 0;
 	this.numNodes = 0;
-	this.isValidationEnabled = true;
+	this.isValidationEnabled = false;
 	this.fattenDelta = fattenDelta;
 	if(insertStrategy != null) this.insertStrategy = insertStrategy; else this.insertStrategy = new ds.aabbtree.InsertStrategyPerimeter();
 	this.pool = new ds.aabbtree.NodePool(initialPoolCapacity,poolGrowthFactor);
@@ -1374,7 +479,6 @@ ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowth
 	this.nodes = [];
 	this.leaves = new haxe.ds.IntMap();
 };
-$hxClasses["ds.AABBTree"] = ds.AABBTree;
 ds.AABBTree.__name__ = ["ds","AABBTree"];
 ds.AABBTree.segmentIntersect = function(p0x,p0y,p1x,p1y,q0x,q0y,q1x,q1y) {
 	var intX;
@@ -1408,7 +512,7 @@ ds.AABBTree.sqr = function(x) {
 	return x * x;
 };
 ds.AABBTree.assert = function(cond) {
-	if(!cond) throw "ASSERT FAILED!";
+	return;
 };
 ds.AABBTree.prototype = {
 	get_numNodes: function() {
@@ -1474,13 +578,10 @@ ds.AABBTree.prototype = {
 			node = this.nodes[this.balance(node.id)];
 			left = node.left;
 			right = node.right;
-			ds.AABBTree.assert(left != null);
-			ds.AABBTree.assert(right != null);
 			node.invHeight = 1 + Std["int"](Math.max(left.invHeight,right.invHeight));
 			node.aabb.asUnionOf(left.aabb,right.aabb);
 			node = node.parent;
 		}
-		this.validate();
 		return leafNode.id;
 	}
 	,updateLeaf: function(leafId,x,y,width,height,dx,dy) {
@@ -1489,7 +590,6 @@ ds.AABBTree.prototype = {
 		if(height == null) height = 0;
 		if(width == null) width = 0;
 		var leafNode = this.nodes[leafId];
-		ds.AABBTree.assert(leafNode.left == null);
 		var newAABB = new ds.AABB(x,y,width,height);
 		if(leafNode.aabb.contains(newAABB)) return false;
 		var data = leafNode.data;
@@ -1505,12 +605,10 @@ ds.AABBTree.prototype = {
 			height -= dy;
 		} else height += dy;
 		var newId = this.insertLeaf(data,x,y,width,height);
-		ds.AABBTree.assert(newId == leafId);
 		return true;
 	}
 	,removeLeaf: function(leafId) {
 		var leafNode = this.nodes[leafId];
-		ds.AABBTree.assert(leafNode.left == null);
 		this.leaves.remove(leafId);
 		if(leafNode == this.root) {
 			this.disposeNode(leafId);
@@ -1537,21 +635,9 @@ ds.AABBTree.prototype = {
 			this.root = sibling;
 			this.root.parent = null;
 		}
-		ds.AABBTree.assert(parent.id != -1);
 		this.disposeNode(parent.id);
 		this.disposeNode(leafId);
-		ds.AABBTree.assert(this.numLeaves == ((function($this) {
-			var $r;
-			var _g = [];
-			var $it0 = $this.leaves.keys();
-			while( $it0.hasNext() ) {
-				var k = $it0.next();
-				_g.push(k);
-			}
-			$r = _g;
-			return $r;
-		}(this))).length);
-		this.validate();
+		null;
 	}
 	,clear: function(resetPool) {
 		if(resetPool == null) resetPool = false;
@@ -1625,7 +711,7 @@ ds.AABBTree.prototype = {
 			count--;
 		}
 		this.root = this.nodes[leafIds[0]];
-		this.validate();
+		null;
 	}
 	,getLeavesData: function(into) {
 		var res;
@@ -1649,12 +735,10 @@ ds.AABBTree.prototype = {
 	}
 	,getData: function(leafId) {
 		var leafNode = this.nodes[leafId];
-		ds.AABBTree.assert(leafNode.left == null);
 		return leafNode.data;
 	}
 	,getFatAABB: function(leafId) {
 		var leafNode = this.nodes[leafId];
-		ds.AABBTree.assert(leafNode.left == null);
 		return leafNode.aabb.clone();
 	}
 	,query: function(x,y,width,height,strictMode,into,callback) {
@@ -1755,7 +839,6 @@ ds.AABBTree.prototype = {
 		return newId;
 	}
 	,disposeNode: function(id) {
-		ds.AABBTree.assert(this.nodes[id] != null);
 		var node = this.nodes[id];
 		if(node.left == null) this.numLeaves--;
 		this.nodes[node.id] = null;
@@ -1764,7 +847,6 @@ ds.AABBTree.prototype = {
 	}
 	,balance: function(nodeId) {
 		var A = this.nodes[nodeId];
-		ds.AABBTree.assert(A != null);
 		if(A.left == null || A.invHeight < 2) return A.id;
 		var B = A.left;
 		var C = A.right;
@@ -1781,7 +863,6 @@ ds.AABBTree.prototype = {
 			var i = _g1++;
 			var node = this.nodes[i];
 			if(node.invHeight <= 1 || node == null) continue;
-			ds.AABBTree.assert(!(node.left == null));
 			var left = node.left;
 			var right = node.right;
 			var balance = Math.abs(right.invHeight - left.invHeight);
@@ -1796,10 +877,7 @@ ds.AABBTree.prototype = {
 		rightNode.parent = parentNode.parent;
 		parentNode.parent = rightNode;
 		if(rightNode.parent != null) {
-			if(rightNode.parent.left == parentNode) rightNode.parent.left = rightNode; else {
-				ds.AABBTree.assert(rightNode.parent.right == parentNode);
-				rightNode.parent.right = rightNode;
-			}
+			if(rightNode.parent.left == parentNode) rightNode.parent.left = rightNode; else rightNode.parent.right = rightNode;
 		} else this.root = rightNode;
 		if(F.invHeight > G.invHeight) {
 			rightNode.right = F;
@@ -1827,10 +905,7 @@ ds.AABBTree.prototype = {
 		leftNode.parent = parentNode.parent;
 		parentNode.parent = leftNode;
 		if(leftNode.parent != null) {
-			if(leftNode.parent.left == parentNode) leftNode.parent.left = leftNode; else {
-				ds.AABBTree.assert(leftNode.parent.right == parentNode);
-				leftNode.parent.right = leftNode;
-			}
+			if(leftNode.parent.left == parentNode) leftNode.parent.left = leftNode; else leftNode.parent.right = leftNode;
 		} else this.root = leftNode;
 		if(D.invHeight > E.invHeight) {
 			leftNode.right = D;
@@ -1852,7 +927,6 @@ ds.AABBTree.prototype = {
 		return leftNode.id;
 	}
 	,getNode: function(id) {
-		ds.AABBTree.assert(id >= 0 && this.nodes[id] != null);
 		return this.nodes[id];
 	}
 	,validateNode: function(id) {
@@ -1861,18 +935,13 @@ ds.AABBTree.prototype = {
 		var stack = [root];
 		while(stack.length > 0) {
 			var node = stack.pop();
-			ds.AABBTree.assert(node != null);
 			var left = node.left;
 			var right = node.right;
 			if(node.left == null) {
-				ds.AABBTree.assert(left == null);
-				ds.AABBTree.assert(right == null);
 				node.invHeight = 0;
 				ds.AABBTree.assert(this.leaves.get(node.id) >= 0);
 				continue;
 			}
-			ds.AABBTree.assert(left.id >= 0);
-			ds.AABBTree.assert(right.id >= 0);
 			ds.AABBTree.assert(node.invHeight == 1 + Math.max(left.invHeight,right.invHeight));
 			aabb.asUnionOf(left.aabb,right.aabb);
 			ds.AABBTree.assert(Math.abs(node.aabb.minX - aabb.minX) < 0.000001);
@@ -1882,8 +951,7 @@ ds.AABBTree.prototype = {
 		}
 	}
 	,validate: function() {
-		if(this.root != null) this.validateNode(this.root.id);
-		ds.AABBTree.assert(this.numLeaves >= 0 && this.numLeaves <= this.get_numNodes());
+		return;
 	}
 	,__class__: ds.AABBTree
 };
@@ -1893,7 +961,6 @@ ds.AABBTreeIterator = function(tree) {
 	this.length = tree.numLeaves;
 	this.ids = tree.getLeavesIds();
 };
-$hxClasses["ds.AABBTreeIterator"] = ds.AABBTreeIterator;
 ds.AABBTreeIterator.__name__ = ["ds","AABBTreeIterator"];
 ds.AABBTreeIterator.prototype = {
 	hasNext: function() {
@@ -1911,7 +978,6 @@ ds.Array2D = function(width,height,buffer) {
 	this.data32 = new Uint32Array(this.buffer);
 	this.data8 = new Uint8Array(this.buffer);
 };
-$hxClasses["ds.Array2D"] = ds.Array2D;
 ds.Array2D.__name__ = ["ds","Array2D"];
 ds.Array2D.prototype = {
 	get: function(x,y) {
@@ -1981,7 +1047,6 @@ ds.Array2D.prototype = {
 ds.Grid2D = function(gridWidth,gridHeight,cellSize) {
 	this.initalize(gridWidth,gridHeight,cellSize);
 };
-$hxClasses["ds.Grid2D"] = ds.Grid2D;
 ds.Grid2D.__name__ = ["ds","Grid2D"];
 ds.Grid2D.prototype = {
 	initalize: function(gridWidth,gridHeight,cellSize) {
@@ -2013,13 +1078,11 @@ ds.Grid2D.prototype = {
 };
 ds.Grid2DIterator = function() {
 };
-$hxClasses["ds.Grid2DIterator"] = ds.Grid2DIterator;
 ds.Grid2DIterator.__name__ = ["ds","Grid2DIterator"];
 ds.Grid2DIterator.prototype = {
 	__class__: ds.Grid2DIterator
 };
 ds.IDManager = function() { };
-$hxClasses["ds.IDManager"] = ds.IDManager;
 ds.IDManager.__name__ = ["ds","IDManager"];
 ds.IDManager.GetPersistentID = function() {
 	return ds.IDManager.NEXT_PERSISTENT_ID++;
@@ -2036,14 +1099,12 @@ ds.IDManager.ReleaseTransientID = function(id) {
 };
 ds.aabbtree = {};
 ds.aabbtree.IDebugRenderer = function() { };
-$hxClasses["ds.aabbtree.IDebugRenderer"] = ds.aabbtree.IDebugRenderer;
 ds.aabbtree.IDebugRenderer.__name__ = ["ds","aabbtree","IDebugRenderer"];
 ds.aabbtree.IDebugRenderer.prototype = {
 	__class__: ds.aabbtree.IDebugRenderer
 };
 ds.aabbtree.DebugRenderer = function() {
 };
-$hxClasses["ds.aabbtree.DebugRenderer"] = ds.aabbtree.DebugRenderer;
 ds.aabbtree.DebugRenderer.__name__ = ["ds","aabbtree","DebugRenderer"];
 ds.aabbtree.DebugRenderer.__interfaces__ = [ds.aabbtree.IDebugRenderer];
 ds.aabbtree.DebugRenderer.prototype = {
@@ -2076,7 +1137,6 @@ ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
 ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.IInsertStrategy = function() { };
-$hxClasses["ds.aabbtree.IInsertStrategy"] = ds.aabbtree.IInsertStrategy;
 ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
 ds.aabbtree.IInsertStrategy.prototype = {
 	__class__: ds.aabbtree.IInsertStrategy
@@ -2084,7 +1144,6 @@ ds.aabbtree.IInsertStrategy.prototype = {
 ds.aabbtree.InsertStrategyPerimeter = function() {
 	this.combinedAABB = new ds.AABB();
 };
-$hxClasses["ds.aabbtree.InsertStrategyPerimeter"] = ds.aabbtree.InsertStrategyPerimeter;
 ds.aabbtree.InsertStrategyPerimeter.__name__ = ["ds","aabbtree","InsertStrategyPerimeter"];
 ds.aabbtree.InsertStrategyPerimeter.__interfaces__ = [ds.aabbtree.IInsertStrategy];
 ds.aabbtree.InsertStrategyPerimeter.prototype = {
@@ -2119,7 +1178,6 @@ ds.aabbtree.Node = function(aabb,data,parent,id) {
 	this.parent = parent;
 	this.id = id;
 };
-$hxClasses["ds.aabbtree.Node"] = ds.aabbtree.Node;
 ds.aabbtree.Node.__name__ = ["ds","aabbtree","Node"];
 ds.aabbtree.Node.prototype = {
 	isLeaf: function() {
@@ -2138,7 +1196,6 @@ ds.aabbtree.NodePool = function(capacity,growthFactor) {
 		this.freeNodes.push(new ds.aabbtree.Node(new ds.AABB(),null));
 	}
 };
-$hxClasses["ds.aabbtree.NodePool"] = ds.aabbtree.NodePool;
 ds.aabbtree.NodePool.__name__ = ["ds","aabbtree","NodePool"];
 ds.aabbtree.NodePool.prototype = {
 	get: function(x,y,width,height,data,parent,id) {
@@ -2180,11 +1237,398 @@ ds.aabbtree.NodePool.prototype = {
 	}
 	,__class__: ds.aabbtree.NodePool
 };
+var eco = {};
+eco.core = {};
+eco.core.ClassMap = function() {
+	this.map = new haxe.ds.StringMap();
+};
+eco.core.ClassMap.__name__ = ["eco","core","ClassMap"];
+eco.core.ClassMap.prototype = {
+	registerSystem: function(system) {
+		var _g = 0;
+		var _g1 = system.get_registeredComponents();
+		while(_g < _g1.length) {
+			var componentClass = _g1[_g];
+			++_g;
+			var className = Type.getClassName(componentClass);
+			if(!this.map.exists(className)) {
+				var value = new Array();
+				this.map.set(className,value);
+			}
+			this.map.get(className).push(system);
+		}
+	}
+	,componentAdded: function(e,c) {
+		var className = Type.getClassName(c);
+		var systems = this.map.get(className);
+		if(systems != null) {
+			var _g = 0;
+			while(_g < systems.length) {
+				var system = systems[_g];
+				++_g;
+				system.componentAdded(e,c);
+			}
+		}
+	}
+	,componentRemoved: function(e,c) {
+	}
+	,__class__: eco.core.ClassMap
+};
+eco.core.Component = function() {
+	this.owner = null;
+};
+eco.core.Component.__name__ = ["eco","core","Component"];
+eco.core.Component.prototype = {
+	onAdded: function() {
+	}
+	,onRemoved: function() {
+	}
+	,update: function(time) {
+	}
+	,get_name: function() {
+		return null;
+	}
+	,__class__: eco.core.Component
+};
+eco.core.Engine = function() {
+	this.entities = new Array();
+	this.systems = new Array();
+	this.componentSystemMap = new eco.core.ClassMap();
+	this.componentAdded = new eco.signals.Signal2();
+	this.componentRemoved = new eco.signals.Signal2();
+	this.componentAdded.add(($_=this.componentSystemMap,$bind($_,$_.componentAdded)));
+	this.componentAdded.add(($_=this.componentSystemMap,$bind($_,$_.componentRemoved)));
+	this.updating = false;
+	this.componentPriorities = new haxe.ds.StringMap();
+};
+eco.core.Engine.__name__ = ["eco","core","Engine"];
+eco.core.Engine.prototype = {
+	addEntity: function(entity) {
+		this.entities.push(entity);
+		entity.onAdded(this);
+	}
+	,removeEntity: function(entity) {
+		var i = HxOverrides.indexOf(this.entities,entity,0);
+		if(i >= 0) {
+			this.entities.splice(i,1);
+			entity.onRemoved();
+		}
+	}
+	,addSystem: function(system) {
+		this.systems.push(system);
+		this.componentSystemMap.registerSystem(system);
+		system.onAdded(this);
+	}
+	,removeSystem: function(system) {
+		var i = HxOverrides.indexOf(this.systems,system,0);
+		if(i >= 0) {
+			this.systems.splice(i,1);
+			system.onRemoved();
+		}
+	}
+	,registerComponent: function(component,priority) {
+		var registeredName = Type.getClassName(component).split(".").pop();
+		this.componentPriorities.set(registeredName,priority);
+	}
+	,setComponentPriority: function(component) {
+		if((function($this) {
+			var $r;
+			var key = component.get_name();
+			$r = $this.componentPriorities.exists(key);
+			return $r;
+		}(this))) {
+			var key1 = component.get_name();
+			component.priority = this.componentPriorities.get(key1);
+		} else component.priority = 0;
+	}
+	,update: function(time) {
+		this.updating = true;
+		var _g = 0;
+		var _g1 = this.systems;
+		while(_g < _g1.length) {
+			var system = _g1[_g];
+			++_g;
+			system.update(time);
+		}
+		this.updating = false;
+	}
+	,__class__: eco.core.Engine
+};
+eco.core.Entity = function() {
+	this.components = [];
+	this.componentMap = { };
+	this.events = new eco.signals.Signal2();
+};
+eco.core.Entity.__name__ = ["eco","core","Entity"];
+eco.core.Entity.prototype = {
+	add: function(component) {
+		if(component.owner != null) component.owner.remove(component);
+		var name = component.get_name();
+		var prev = this.componentMap[name];
+		if(prev != null) this.remove(prev);
+		this.componentMap[name] = component;
+		this.components.push(component);
+		component.owner = this;
+		component.onAdded();
+		if(this.engine != null) {
+			this.engine.setComponentPriority(component);
+			this.engine.componentAdded.dispatch(this,Type.getClass(component));
+			this.sortComponents();
+		}
+		return this;
+	}
+	,remove: function(component) {
+		if(component.owner != this) return this;
+		delete(this.componentMap[p.name]);
+		var i = HxOverrides.indexOf(this.components,component,0);
+		if(i >= 0) this.components.splice(i,1);
+		return this;
+	}
+	,onAdded: function(engine) {
+		this.engine = engine;
+		var _g = 0;
+		var _g1 = this.components;
+		while(_g < _g1.length) {
+			var component = _g1[_g];
+			++_g;
+			engine.setComponentPriority(component);
+			engine.componentAdded.dispatch(this,Type.getClass(component));
+		}
+		this.sortComponents();
+	}
+	,onRemoved: function() {
+		var _g = 0;
+		var _g1 = this.components;
+		while(_g < _g1.length) {
+			var component = _g1[_g];
+			++_g;
+			this.engine.componentRemoved.dispatch(this,Type.getClass(component));
+		}
+		this.engine = null;
+	}
+	,update: function(time) {
+		var _g = 0;
+		var _g1 = this.components;
+		while(_g < _g1.length) {
+			var component = _g1[_g];
+			++_g;
+			component.update(time);
+		}
+	}
+	,sortComponents: function() {
+		this.components.sort(function(a,b) {
+			return b.priority - a.priority;
+		});
+	}
+	,getComponent: function(name) {
+		return this.componentMap[name];
+	}
+	,getComponentByClass: function(component) {
+		return this.componentMap[component.NAME];
+	}
+	,registerEvent: function(type,listener) {
+	}
+	,__class__: eco.core.Entity
+};
+eco.core.System = function() {
+};
+eco.core.System.__name__ = ["eco","core","System"];
+eco.core.System.prototype = {
+	get_registeredComponents: function() {
+		return [];
+	}
+	,onAdded: function(engine) {
+		this.engine = engine;
+	}
+	,onRemoved: function() {
+	}
+	,componentAdded: function(e,c) {
+	}
+	,componentRemoved: function(e,c) {
+	}
+	,update: function(time) {
+	}
+	,__class__: eco.core.System
+};
+eco.signals = {};
+eco.signals.ListenerNode = function() {
+};
+eco.signals.ListenerNode.__name__ = ["eco","signals","ListenerNode"];
+eco.signals.ListenerNode.prototype = {
+	__class__: eco.signals.ListenerNode
+};
+eco.signals.ListenerNodePool = function() {
+};
+eco.signals.ListenerNodePool.__name__ = ["eco","signals","ListenerNodePool"];
+eco.signals.ListenerNodePool.prototype = {
+	get: function() {
+		if(this.tail != null) {
+			var node = this.tail;
+			this.tail = this.tail.previous;
+			node.previous = null;
+			return node;
+		} else return new eco.signals.ListenerNode();
+	}
+	,dispose: function(node) {
+		node.listener = null;
+		node.once = false;
+		node.next = null;
+		node.previous = this.tail;
+		this.tail = node;
+	}
+	,cache: function(node) {
+		node.listener = null;
+		node.previous = this.cacheTail;
+		this.cacheTail = node;
+	}
+	,releaseCache: function() {
+		while(this.cacheTail != null) {
+			var node = this.cacheTail;
+			this.cacheTail = node.previous;
+			node.next = null;
+			node.previous = this.tail;
+			this.tail = node;
+		}
+	}
+	,__class__: eco.signals.ListenerNodePool
+};
+eco.signals.SignalBase = function() {
+	this.listenerNodePool = new eco.signals.ListenerNodePool();
+	this.numListeners = 0;
+};
+eco.signals.SignalBase.__name__ = ["eco","signals","SignalBase"];
+eco.signals.SignalBase.prototype = {
+	startDispatch: function() {
+		this.dispatching = true;
+	}
+	,endDispatch: function() {
+		this.dispatching = false;
+		if(this.toAddHead != null) {
+			if(this.head == null) {
+				this.head = this.toAddHead;
+				this.tail = this.toAddTail;
+			} else {
+				this.tail.next = this.toAddHead;
+				this.toAddHead.previous = this.tail;
+				this.tail = this.toAddTail;
+			}
+			this.toAddHead = null;
+			this.toAddTail = null;
+		}
+		this.listenerNodePool.releaseCache();
+	}
+	,getNode: function(listener) {
+		var node = this.head;
+		while(node != null) {
+			if(Reflect.compareMethods(node.listener,listener)) break;
+			node = node.next;
+		}
+		if(node == null) {
+			node = this.toAddHead;
+			while(node != null) {
+				if(Reflect.compareMethods(node.listener,listener)) break;
+				node = node.next;
+			}
+		}
+		return node;
+	}
+	,nodeExists: function(listener) {
+		return this.getNode(listener) != null;
+	}
+	,add: function(listener) {
+		if(this.getNode(listener) != null) return;
+		var node = this.listenerNodePool.get();
+		node.listener = listener;
+		this.addNode(node);
+	}
+	,addOnce: function(listener) {
+		if(this.getNode(listener) != null) return;
+		var node = this.listenerNodePool.get();
+		node.listener = listener;
+		node.once = true;
+		this.addNode(node);
+	}
+	,addNode: function(node) {
+		if(this.dispatching) {
+			if(this.toAddHead == null) this.toAddHead = this.toAddTail = node; else {
+				this.toAddTail.next = node;
+				node.previous = this.toAddTail;
+				this.toAddTail = node;
+			}
+		} else if(this.head == null) this.head = this.tail = node; else {
+			this.tail.next = node;
+			node.previous = this.tail;
+			this.tail = node;
+		}
+		this.numListeners++;
+	}
+	,remove: function(listener) {
+		var node = this.getNode(listener);
+		if(node != null) {
+			if(this.head == node) this.head = this.head.next;
+			if(this.tail == node) this.tail = this.tail.previous;
+			if(this.toAddHead == node) this.toAddHead = this.toAddHead.next;
+			if(this.toAddTail == node) this.toAddTail = this.toAddTail.previous;
+			if(node.previous != null) node.previous.next = node.next;
+			if(node.next != null) node.next.previous = node.previous;
+			if(this.dispatching) this.listenerNodePool.cache(node); else this.listenerNodePool.dispose(node);
+			this.numListeners--;
+		}
+	}
+	,removeAll: function() {
+		while(this.head != null) {
+			var node = this.head;
+			this.head = this.head.next;
+			this.listenerNodePool.dispose(node);
+		}
+		this.tail = null;
+		this.toAddHead = null;
+		this.toAddTail = null;
+		this.numListeners = 0;
+	}
+	,__class__: eco.signals.SignalBase
+};
+eco.signals.Signal2 = function() {
+	eco.signals.SignalBase.call(this);
+};
+eco.signals.Signal2.__name__ = ["eco","signals","Signal2"];
+eco.signals.Signal2.__super__ = eco.signals.SignalBase;
+eco.signals.Signal2.prototype = $extend(eco.signals.SignalBase.prototype,{
+	dispatch: function(object1,object2) {
+		this.startDispatch();
+		var node = this.head;
+		while(node != null) {
+			node.listener(object1,object2);
+			if(node.once) this.remove(node.listener);
+			node = node.next;
+		}
+		this.endDispatch();
+	}
+	,__class__: eco.signals.Signal2
+});
+eco.systems = {};
+eco.systems.EntityUpdater = function(entities) {
+	eco.core.System.call(this);
+	this.entities = entities;
+};
+eco.systems.EntityUpdater.__name__ = ["eco","systems","EntityUpdater"];
+eco.systems.EntityUpdater.__super__ = eco.core.System;
+eco.systems.EntityUpdater.prototype = $extend(eco.core.System.prototype,{
+	update: function(time) {
+		var _g = 0;
+		var _g1 = this.entities;
+		while(_g < _g1.length) {
+			var entity = _g1[_g];
+			++_g;
+			entity.update(time);
+		}
+	}
+	,__class__: eco.systems.EntityUpdater
+});
 var engine = {};
 engine.GameLoop = function() {
 	this.isRunning = false;
 };
-$hxClasses["engine.GameLoop"] = engine.GameLoop;
 engine.GameLoop.__name__ = ["engine","GameLoop"];
 engine.GameLoop.prototype = {
 	update: function(timestamp) {
@@ -2208,43 +1652,72 @@ engine.GameLoop.prototype = {
 	,__class__: engine.GameLoop
 };
 engine.components = {};
-engine.components.Camera = function() {
+engine.components.CameraController = function() {
+	eco.core.Component.call(this);
 };
-$hxClasses["engine.components.Camera"] = engine.components.Camera;
-engine.components.Camera.__name__ = ["engine","components","Camera"];
-engine.components.Camera.prototype = {
-	__class__: engine.components.Camera
+engine.components.CameraController.__name__ = ["engine","components","CameraController"];
+engine.components.CameraController.__super__ = eco.core.Component;
+engine.components.CameraController.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "CameraController";
+	}
+	,getPosition: function() {
+		var position = this.owner.componentMap.Position;
+		return position;
+	}
+	,__class__: engine.components.CameraController
+});
+engine.components.Controls = function() {
+	eco.core.Component.call(this);
 };
-engine.components.DebugDisplay = function() {
-};
-$hxClasses["engine.components.DebugDisplay"] = engine.components.DebugDisplay;
-engine.components.DebugDisplay.__name__ = ["engine","components","DebugDisplay"];
-engine.components.DebugDisplay.prototype = {
-	__class__: engine.components.DebugDisplay
-};
+engine.components.Controls.__name__ = ["engine","components","Controls"];
+engine.components.Controls.__super__ = eco.core.Component;
+engine.components.Controls.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Controls";
+	}
+	,__class__: engine.components.Controls
+});
 engine.components.Display = function(displayObject) {
+	eco.core.Component.call(this);
 	this.displayObject = displayObject;
 };
-$hxClasses["engine.components.Display"] = engine.components.Display;
 engine.components.Display.__name__ = ["engine","components","Display"];
-engine.components.Display.prototype = {
-	__class__: engine.components.Display
+engine.components.Display.__super__ = eco.core.Component;
+engine.components.Display.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Display";
+	}
+	,update: function(time) {
+		var position = this.owner.componentMap.Position;
+		this.displayObject.position.x = position.position.x;
+		this.displayObject.position.y = position.position.y;
+	}
+	,__class__: engine.components.Display
+});
+engine.components.Lifecycle = function(ttl) {
+	eco.core.Component.call(this);
+	this.ttl = ttl;
+	this.age = 0;
+	this.expired = false;
 };
-engine.components.MotionControls = function() {
-};
-$hxClasses["engine.components.MotionControls"] = engine.components.MotionControls;
-engine.components.MotionControls.__name__ = ["engine","components","MotionControls"];
-engine.components.MotionControls.prototype = {
-	__class__: engine.components.MotionControls
-};
-engine.components.Particle = function() {
-};
-$hxClasses["engine.components.Particle"] = engine.components.Particle;
-engine.components.Particle.__name__ = ["engine","components","Particle"];
-engine.components.Particle.prototype = {
-	__class__: engine.components.Particle
-};
+engine.components.Lifecycle.__name__ = ["engine","components","Lifecycle"];
+engine.components.Lifecycle.__super__ = eco.core.Component;
+engine.components.Lifecycle.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Lifecycle";
+	}
+	,update: function(time) {
+		this.age += time;
+		if(!this.expired && this.age >= this.ttl) {
+			this.owner.events.dispatch("lc",{ age : this.age});
+			this.expired = true;
+		}
+	}
+	,__class__: engine.components.Lifecycle
+});
 engine.components.Physics = function(x,y,velocityX,velocityY,shapes) {
+	eco.core.Component.call(this);
 	this.body = new physics.dynamics.Body();
 	this.body.SetStaticPosition(new physics.geometry.Vector2D(x,y));
 	this.body.SetVelocity(new physics.geometry.Vector2D(velocityX,velocityY));
@@ -2255,25 +1728,35 @@ engine.components.Physics = function(x,y,velocityX,velocityY,shapes) {
 		this.body.AddFeature(shape,new physics.dynamics.Material());
 	}
 };
-$hxClasses["engine.components.Physics"] = engine.components.Physics;
 engine.components.Physics.__name__ = ["engine","components","Physics"];
-engine.components.Physics.prototype = {
-	__class__: engine.components.Physics
-};
+engine.components.Physics.__super__ = eco.core.Component;
+engine.components.Physics.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Physics";
+	}
+	,onAdded: function() {
+		this.position = this.owner.componentMap.Position;
+		this.position.position = this.body.position;
+	}
+	,__class__: engine.components.Physics
+});
 engine.components.Position = function(x,y,rotation) {
+	eco.core.Component.call(this);
 	this.position = new physics.geometry.Vector2D(x,y);
 	this.rotation = rotation;
 };
-$hxClasses["engine.components.Position"] = engine.components.Position;
 engine.components.Position.__name__ = ["engine","components","Position"];
-engine.components.Position.prototype = {
-	__class__: engine.components.Position
-};
+engine.components.Position.__super__ = eco.core.Component;
+engine.components.Position.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Position";
+	}
+	,__class__: engine.components.Position
+});
 engine.core = {};
 engine.core.BaseGame = function() {
 	this.gameLoop = new engine.GameLoop();
 };
-$hxClasses["engine.core.BaseGame"] = engine.core.BaseGame;
 engine.core.BaseGame.__name__ = ["engine","core","BaseGame"];
 engine.core.BaseGame.prototype = {
 	loadAssets: function(assetList) {
@@ -2297,14 +1780,12 @@ engine.core.BaseGame.prototype = {
 };
 engine.graphics = {};
 engine.graphics.IGameGraphics = function() { };
-$hxClasses["engine.graphics.IGameGraphics"] = engine.graphics.IGameGraphics;
 engine.graphics.IGameGraphics.__name__ = ["engine","graphics","IGameGraphics"];
 engine.graphics.StaticLayerDisplayManager = function(worldData,cellSize) {
 	this.worldData = worldData;
 	this.grid = new ds.Grid2D(Math.ceil(worldData.worldBounds.width() / cellSize),Math.ceil(worldData.worldBounds.height() / cellSize),cellSize);
 	this.hashItems();
 };
-$hxClasses["engine.graphics.StaticLayerDisplayManager"] = engine.graphics.StaticLayerDisplayManager;
 engine.graphics.StaticLayerDisplayManager.__name__ = ["engine","graphics","StaticLayerDisplayManager"];
 engine.graphics.StaticLayerDisplayManager.prototype = {
 	hashItems: function() {
@@ -2339,7 +1820,6 @@ engine.input.DigitalInput = function() {
 	this.mouseOffset = new physics.geometry.Vector2D();
 	this.frameRef = 1;
 };
-$hxClasses["engine.input.DigitalInput"] = engine.input.DigitalInput;
 engine.input.DigitalInput.__name__ = ["engine","input","DigitalInput"];
 engine.input.DigitalInput.prototype = {
 	InputTarget: function(target) {
@@ -2435,7 +1915,6 @@ engine.map.tmx.TmxLayer = function(source,parent) {
 		}
 	}
 };
-$hxClasses["engine.map.tmx.TmxLayer"] = engine.map.tmx.TmxLayer;
 engine.map.tmx.TmxLayer.__name__ = ["engine","map","tmx","TmxLayer"];
 engine.map.tmx.TmxLayer.csvToArray = function(input) {
 	var result = new Array();
@@ -2551,7 +2030,6 @@ engine.map.tmx.TmxMap = function(data) {
 		this.objectGroups.set(node4.att.resolve("name"),new engine.map.tmx.TmxObjectGroup(node4,this));
 	}
 };
-$hxClasses["engine.map.tmx.TmxMap"] = engine.map.tmx.TmxMap;
 engine.map.tmx.TmxMap.__name__ = ["engine","map","tmx","TmxMap"];
 engine.map.tmx.TmxMap.prototype = {
 	getLayer: function(name) {
@@ -2604,7 +2082,6 @@ engine.map.tmx.TmxObject = function(source,parent) {
 		this.custom.extend(node1);
 	}
 };
-$hxClasses["engine.map.tmx.TmxObject"] = engine.map.tmx.TmxObject;
 engine.map.tmx.TmxObject.__name__ = ["engine","map","tmx","TmxObject"];
 engine.map.tmx.TmxObject.prototype = {
 	__class__: engine.map.tmx.TmxObject
@@ -2632,7 +2109,6 @@ engine.map.tmx.TmxObjectGroup = function(source,parent) {
 		this.objects.push(new engine.map.tmx.TmxObject(node2,this));
 	}
 };
-$hxClasses["engine.map.tmx.TmxObjectGroup"] = engine.map.tmx.TmxObjectGroup;
 engine.map.tmx.TmxObjectGroup.__name__ = ["engine","map","tmx","TmxObjectGroup"];
 engine.map.tmx.TmxObjectGroup.prototype = {
 	__class__: engine.map.tmx.TmxObjectGroup
@@ -2641,7 +2117,6 @@ engine.map.tmx.TmxOrderedHash = function() {
 	this._keys = new Array();
 	this._map = new haxe.ds.StringMap();
 };
-$hxClasses["engine.map.tmx.TmxOrderedHash"] = engine.map.tmx.TmxOrderedHash;
 engine.map.tmx.TmxOrderedHash.__name__ = ["engine","map","tmx","TmxOrderedHash"];
 engine.map.tmx.TmxOrderedHash.prototype = {
 	set: function(key,value) {
@@ -2681,7 +2156,6 @@ engine.map.tmx.TmxOrderedHash.prototype = {
 engine.map.tmx.TmxPropertySet = function() {
 	this.keys = new haxe.ds.StringMap();
 };
-$hxClasses["engine.map.tmx.TmxPropertySet"] = engine.map.tmx.TmxPropertySet;
 engine.map.tmx.TmxPropertySet.__name__ = ["engine","map","tmx","TmxPropertySet"];
 engine.map.tmx.TmxPropertySet.prototype = {
 	resolve: function(name) {
@@ -2731,7 +2205,6 @@ engine.map.tmx.TmxTileSet = function(data) {
 		}
 	}
 };
-$hxClasses["engine.map.tmx.TmxTileSet"] = engine.map.tmx.TmxTileSet;
 engine.map.tmx.TmxTileSet.__name__ = ["engine","map","tmx","TmxTileSet"];
 engine.map.tmx.TmxTileSet.prototype = {
 	get_image: function() {
@@ -2765,273 +2238,79 @@ engine.map.tmx.TmxTileSet.prototype = {
 	}
 	,__class__: engine.map.tmx.TmxTileSet
 };
-engine.nodes = {};
-engine.nodes.CameraControlNode = function() { };
-$hxClasses["engine.nodes.CameraControlNode"] = engine.nodes.CameraControlNode;
-engine.nodes.CameraControlNode.__name__ = ["engine","nodes","CameraControlNode"];
-engine.nodes.CameraControlNode._getComponents = function() {
-	if(engine.nodes.CameraControlNode._components == null) {
-		engine.nodes.CameraControlNode._components = new ash.ClassMap();
-		engine.nodes.CameraControlNode._components.h.set(Type.getClassName(engine.components.Camera),"camera");
-		engine.nodes.CameraControlNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-	}
-	return engine.nodes.CameraControlNode._components;
-};
-engine.nodes.CameraControlNode.__super__ = ash.core.Node;
-engine.nodes.CameraControlNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.CameraControlNode
-});
-engine.nodes.DebugRenderNode = function() { };
-$hxClasses["engine.nodes.DebugRenderNode"] = engine.nodes.DebugRenderNode;
-engine.nodes.DebugRenderNode.__name__ = ["engine","nodes","DebugRenderNode"];
-engine.nodes.DebugRenderNode._getComponents = function() {
-	if(engine.nodes.DebugRenderNode._components == null) {
-		engine.nodes.DebugRenderNode._components = new ash.ClassMap();
-		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
-		engine.nodes.DebugRenderNode._components.h.set(Type.getClassName(engine.components.DebugDisplay),"debugDisplay");
-	}
-	return engine.nodes.DebugRenderNode._components;
-};
-engine.nodes.DebugRenderNode.__super__ = ash.core.Node;
-engine.nodes.DebugRenderNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.DebugRenderNode
-});
-engine.nodes.MotionControlNode = function() { };
-$hxClasses["engine.nodes.MotionControlNode"] = engine.nodes.MotionControlNode;
-engine.nodes.MotionControlNode.__name__ = ["engine","nodes","MotionControlNode"];
-engine.nodes.MotionControlNode._getComponents = function() {
-	if(engine.nodes.MotionControlNode._components == null) {
-		engine.nodes.MotionControlNode._components = new ash.ClassMap();
-		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.MotionControls),"controls");
-		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.MotionControlNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
-	}
-	return engine.nodes.MotionControlNode._components;
-};
-engine.nodes.MotionControlNode.__super__ = ash.core.Node;
-engine.nodes.MotionControlNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.MotionControlNode
-});
-engine.nodes.ParticleNode = function() {
-};
-$hxClasses["engine.nodes.ParticleNode"] = engine.nodes.ParticleNode;
-engine.nodes.ParticleNode.__name__ = ["engine","nodes","ParticleNode"];
-engine.nodes.ParticleNode._getComponents = function() {
-	if(engine.nodes.ParticleNode._components == null) {
-		engine.nodes.ParticleNode._components = new ash.ClassMap();
-		engine.nodes.ParticleNode._components.h.set(Type.getClassName(engine.components.Particle),"particle");
-		engine.nodes.ParticleNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-	}
-	return engine.nodes.ParticleNode._components;
-};
-engine.nodes.ParticleNode.__super__ = ash.core.Node;
-engine.nodes.ParticleNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.ParticleNode
-});
-engine.nodes.PhysicsNode = function() { };
-$hxClasses["engine.nodes.PhysicsNode"] = engine.nodes.PhysicsNode;
-engine.nodes.PhysicsNode.__name__ = ["engine","nodes","PhysicsNode"];
-engine.nodes.PhysicsNode._getComponents = function() {
-	if(engine.nodes.PhysicsNode._components == null) {
-		engine.nodes.PhysicsNode._components = new ash.ClassMap();
-		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.PhysicsNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
-	}
-	return engine.nodes.PhysicsNode._components;
-};
-engine.nodes.PhysicsNode.__super__ = ash.core.Node;
-engine.nodes.PhysicsNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: engine.nodes.PhysicsNode
-});
-engine.nodes.RenderNode = function() { };
-$hxClasses["engine.nodes.RenderNode"] = engine.nodes.RenderNode;
-engine.nodes.RenderNode.__name__ = ["engine","nodes","RenderNode"];
-engine.nodes.RenderNode._getComponents = function() {
-	if(engine.nodes.RenderNode._components == null) {
-		engine.nodes.RenderNode._components = new ash.ClassMap();
-		engine.nodes.RenderNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		engine.nodes.RenderNode._components.h.set(Type.getClassName(engine.components.Display),"display");
-	}
-	return engine.nodes.RenderNode._components;
-};
-engine.nodes.RenderNode.__super__ = ash.core.Node;
-engine.nodes.RenderNode.prototype = $extend(ash.core.Node.prototype,{
-	get_displayObject: function() {
-		return this.display.displayObject;
-	}
-	,__class__: engine.nodes.RenderNode
-});
 engine.systems = {};
-engine.systems.CameraControlSystem = function(camera) {
-	ash.tools.ListIteratingSystem.call(this,engine.nodes.CameraControlNode,$bind(this,this.updateNode));
+engine.systems.InputSystem = function(digitalInput,camera) {
+	eco.core.System.call(this);
+	this.digitalInput = digitalInput;
 	this.camera = camera;
 };
-$hxClasses["engine.systems.CameraControlSystem"] = engine.systems.CameraControlSystem;
-engine.systems.CameraControlSystem.__name__ = ["engine","systems","CameraControlSystem"];
-engine.systems.CameraControlSystem.__super__ = ash.tools.ListIteratingSystem;
-engine.systems.CameraControlSystem.prototype = $extend(ash.tools.ListIteratingSystem.prototype,{
-	updateNode: function(node,time) {
-		var position = node.position;
-		this.camera.Focus(position.position.x,position.position.y);
+engine.systems.InputSystem.__name__ = ["engine","systems","InputSystem"];
+engine.systems.InputSystem.__super__ = eco.core.System;
+engine.systems.InputSystem.prototype = $extend(eco.core.System.prototype,{
+	get_registeredComponents: function() {
+		return [engine.components.Controls];
 	}
-	,__class__: engine.systems.CameraControlSystem
-});
-engine.systems.DebugRenderSystem = function(view) {
-	ash.core.System.call(this);
-	this.view = view;
-};
-$hxClasses["engine.systems.DebugRenderSystem"] = engine.systems.DebugRenderSystem;
-engine.systems.DebugRenderSystem.__name__ = ["engine","systems","DebugRenderSystem"];
-engine.systems.DebugRenderSystem.__super__ = ash.core.System;
-engine.systems.DebugRenderSystem.prototype = $extend(ash.core.System.prototype,{
-	addToEngine: function(engine1) {
-		this.nodes = engine1.getNodeList(engine.nodes.DebugRenderNode);
+	,componentAdded: function(e,c) {
+		var controls = e.componentMap[c.NAME];
+		controls.digitalInput = this.digitalInput;
+	}
+	,componentRemoved: function(e,c) {
+		console.log("TODO removed controls");
 	}
 	,update: function(time) {
-		this.view.Clear();
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var position = node.position.position;
-			var physics = node.physics;
-			var aabb = physics.body.aabb;
-			this.view.DrawCross(position.x,position.y,10);
-			this.view.DrawRect(position.x - (aabb.r - aabb.l) / 2,position.y - (aabb.b - aabb.t) / 2,aabb.r - aabb.l,aabb.b - aabb.t);
-		}
+		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 	}
-	,removeFromEngine: function(engine) {
-		this.nodes = null;
-	}
-	,__class__: engine.systems.DebugRenderSystem
-});
-engine.systems.MotionControlSystem = function(input) {
-	ash.tools.ListIteratingSystem.call(this,engine.nodes.MotionControlNode,$bind(this,this.updateNode));
-	this.input = input;
-	this.force = new physics.geometry.Vector2D();
-};
-$hxClasses["engine.systems.MotionControlSystem"] = engine.systems.MotionControlSystem;
-engine.systems.MotionControlSystem.__name__ = ["engine","systems","MotionControlSystem"];
-engine.systems.MotionControlSystem.__super__ = ash.tools.ListIteratingSystem;
-engine.systems.MotionControlSystem.prototype = $extend(ash.tools.ListIteratingSystem.prototype,{
-	updateNode: function(node,time) {
-		var control = node.controls;
-		var position = node.position;
-		var physics = node.physics;
-		this.left = this.input.keyMap[65] > 0;
-		this.right = this.input.keyMap[68] > 0;
-		this.up = this.input.keyMap[87] > 0;
-		this.down = this.input.keyMap[83] > 0;
-		this.force.setTo(0,0);
-		if(this.left) this.force.x -= 10; else this.force.x -= 0;
-		if(this.right) this.force.x += 10; else this.force.x += 0;
-		if(this.up) this.force.y -= 50; else this.force.y -= 0;
-		if(this.down) this.force.y += 10; else this.force.y += 0;
-		physics.body.AddForce(this.force);
-	}
-	,__class__: engine.systems.MotionControlSystem
-});
-engine.systems.ParticleSystem = function(particleEngine) {
-	ash.core.System.call(this);
-	this.particleEngine = particleEngine;
-};
-$hxClasses["engine.systems.ParticleSystem"] = engine.systems.ParticleSystem;
-engine.systems.ParticleSystem.__name__ = ["engine","systems","ParticleSystem"];
-engine.systems.ParticleSystem.__super__ = ash.core.System;
-engine.systems.ParticleSystem.prototype = $extend(ash.core.System.prototype,{
-	addToEngine: function(engine1) {
-		this.nodes = engine1.getNodeList(engine.nodes.ParticleNode);
-	}
-	,update: function(time) {
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var position = node.position.position;
-			this.particleEngine.EmitParticle(position.x,position.y,Math.random() * 200 + -100,Math.random() * 200 + -100,0,0,800,0.95,true,false,null,4,255,255,255,255);
-		}
-		this.particleEngine.Update();
-	}
-	,__class__: engine.systems.ParticleSystem
+	,__class__: engine.systems.InputSystem
 });
 engine.systems.PhysicsSystem = function(worldData) {
-	ash.core.System.call(this);
+	eco.core.System.call(this);
 	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),worldData);
-	var ray = new physics.geometry.Ray();
-	ray.SetParams(new physics.geometry.Vector2D(64,64),new physics.geometry.Vector2D(64,100),1000);
-	var result = this.physicsEngine.CastRay(ray);
-	console.log(result);
-	var staticLayer = new engine.graphics.StaticLayerDisplayManager(worldData,600);
 	this.physicsEngine.masslessForces.setTo(0,9);
 };
-$hxClasses["engine.systems.PhysicsSystem"] = engine.systems.PhysicsSystem;
 engine.systems.PhysicsSystem.__name__ = ["engine","systems","PhysicsSystem"];
-engine.systems.PhysicsSystem.__super__ = ash.core.System;
-engine.systems.PhysicsSystem.prototype = $extend(ash.core.System.prototype,{
-	addToEngine: function(engine1) {
-		this.nodes = engine1.getNodeList(engine.nodes.PhysicsNode);
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			this.addToPhysicsEngine(node);
-		}
-		this.nodes.nodeAdded.add($bind(this,this.addToPhysicsEngine));
-		this.nodes.nodeRemoved.add($bind(this,this.removeFromPhysicsEngine));
+engine.systems.PhysicsSystem.__super__ = eco.core.System;
+engine.systems.PhysicsSystem.prototype = $extend(eco.core.System.prototype,{
+	get_registeredComponents: function() {
+		return [engine.components.Physics];
 	}
-	,addToPhysicsEngine: function(node) {
-		this.physicsEngine.AddBody(node.physics.body);
-		node.position.position = node.physics.body.position;
+	,componentAdded: function(e,c) {
+		var physics = e.componentMap[c.NAME];
+		this.physicsEngine.AddBody(physics.body);
 	}
-	,removeFromPhysicsEngine: function(node) {
-		this.physicsEngine.RemoveBody(node.physics.body);
+	,componentRemoved: function(e,c) {
+		var physics = e.componentMap[c.NAME];
+		console.log("removed Physics");
 	}
 	,update: function(time) {
 		this.physicsEngine.Step();
 	}
-	,removeFromEngine: function(engine) {
-		this.nodes = null;
-	}
 	,__class__: engine.systems.PhysicsSystem
 });
-engine.systems.RenderSystem = function(container) {
-	ash.core.System.call(this);
+engine.systems.RenderSystem = function(camera,container) {
+	eco.core.System.call(this);
+	this.camera = camera;
 	this.container = container;
 };
-$hxClasses["engine.systems.RenderSystem"] = engine.systems.RenderSystem;
 engine.systems.RenderSystem.__name__ = ["engine","systems","RenderSystem"];
-engine.systems.RenderSystem.__super__ = ash.core.System;
-engine.systems.RenderSystem.prototype = $extend(ash.core.System.prototype,{
-	addToEngine: function(engine1) {
-		this.nodes = engine1.getNodeList(engine.nodes.RenderNode);
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			this.addToDisplay(node);
+engine.systems.RenderSystem.__super__ = eco.core.System;
+engine.systems.RenderSystem.prototype = $extend(eco.core.System.prototype,{
+	get_registeredComponents: function() {
+		return [engine.components.Display,engine.components.CameraController];
+	}
+	,componentAdded: function(e,c) {
+		if(c == engine.components.Display) {
+			var display = e.componentMap[c.NAME];
+			this.container.addChild(display.displayObject);
+		} else if(c == engine.components.CameraController) {
+			var camera = e.componentMap.CameraController;
+			this.cameraPosition = camera.getPosition();
 		}
-		this.nodes.nodeAdded.add($bind(this,this.addToDisplay));
-		this.nodes.nodeRemoved.add($bind(this,this.removeFromDisplay));
 	}
-	,addToDisplay: function(node) {
-		this.container.addChild(node.display.displayObject);
-	}
-	,removeFromDisplay: function(node) {
-		this.container.removeChild(node.display.displayObject);
+	,componentRemoved: function(e,c) {
+		console.log("removed");
 	}
 	,update: function(time) {
-		var _g = new ash.GenericListIterator(this.nodes.head);
-		while(_g.previous.next != null) {
-			var node = _g.next();
-			var displayObject = node.display.displayObject;
-			var position = node.position;
-			displayObject.position.x = position.position.x;
-			displayObject.position.y = position.position.y;
-			displayObject._rotation = position.rotation * 180 / Math.PI;
-			displayObject._rotationComponents.x = Math.cos(displayObject._rotation);
-			displayObject._rotationComponents.y = Math.sin(displayObject._rotation);
-			displayObject._rotation;
-		}
-	}
-	,removeFromEngine: function(engine) {
-		this.nodes = null;
+		this.camera.Focus(this.cameraPosition.position.x,this.cameraPosition.position.y);
 	}
 	,__class__: engine.systems.RenderSystem
 });
@@ -3046,7 +2325,6 @@ engine.view.View = function(width,height,camera,debug) {
 	this.debugRenderer = new wgr.renderers.canvas.CanvasDebugView(this.debugView,camera,width,height);
 	camera.Resize(this.renderer.width,this.renderer.height);
 };
-$hxClasses["engine.view.View"] = engine.view.View;
 engine.view.View.__name__ = ["engine","view","View"];
 engine.view.View.prototype = {
 	__class__: engine.view.View
@@ -3057,29 +2335,27 @@ game.exile.Exile = function() {
 	engine.core.BaseGame.call(this);
 	this.loadAssets(["data/sprites.json","data/sprites.png","data/testMap.tmx","data/spelunky0.png","data/spelunky1.png","data/spelunky-tiles.png"]);
 };
-$hxClasses["game.exile.Exile"] = game.exile.Exile;
 game.exile.Exile.__name__ = ["game","exile","Exile"];
 game.exile.Exile.__super__ = engine.core.BaseGame;
 game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	prepareEngine: function() {
-		this.mainEngine = new ash.core.Engine();
+		this.mainEngine = new eco.core.Engine();
 		this.factory = new game.exile.entities.EntityFactory(this.tm);
-		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(this.worldData),0);
-		this.mainEngine.addSystem(new engine.systems.MotionControlSystem(this.digitalInput),1);
-		this.mainEngine.addSystem(new game.exile.systems.PlayerSystem(this.digitalInput,this.factory),1);
-		this.mainEngine.addSystem(new engine.systems.CameraControlSystem(this.view.camera),4);
-		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.itemContainer),5);
-		this.mainEngine.addSystem(new engine.systems.ParticleSystem(this.blockParticleEngine),6);
+		this.mainEngine.registerComponent(engine.components.Physics,5);
+		this.mainEngine.registerComponent(engine.components.Display,2);
+		this.mainEngine.registerComponent(engine.components.CameraController,1);
+		this.mainEngine.addSystem(new engine.systems.PhysicsSystem(this.worldData));
+		this.mainEngine.addSystem(new eco.systems.EntityUpdater(this.mainEngine.entities));
+		this.mainEngine.addSystem(new engine.systems.InputSystem(this.digitalInput,this.camera));
+		this.mainEngine.addSystem(new engine.systems.RenderSystem(this.camera,this.itemContainer));
 		this.createEntities();
 		this.gameLoop.updateFunc = $bind(this,this.tick);
 		this.gameLoop.start();
 	}
 	,createEntities: function() {
 		this.mainEngine.addEntity(this.factory.create("player",50,50));
-		this.mainEngine.addEntity(this.factory.create("enemy",400,100));
 	}
 	,tick: function(time) {
-		this.digitalInput.Update(-this.camera.position.x,-this.camera.position.y);
 		this.mainEngine.update(time);
 		this.view.renderer.Render(this.view.camera.viewPortAABB);
 	}
@@ -3119,36 +2395,51 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 });
 game.exile.components = {};
 game.exile.components.Player = function() {
+	eco.core.Component.call(this);
+	this.force = new physics.geometry.Vector2D();
 };
-$hxClasses["game.exile.components.Player"] = game.exile.components.Player;
 game.exile.components.Player.__name__ = ["game","exile","components","Player"];
-game.exile.components.Player.prototype = {
-	__class__: game.exile.components.Player
-};
+game.exile.components.Player.__super__ = eco.core.Component;
+game.exile.components.Player.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Player";
+	}
+	,onAdded: function() {
+	}
+	,update: function(time) {
+		this.controls = this.owner.componentMap.Controls;
+		this.physics = this.owner.componentMap.Physics;
+		this.processInputs();
+	}
+	,processInputs: function() {
+		this.left = this.controls.digitalInput.keyMap[65] > 0;
+		this.right = this.controls.digitalInput.keyMap[68] > 0;
+		this.up = this.controls.digitalInput.keyMap[87] > 0;
+		this.down = this.controls.digitalInput.keyMap[83] > 0;
+		this.force.setTo(0,0);
+		if(this.left) this.force.x -= 10; else this.force.x -= 0;
+		if(this.right) this.force.x += 10; else this.force.x += 0;
+		if(this.up) this.force.y -= 50; else this.force.y -= 0;
+		if(this.down) this.force.y += 10; else this.force.y += 0;
+		this.physics.body.AddForce(this.force);
+	}
+	,__class__: game.exile.components.Player
+});
 game.exile.entities = {};
 game.exile.entities.EntityFactory = function(tm) {
 	this.tm = tm;
 };
-$hxClasses["game.exile.entities.EntityFactory"] = game.exile.entities.EntityFactory;
 game.exile.entities.EntityFactory.__name__ = ["game","exile","entities","EntityFactory"];
 game.exile.entities.EntityFactory.prototype = {
 	create: function(name,x,y) {
 		switch(name) {
 		case "player":
 			var spr = this.createSprite("character","character1.png");
-			var player = new ash.core.Entity().add(new game.exile.components.Player()).add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr)).add(new engine.components.DebugDisplay()).add(new engine.components.MotionControls()).add(new engine.components.Camera());
-			var physics1 = player.components.h.get(Type.getClassName(engine.components.Physics));
-			physics1.body.group = 1;
+			var player = new eco.core.Entity().add(new engine.components.Position(100,100,0)).add(new engine.components.Physics(x,y,10,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr)).add(new engine.components.CameraController()).add(new engine.components.Lifecycle(1000)).add(new engine.components.Controls()).add(new game.exile.components.Player());
+			player.events.add(function(type,data) {
+				console.log(data);
+			});
 			return player;
-		case "enemy":
-			var spr1 = this.createSprite("character","character2.png");
-			spr1.scale.x = -1;
-			var enemy = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,1,1,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr1)).add(new engine.components.DebugDisplay());
-			return enemy;
-		case "projectile":
-			var spr2 = this.createSprite("character","projectile1.png");
-			var enemy1 = new ash.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display(spr2)).add(new engine.components.Particle());
-			return enemy1;
 		}
 		return null;
 	}
@@ -3164,64 +2455,11 @@ game.exile.entities.EntityFactory.prototype = {
 	}
 	,__class__: game.exile.entities.EntityFactory
 };
-game.exile.nodes = {};
-game.exile.nodes.PlayerNode = function() { };
-$hxClasses["game.exile.nodes.PlayerNode"] = game.exile.nodes.PlayerNode;
-game.exile.nodes.PlayerNode.__name__ = ["game","exile","nodes","PlayerNode"];
-game.exile.nodes.PlayerNode._getComponents = function() {
-	if(game.exile.nodes.PlayerNode._components == null) {
-		game.exile.nodes.PlayerNode._components = new ash.ClassMap();
-		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(game.exile.components.Player),"player");
-		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(engine.components.Position),"position");
-		game.exile.nodes.PlayerNode._components.h.set(Type.getClassName(engine.components.Physics),"physics");
-	}
-	return game.exile.nodes.PlayerNode._components;
-};
-game.exile.nodes.PlayerNode.__super__ = ash.core.Node;
-game.exile.nodes.PlayerNode.prototype = $extend(ash.core.Node.prototype,{
-	__class__: game.exile.nodes.PlayerNode
-});
-game.exile.systems = {};
-game.exile.systems.PlayerSystem = function(input,entityFactory) {
-	this.input = input;
-	this.entityFactory = entityFactory;
-	ash.core.System.call(this);
-};
-$hxClasses["game.exile.systems.PlayerSystem"] = game.exile.systems.PlayerSystem;
-game.exile.systems.PlayerSystem.__name__ = ["game","exile","systems","PlayerSystem"];
-game.exile.systems.PlayerSystem.__super__ = ash.core.System;
-game.exile.systems.PlayerSystem.prototype = $extend(ash.core.System.prototype,{
-	update: function(time) {
-		var player = this.nodes.head;
-		if(this.input.JustPressed(200)) {
-			var position = player.position.position;
-			var projectile = this.entityFactory.create("projectile",position.x,position.y);
-			var physics = projectile.components.h.get(Type.getClassName(engine.components.Physics));
-			physics.body.SetMass(0.1);
-			physics.body.group = 1;
-			var viewPos = this.input.mousePosition.plus(this.input.mouseOffset);
-			physics.body.SetVelocity(((function($this) {
-				var $r;
-				viewPos.x -= position.x;
-				viewPos.y -= position.y;
-				$r = viewPos;
-				return $r;
-			}(this))).unitEquals().multEquals(15));
-			this.engine.addEntity(projectile);
-		}
-	}
-	,addToEngine: function(engine) {
-		this.nodes = engine.getNodeList(game.exile.nodes.PlayerNode);
-		this.engine = engine;
-	}
-	,__class__: game.exile.systems.PlayerSystem
-});
 var haxe = {};
 haxe.ds = {};
 haxe.ds.IntMap = function() {
 	this.h = { };
 };
-$hxClasses["haxe.ds.IntMap"] = haxe.ds.IntMap;
 haxe.ds.IntMap.__name__ = ["haxe","ds","IntMap"];
 haxe.ds.IntMap.__interfaces__ = [IMap];
 haxe.ds.IntMap.prototype = {
@@ -3253,32 +2491,9 @@ haxe.ds.IntMap.prototype = {
 	}
 	,__class__: haxe.ds.IntMap
 };
-haxe.ds.ObjectMap = function() {
-	this.h = { };
-	this.h.__keys__ = { };
-};
-$hxClasses["haxe.ds.ObjectMap"] = haxe.ds.ObjectMap;
-haxe.ds.ObjectMap.__name__ = ["haxe","ds","ObjectMap"];
-haxe.ds.ObjectMap.__interfaces__ = [IMap];
-haxe.ds.ObjectMap.prototype = {
-	set: function(key,value) {
-		var id = key.__id__ || (key.__id__ = ++haxe.ds.ObjectMap.count);
-		this.h[id] = value;
-		this.h.__keys__[id] = key;
-	}
-	,remove: function(key) {
-		var id = key.__id__;
-		if(this.h.__keys__[id] == null) return false;
-		delete(this.h[id]);
-		delete(this.h.__keys__[id]);
-		return true;
-	}
-	,__class__: haxe.ds.ObjectMap
-};
 haxe.ds.StringMap = function() {
 	this.h = { };
 };
-$hxClasses["haxe.ds.StringMap"] = haxe.ds.StringMap;
 haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
 haxe.ds.StringMap.__interfaces__ = [IMap];
 haxe.ds.StringMap.prototype = {
@@ -3312,20 +2527,6 @@ haxe.ds.StringMap.prototype = {
 			return this.ref["$" + i];
 		}};
 	}
-	,toString: function() {
-		var s = new StringBuf();
-		s.b += "{";
-		var it = this.keys();
-		while( it.hasNext() ) {
-			var i = it.next();
-			if(i == null) s.b += "null"; else s.b += "" + i;
-			s.b += " => ";
-			s.add(Std.string(this.get(i)));
-			if(it.hasNext()) s.b += ", ";
-		}
-		s.b += "}";
-		return s.b;
-	}
 	,__class__: haxe.ds.StringMap
 };
 haxe.xml = {};
@@ -3333,7 +2534,6 @@ haxe.xml._Fast = {};
 haxe.xml._Fast.NodeAccess = function(x) {
 	this.__x = x;
 };
-$hxClasses["haxe.xml._Fast.NodeAccess"] = haxe.xml._Fast.NodeAccess;
 haxe.xml._Fast.NodeAccess.__name__ = ["haxe","xml","_Fast","NodeAccess"];
 haxe.xml._Fast.NodeAccess.prototype = {
 	resolve: function(name) {
@@ -3350,7 +2550,6 @@ haxe.xml._Fast.NodeAccess.prototype = {
 haxe.xml._Fast.AttribAccess = function(x) {
 	this.__x = x;
 };
-$hxClasses["haxe.xml._Fast.AttribAccess"] = haxe.xml._Fast.AttribAccess;
 haxe.xml._Fast.AttribAccess.__name__ = ["haxe","xml","_Fast","AttribAccess"];
 haxe.xml._Fast.AttribAccess.prototype = {
 	resolve: function(name) {
@@ -3364,7 +2563,6 @@ haxe.xml._Fast.AttribAccess.prototype = {
 haxe.xml._Fast.HasAttribAccess = function(x) {
 	this.__x = x;
 };
-$hxClasses["haxe.xml._Fast.HasAttribAccess"] = haxe.xml._Fast.HasAttribAccess;
 haxe.xml._Fast.HasAttribAccess.__name__ = ["haxe","xml","_Fast","HasAttribAccess"];
 haxe.xml._Fast.HasAttribAccess.prototype = {
 	resolve: function(name) {
@@ -3376,7 +2574,6 @@ haxe.xml._Fast.HasAttribAccess.prototype = {
 haxe.xml._Fast.HasNodeAccess = function(x) {
 	this.__x = x;
 };
-$hxClasses["haxe.xml._Fast.HasNodeAccess"] = haxe.xml._Fast.HasNodeAccess;
 haxe.xml._Fast.HasNodeAccess.__name__ = ["haxe","xml","_Fast","HasNodeAccess"];
 haxe.xml._Fast.HasNodeAccess.prototype = {
 	__class__: haxe.xml._Fast.HasNodeAccess
@@ -3384,7 +2581,6 @@ haxe.xml._Fast.HasNodeAccess.prototype = {
 haxe.xml._Fast.NodeListAccess = function(x) {
 	this.__x = x;
 };
-$hxClasses["haxe.xml._Fast.NodeListAccess"] = haxe.xml._Fast.NodeListAccess;
 haxe.xml._Fast.NodeListAccess.__name__ = ["haxe","xml","_Fast","NodeListAccess"];
 haxe.xml._Fast.NodeListAccess.prototype = {
 	resolve: function(name) {
@@ -3407,7 +2603,6 @@ haxe.xml.Fast = function(x) {
 	this.has = new haxe.xml._Fast.HasAttribAccess(x);
 	this.hasNode = new haxe.xml._Fast.HasNodeAccess(x);
 };
-$hxClasses["haxe.xml.Fast"] = haxe.xml.Fast;
 haxe.xml.Fast.__name__ = ["haxe","xml","Fast"];
 haxe.xml.Fast.prototype = {
 	get_name: function() {
@@ -3431,7 +2626,6 @@ haxe.xml.Fast.prototype = {
 	,__class__: haxe.xml.Fast
 };
 haxe.xml.Parser = function() { };
-$hxClasses["haxe.xml.Parser"] = haxe.xml.Parser;
 haxe.xml.Parser.__name__ = ["haxe","xml","Parser"];
 haxe.xml.Parser.parse = function(str) {
 	var doc = Xml.createDocument();
@@ -3679,7 +2873,6 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 };
 var js = {};
 js.Boot = function() { };
-$hxClasses["js.Boot"] = js.Boot;
 js.Boot.__name__ = ["js","Boot"];
 js.Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
@@ -3797,7 +2990,6 @@ js.Boot.__cast = function(o,t) {
 	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
 };
 js.Lib = function() { };
-$hxClasses["js.Lib"] = js.Lib;
 js.Lib.__name__ = ["js","Lib"];
 js.Lib.alert = function(v) {
 	alert(js.Boot.__string_rec(v,""));
@@ -3805,7 +2997,6 @@ js.Lib.alert = function(v) {
 js.html = {};
 js.html._CanvasElement = {};
 js.html._CanvasElement.CanvasUtil = function() { };
-$hxClasses["js.html._CanvasElement.CanvasUtil"] = js.html._CanvasElement.CanvasUtil;
 js.html._CanvasElement.CanvasUtil.__name__ = ["js","html","_CanvasElement","CanvasUtil"];
 js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 	var _g = 0;
@@ -3820,7 +3011,6 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 };
 var physics = {};
 physics.Constants = function() { };
-$hxClasses["physics.Constants"] = physics.Constants;
 physics.Constants.__name__ = ["physics","Constants"];
 physics.PhysicsEngine = function(fps,pps,narrowphase) {
 	this.fps = fps;
@@ -3828,7 +3018,6 @@ physics.PhysicsEngine = function(fps,pps,narrowphase) {
 	this.narrowphase = narrowphase;
 	this.Initalize();
 };
-$hxClasses["physics.PhysicsEngine"] = physics.PhysicsEngine;
 physics.PhysicsEngine.__name__ = ["physics","PhysicsEngine"];
 physics.PhysicsEngine.prototype = {
 	Initalize: function() {
@@ -3894,7 +3083,6 @@ physics.collision.broadphase = {};
 physics.collision.broadphase.action = {};
 physics.collision.broadphase.action.ActionParams = function() {
 };
-$hxClasses["physics.collision.broadphase.action.ActionParams"] = physics.collision.broadphase.action.ActionParams;
 physics.collision.broadphase.action.ActionParams.__name__ = ["physics","collision","broadphase","action","ActionParams"];
 physics.collision.broadphase.action.ActionParams.prototype = {
 	PreProcess: function() {
@@ -3904,7 +3092,6 @@ physics.collision.broadphase.action.ActionParams.prototype = {
 };
 physics.collision.broadphase.action.ActionResult = function() {
 };
-$hxClasses["physics.collision.broadphase.action.ActionResult"] = physics.collision.broadphase.action.ActionResult;
 physics.collision.broadphase.action.ActionResult.__name__ = ["physics","collision","broadphase","action","ActionResult"];
 physics.collision.broadphase.action.ActionResult.prototype = {
 	Reset: function() {
@@ -3917,7 +3104,6 @@ physics.collision.broadphase.action.ActionResultCollection = function() {
 	this.results = new Array();
 	this.opaqueBodies = new Array();
 };
-$hxClasses["physics.collision.broadphase.action.ActionResultCollection"] = physics.collision.broadphase.action.ActionResultCollection;
 physics.collision.broadphase.action.ActionResultCollection.__name__ = ["physics","collision","broadphase","action","ActionResultCollection"];
 physics.collision.broadphase.action.ActionResultCollection.prototype = {
 	Reset: function() {
@@ -3981,7 +3167,6 @@ physics.collision.broadphase.action.ActionResultCollection.prototype = {
 	,__class__: physics.collision.broadphase.action.ActionResultCollection
 };
 physics.collision.broadphase.action.IBroadphaseAction = function() { };
-$hxClasses["physics.collision.broadphase.action.IBroadphaseAction"] = physics.collision.broadphase.action.IBroadphaseAction;
 physics.collision.broadphase.action.IBroadphaseAction.__name__ = ["physics","collision","broadphase","action","IBroadphaseAction"];
 physics.collision.broadphase.action.IBroadphaseAction.prototype = {
 	__class__: physics.collision.broadphase.action.IBroadphaseAction
@@ -3999,7 +3184,6 @@ physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
 	this.staticItems = new Array();
 	this.adjacentCells = new Array();
 };
-$hxClasses["physics.collision.broadphase.managedgrid.Cell"] = physics.collision.broadphase.managedgrid.Cell;
 physics.collision.broadphase.managedgrid.Cell.__name__ = ["physics","collision","broadphase","managedgrid","Cell"];
 physics.collision.broadphase.managedgrid.Cell.prototype = {
 	AddBody: function(body) {
@@ -4015,7 +3199,6 @@ physics.collision.broadphase.managedgrid.ManagedGrid = function(fps,pps,narrowph
 	this.grid = new ds.Grid2D(worldGridWidth,worldGridHeight,cellSize);
 	this.init();
 };
-$hxClasses["physics.collision.broadphase.managedgrid.ManagedGrid"] = physics.collision.broadphase.managedgrid.ManagedGrid;
 physics.collision.broadphase.managedgrid.ManagedGrid.__name__ = ["physics","collision","broadphase","managedgrid","ManagedGrid"];
 physics.collision.broadphase.managedgrid.ManagedGrid.__super__ = physics.PhysicsEngine;
 physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics.PhysicsEngine.prototype,{
@@ -4106,7 +3289,6 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 });
 physics.collision.narrowphase = {};
 physics.collision.narrowphase.INarrowphase = function() { };
-$hxClasses["physics.collision.narrowphase.INarrowphase"] = physics.collision.narrowphase.INarrowphase;
 physics.collision.narrowphase.INarrowphase.__name__ = ["physics","collision","narrowphase","INarrowphase"];
 physics.collision.narrowphase.INarrowphase.prototype = {
 	__class__: physics.collision.narrowphase.INarrowphase
@@ -4115,7 +3297,6 @@ physics.collision.narrowphase.sat = {};
 physics.collision.narrowphase.sat.SAT = function() {
 	this.result = new physics.dynamics.Arbiter();
 };
-$hxClasses["physics.collision.narrowphase.sat.SAT"] = physics.collision.narrowphase.sat.SAT;
 physics.collision.narrowphase.sat.SAT.__name__ = ["physics","collision","narrowphase","sat","SAT"];
 physics.collision.narrowphase.sat.SAT.__interfaces__ = [physics.collision.narrowphase.INarrowphase];
 physics.collision.narrowphase.sat.SAT.poly2poly = function(shape1,shape1Pos,shape2,shape2Pos,arbiter) {
@@ -4295,7 +3476,6 @@ physics.collision.narrowphase.sat.SAT.prototype = {
 physics.constraints = {};
 physics.constraints.Constraint = function() {
 };
-$hxClasses["physics.constraints.Constraint"] = physics.constraints.Constraint;
 physics.constraints.Constraint.__name__ = ["physics","constraints","Constraint"];
 physics.constraints.Constraint.prototype = {
 	resolve: function() {
@@ -4322,7 +3502,6 @@ physics.dynamics.Arbiter = function() {
 	this.vnA = new physics.geometry.Vector2D();
 	this.vnB = new physics.geometry.Vector2D();
 };
-$hxClasses["physics.dynamics.Arbiter"] = physics.dynamics.Arbiter;
 physics.dynamics.Arbiter.__name__ = ["physics","dynamics","Arbiter"];
 physics.dynamics.Arbiter.prototype = {
 	Reset: function() {
@@ -4424,7 +3603,6 @@ physics.dynamics.Body = function() {
 	this.lastStep = -1;
 	this.Initalize();
 };
-$hxClasses["physics.dynamics.Body"] = physics.dynamics.Body;
 physics.dynamics.Body.__name__ = ["physics","dynamics","Body"];
 physics.dynamics.Body.HashBodyIDs = function(body1ID,body2ID) {
 	if(body1ID < body2ID) return body1ID << 16 | body2ID; else return body2ID << 16 | body1ID;
@@ -4617,7 +3795,6 @@ physics.dynamics.Body.prototype = {
 };
 physics.dynamics.BodyContact = function() {
 };
-$hxClasses["physics.dynamics.BodyContact"] = physics.dynamics.BodyContact;
 physics.dynamics.BodyContact.__name__ = ["physics","dynamics","BodyContact"];
 physics.dynamics.BodyContact.prototype = {
 	__class__: physics.dynamics.BodyContact
@@ -4626,7 +3803,6 @@ physics.dynamics.BodyContactManager = function(engine) {
 	this.engine = engine;
 	this.contacts = new haxe.ds.IntMap();
 };
-$hxClasses["physics.dynamics.BodyContactManager"] = physics.dynamics.BodyContactManager;
 physics.dynamics.BodyContactManager.__name__ = ["physics","dynamics","BodyContactManager"];
 physics.dynamics.BodyContactManager.prototype = {
 	UpdateContacts: function(body1,body2) {
@@ -4681,7 +3857,6 @@ physics.dynamics.Contact = function() {
 	this.normal = new physics.geometry.Vector2D();
 	this.penDist = 0;
 };
-$hxClasses["physics.dynamics.Contact"] = physics.dynamics.Contact;
 physics.dynamics.Contact.__name__ = ["physics","dynamics","Contact"];
 physics.dynamics.Contact.prototype = {
 	__class__: physics.dynamics.Contact
@@ -4694,7 +3869,6 @@ physics.dynamics.Feature = function(body,shape,material) {
 	this.isCollidable = false;
 	this.position = body.position;
 };
-$hxClasses["physics.dynamics.Feature"] = physics.dynamics.Feature;
 physics.dynamics.Feature.__name__ = ["physics","dynamics","Feature"];
 physics.dynamics.Feature.prototype = {
 	copy: function(feature) {
@@ -4713,7 +3887,6 @@ physics.dynamics.Material = function(density,elasticity,friction) {
 	this.elasticity = elasticity;
 	this.friction = friction;
 };
-$hxClasses["physics.dynamics.Material"] = physics.dynamics.Material;
 physics.dynamics.Material.__name__ = ["physics","dynamics","Material"];
 physics.dynamics.Material.prototype = {
 	__class__: physics.dynamics.Material
@@ -4729,7 +3902,6 @@ physics.geometry.AABB = function(l,b,r,t) {
 	this.r = r;
 	this.t = t;
 };
-$hxClasses["physics.geometry.AABB"] = physics.geometry.AABB;
 physics.geometry.AABB.__name__ = ["physics","geometry","AABB"];
 physics.geometry.AABB.intersects = function(aabb1,position1,aabb2,position2) {
 	if(aabb1.l + position1.x > aabb2.r + position2.x) return false; else if(aabb1.r + position1.x < aabb2.l + position2.x) return false; else if(aabb1.t + position1.y > aabb2.b + position2.y) return false; else if(aabb1.b + position1.y < aabb2.t + position2.y) return false; else return true;
@@ -4775,7 +3947,6 @@ physics.geometry.Axis = function(n,d) {
 	this.n = n;
 	this.d = d;
 };
-$hxClasses["physics.geometry.Axis"] = physics.geometry.Axis;
 physics.geometry.Axis.__name__ = ["physics","geometry","Axis"];
 physics.geometry.Axis.prototype = {
 	clone: function() {
@@ -4789,7 +3960,6 @@ physics.geometry.GeometricShape = function(typeID,offset) {
 	this.aabb = new physics.geometry.AABB();
 	this.UID = physics.geometry.GeometricShape.nextUID++;
 };
-$hxClasses["physics.geometry.GeometricShape"] = physics.geometry.GeometricShape;
 physics.geometry.GeometricShape.__name__ = ["physics","geometry","GeometricShape"];
 physics.geometry.GeometricShape.prototype = {
 	Update: function(rotation) {
@@ -4809,7 +3979,6 @@ physics.geometry.Circle = function(radius,offset) {
 	this.radius = radius;
 	this.InitShape();
 };
-$hxClasses["physics.geometry.Circle"] = physics.geometry.Circle;
 physics.geometry.Circle.__name__ = ["physics","geometry","Circle"];
 physics.geometry.Circle.__super__ = physics.geometry.GeometricShape;
 physics.geometry.Circle.prototype = $extend(physics.geometry.GeometricShape.prototype,{
@@ -4860,7 +4029,6 @@ physics.geometry.Polygon = function(vertices,offset) {
 	physics.geometry.GeometricShape.call(this,4,offset);
 	this.InitShape(vertices);
 };
-$hxClasses["physics.geometry.Polygon"] = physics.geometry.Polygon;
 physics.geometry.Polygon.__name__ = ["physics","geometry","Polygon"];
 physics.geometry.Polygon.CreateRectangle = function(w,h) {
 	var rect = new Array();
@@ -5025,7 +4193,6 @@ physics.geometry.Polygon.prototype = $extend(physics.geometry.GeometricShape.pro
 });
 physics.geometry.Ray = function() {
 };
-$hxClasses["physics.geometry.Ray"] = physics.geometry.Ray;
 physics.geometry.Ray.__name__ = ["physics","geometry","Ray"];
 physics.geometry.Ray.prototype = {
 	SetParams: function(origin,target,range) {
@@ -5094,7 +4261,6 @@ physics.geometry.Segment = function(a,b,radius) {
 	this.radius = radius;
 	this.InitShape();
 };
-$hxClasses["physics.geometry.Segment"] = physics.geometry.Segment;
 physics.geometry.Segment.__name__ = ["physics","geometry","Segment"];
 physics.geometry.Segment.__super__ = physics.geometry.GeometricShape;
 physics.geometry.Segment.prototype = $extend(physics.geometry.GeometricShape.prototype,{
@@ -5134,7 +4300,6 @@ physics.geometry.Segment.prototype = $extend(physics.geometry.GeometricShape.pro
 	,__class__: physics.geometry.Segment
 });
 physics.geometry.Shapes = function() { };
-$hxClasses["physics.geometry.Shapes"] = physics.geometry.Shapes;
 physics.geometry.Shapes.__name__ = ["physics","geometry","Shapes"];
 physics.geometry.Vector2D = function(x,y) {
 	if(y == null) y = .0;
@@ -5142,7 +4307,6 @@ physics.geometry.Vector2D = function(x,y) {
 	this.x = x;
 	this.y = y;
 };
-$hxClasses["physics.geometry.Vector2D"] = physics.geometry.Vector2D;
 physics.geometry.Vector2D.__name__ = ["physics","geometry","Vector2D"];
 physics.geometry.Vector2D.fromString = function(str) {
 	if(str == null) return null;
@@ -5320,7 +4484,6 @@ physics.geometry.VertexList = function() {
 	this.vertices = new Array();
 	this.transformedVertices = new Array();
 };
-$hxClasses["physics.geometry.VertexList"] = physics.geometry.VertexList;
 physics.geometry.VertexList.__name__ = ["physics","geometry","VertexList"];
 physics.geometry.VertexList.prototype = {
 	AddVertex: function(v) {
@@ -5361,7 +4524,6 @@ physics.geometry.VertexList.prototype = {
 physics.signals = {};
 physics.signals.ChannelSignalData = function() {
 };
-$hxClasses["physics.signals.ChannelSignalData"] = physics.signals.ChannelSignalData;
 physics.signals.ChannelSignalData.__name__ = ["physics","signals","ChannelSignalData"];
 physics.signals.ChannelSignalData.prototype = {
 	__class__: physics.signals.ChannelSignalData
@@ -5370,7 +4532,6 @@ var utils = {};
 utils.EventTarget = function() {
 	this.listeners = new haxe.ds.StringMap();
 };
-$hxClasses["utils.EventTarget"] = utils.EventTarget;
 utils.EventTarget.__name__ = ["utils","EventTarget"];
 utils.EventTarget.prototype = {
 	addEventListener: function(type,listener) {
@@ -5397,7 +4558,6 @@ utils.AssetLoader = function() {
 	this.assets = new haxe.ds.StringMap();
 	this.Reset();
 };
-$hxClasses["utils.AssetLoader"] = utils.AssetLoader;
 utils.AssetLoader.__name__ = ["utils","AssetLoader"];
 utils.AssetLoader.__super__ = utils.EventTarget;
 utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
@@ -5448,7 +4608,6 @@ utils.AssetLoader.prototype = $extend(utils.EventTarget.prototype,{
 	,__class__: utils.AssetLoader
 });
 utils.ILoader = function() { };
-$hxClasses["utils.ILoader"] = utils.ILoader;
 utils.ILoader.__name__ = ["utils","ILoader"];
 utils.ILoader.prototype = {
 	__class__: utils.ILoader
@@ -5456,7 +4615,6 @@ utils.ILoader.prototype = {
 utils.ImageAsset = function(mgr) {
 	this.mgr = mgr;
 };
-$hxClasses["utils.ImageAsset"] = utils.ImageAsset;
 utils.ImageAsset.__name__ = ["utils","ImageAsset"];
 utils.ImageAsset.__interfaces__ = [utils.ILoader];
 utils.ImageAsset.prototype = {
@@ -5484,7 +4642,6 @@ utils.ImageAsset.prototype = {
 utils.BlobAsset = function(mgr) {
 	this.mgr = mgr;
 };
-$hxClasses["utils.BlobAsset"] = utils.BlobAsset;
 utils.BlobAsset.__name__ = ["utils","BlobAsset"];
 utils.BlobAsset.__interfaces__ = [utils.ILoader];
 utils.BlobAsset.prototype = {
@@ -5510,7 +4667,6 @@ utils.BlobAsset.prototype = {
 	,__class__: utils.BlobAsset
 };
 utils.Base64 = function() { };
-$hxClasses["utils.Base64"] = utils.Base64;
 utils.Base64.__name__ = ["utils","Base64"];
 utils.Base64.Decode = function(input) {
 	var len = input.length / 4 * 3;
@@ -5539,11 +4695,7 @@ utils.Base64.Decode = function(input) {
 	}
 	return ab;
 };
-utils.Limits = function() { };
-$hxClasses["utils.Limits"] = utils.Limits;
-utils.Limits.__name__ = ["utils","Limits"];
 utils.Maths = function() { };
-$hxClasses["utils.Maths"] = utils.Maths;
 utils.Maths.__name__ = ["utils","Maths"];
 utils.Maths.toRad = function(deg) {
 	return deg * 0.0174532925199432955;
@@ -5560,44 +4712,6 @@ utils.Maths.ScaleRectangleWithRatio = function(containerRect,itemRect) {
 	var rD = containerRect.x / containerRect.y;
 	var rR = itemRect.x / itemRect.y;
 	if(rD < rR) return sX; else return sY;
-};
-utils.Random = function() { };
-$hxClasses["utils.Random"] = utils.Random;
-utils.Random.__name__ = ["utils","Random"];
-utils.Random.SetPseudoRandomSeed = function(seed) {
-	utils.Random.PseudoRandomSeed = seed;
-};
-utils.Random.RandomFloat = function(min,max) {
-	return Math.random() * (max - min) + min;
-};
-utils.Random.RandomBoolean = function(chance) {
-	if(chance == null) chance = 0.5;
-	return Math.random() < chance;
-};
-utils.Random.RandomSign = function(chance) {
-	if(chance == null) chance = 0.5;
-	if(Math.random() < chance) return 1; else return -1;
-};
-utils.Random.RandomInteger = function(min,max) {
-	return Math.floor(Math.random() * (max - min) + min);
-};
-utils.Random.PseudoInteger = function(n) {
-	if(n == null) n = 2147483647;
-	if(n > 0) return Std["int"]((function($this) {
-		var $r;
-		utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
-		$r = utils.Random.PseudoRandomSeed / 233280.0;
-		return $r;
-	}(this)) * n); else return Std["int"]((function($this) {
-		var $r;
-		utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
-		$r = utils.Random.PseudoRandomSeed / 233280.0;
-		return $r;
-	}(this)));
-};
-utils.Random.PseudoFloat = function() {
-	utils.Random.PseudoRandomSeed = (utils.Random.PseudoRandomSeed * 9301 + 49297) % 233280;
-	return utils.Random.PseudoRandomSeed / 233280.0;
 };
 var wgr = {};
 wgr.display = {};
@@ -5620,7 +4734,6 @@ wgr.display.DisplayObject = function() {
 	this.worldTransform = wgr.geom.Matrix3.Create();
 	this.localTransform = wgr.geom.Matrix3.Create();
 };
-$hxClasses["wgr.display.DisplayObject"] = wgr.display.DisplayObject;
 wgr.display.DisplayObject.__name__ = ["wgr","display","DisplayObject"];
 wgr.display.DisplayObject.prototype = {
 	get_rotation: function() {
@@ -5689,7 +4802,6 @@ wgr.display.DisplayObjectContainer = function() {
 	this.subTreeAABB = new wgr.geom.AABB();
 	this.childCount = 0;
 };
-$hxClasses["wgr.display.DisplayObjectContainer"] = wgr.display.DisplayObjectContainer;
 wgr.display.DisplayObjectContainer.__name__ = ["wgr","display","DisplayObjectContainer"];
 wgr.display.DisplayObjectContainer.__super__ = wgr.display.DisplayObject;
 wgr.display.DisplayObjectContainer.prototype = $extend(wgr.display.DisplayObject.prototype,{
@@ -5839,7 +4951,6 @@ wgr.display.Camera = function() {
 	this.viewPortAABB = new wgr.geom.AABB();
 	this.worldExtentsAABB = new wgr.geom.AABB();
 };
-$hxClasses["wgr.display.Camera"] = wgr.display.Camera;
 wgr.display.Camera.__name__ = ["wgr","display","Camera"];
 wgr.display.Camera.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Camera.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
@@ -5869,7 +4980,6 @@ wgr.display.Sprite = function() {
 	this.anchor = new wgr.geom.Point();
 	this.transformedVerts = new Float32Array(8);
 };
-$hxClasses["wgr.display.Sprite"] = wgr.display.Sprite;
 wgr.display.Sprite.__name__ = ["wgr","display","Sprite"];
 wgr.display.Sprite.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Sprite.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
@@ -5910,7 +5020,6 @@ wgr.display.Stage = function() {
 	this.worldAlpha = this.alpha;
 	this.stage = this;
 };
-$hxClasses["wgr.display.Stage"] = wgr.display.Stage;
 wgr.display.Stage.__name__ = ["wgr","display","Stage"];
 wgr.display.Stage.__super__ = wgr.display.DisplayObjectContainer;
 wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototype,{
@@ -5976,7 +5085,6 @@ wgr.geom.AABB = function(t,r,b,l) {
 	this.b = b;
 	this.l = l;
 };
-$hxClasses["wgr.geom.AABB"] = wgr.geom.AABB;
 wgr.geom.AABB.__name__ = ["wgr","geom","AABB"];
 wgr.geom.AABB.prototype = {
 	clone: function() {
@@ -6028,7 +5136,6 @@ wgr.geom.AABB.prototype = {
 	,__class__: wgr.geom.AABB
 };
 wgr.geom.Matrix3 = function() { };
-$hxClasses["wgr.geom.Matrix3"] = wgr.geom.Matrix3;
 wgr.geom.Matrix3.__name__ = ["wgr","geom","Matrix3"];
 wgr.geom.Matrix3.Create = function() {
 	return wgr.geom.Matrix3.Identity(new Float32Array(9));
@@ -6134,7 +5241,6 @@ wgr.geom.Matrix3.ToMatrix4 = function(mat,dest) {
 	return dest;
 };
 wgr.geom.Matrix4 = function() { };
-$hxClasses["wgr.geom.Matrix4"] = wgr.geom.Matrix4;
 wgr.geom.Matrix4.__name__ = ["wgr","geom","Matrix4"];
 wgr.geom.Matrix4.Create = function() {
 	return wgr.geom.Matrix4.Identity(new Float32Array(16));
@@ -6256,7 +5362,6 @@ wgr.geom.Point = function(x,y) {
 	this.x = x;
 	this.y = y;
 };
-$hxClasses["wgr.geom.Point"] = wgr.geom.Point;
 wgr.geom.Point.__name__ = ["wgr","geom","Point"];
 wgr.geom.Point.prototype = {
 	__class__: wgr.geom.Point
@@ -6271,7 +5376,6 @@ wgr.geom.Rectangle = function(x,y,width,height) {
 	this.width = width;
 	this.height = height;
 };
-$hxClasses["wgr.geom.Rectangle"] = wgr.geom.Rectangle;
 wgr.geom.Rectangle.__name__ = ["wgr","geom","Rectangle"];
 wgr.geom.Rectangle.prototype = {
 	__class__: wgr.geom.Rectangle
@@ -6279,7 +5383,6 @@ wgr.geom.Rectangle.prototype = {
 wgr.particle = {};
 wgr.particle.BlockSpriteParticle = function() {
 };
-$hxClasses["wgr.particle.BlockSpriteParticle"] = wgr.particle.BlockSpriteParticle;
 wgr.particle.BlockSpriteParticle.__name__ = ["wgr","particle","BlockSpriteParticle"];
 wgr.particle.BlockSpriteParticle.prototype = {
 	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,data1,data2,data3,data4,data5) {
@@ -6314,7 +5417,6 @@ wgr.particle.BlockSpriteParticle.prototype = {
 	,__class__: wgr.particle.BlockSpriteParticle
 };
 wgr.particle.IParticleEngine = function() { };
-$hxClasses["wgr.particle.IParticleEngine"] = wgr.particle.IParticleEngine;
 wgr.particle.IParticleEngine.__name__ = ["wgr","particle","IParticleEngine"];
 wgr.particle.IParticleEngine.prototype = {
 	__class__: wgr.particle.IParticleEngine
@@ -6334,7 +5436,6 @@ wgr.particle.BlockSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.renderer = new wgr.renderers.webgl.PointSpriteLightMapRenderer();
 	this.renderer.ResizeBatch(particleCount);
 };
-$hxClasses["wgr.particle.BlockSpriteParticleEngine"] = wgr.particle.BlockSpriteParticleEngine;
 wgr.particle.BlockSpriteParticleEngine.__name__ = ["wgr","particle","BlockSpriteParticleEngine"];
 wgr.particle.BlockSpriteParticleEngine.__interfaces__ = [wgr.particle.IParticleEngine];
 wgr.particle.BlockSpriteParticleEngine.prototype = {
@@ -6388,7 +5489,6 @@ wgr.particle.BlockSpriteParticleEngine.prototype = {
 };
 wgr.particle.PointSpriteParticle = function() {
 };
-$hxClasses["wgr.particle.PointSpriteParticle"] = wgr.particle.PointSpriteParticle;
 wgr.particle.PointSpriteParticle.__name__ = ["wgr","particle","PointSpriteParticle"];
 wgr.particle.PointSpriteParticle.prototype = {
 	Initalize: function(x,y,vX,vY,fX,fY,ttl,damping,decay,top,externalForce,data1,data2,data3,data4) {
@@ -6436,7 +5536,6 @@ wgr.particle.PointSpriteParticleEngine = function(particleCount,deltaTime) {
 	this.renderer = new wgr.renderers.webgl.PointSpriteRenderer();
 	this.renderer.ResizeBatch(particleCount);
 };
-$hxClasses["wgr.particle.PointSpriteParticleEngine"] = wgr.particle.PointSpriteParticleEngine;
 wgr.particle.PointSpriteParticleEngine.__name__ = ["wgr","particle","PointSpriteParticleEngine"];
 wgr.particle.PointSpriteParticleEngine.__interfaces__ = [wgr.particle.IParticleEngine];
 wgr.particle.PointSpriteParticleEngine.prototype = {
@@ -6497,7 +5596,6 @@ wgr.renderers.canvas.CanvasDebugView = function(view,camera,width,height) {
 	this.ctx = view.getContext("2d");
 	this.Resize(width,height);
 };
-$hxClasses["wgr.renderers.canvas.CanvasDebugView"] = wgr.renderers.canvas.CanvasDebugView;
 wgr.renderers.canvas.CanvasDebugView.__name__ = ["wgr","renderers","canvas","CanvasDebugView"];
 wgr.renderers.canvas.CanvasDebugView.prototype = {
 	Resize: function(width,height) {
@@ -6538,14 +5636,12 @@ wgr.renderers.canvas.CanvasDebugView.prototype = {
 };
 wgr.renderers.webgl = {};
 wgr.renderers.webgl.IRenderer = function() { };
-$hxClasses["wgr.renderers.webgl.IRenderer"] = wgr.renderers.webgl.IRenderer;
 wgr.renderers.webgl.IRenderer.__name__ = ["wgr","renderers","webgl","IRenderer"];
 wgr.renderers.webgl.IRenderer.prototype = {
 	__class__: wgr.renderers.webgl.IRenderer
 };
 wgr.renderers.webgl.PointSpriteLightMapRenderer = function() {
 };
-$hxClasses["wgr.renderers.webgl.PointSpriteLightMapRenderer"] = wgr.renderers.webgl.PointSpriteLightMapRenderer;
 wgr.renderers.webgl.PointSpriteLightMapRenderer.__name__ = ["wgr","renderers","webgl","PointSpriteLightMapRenderer"];
 wgr.renderers.webgl.PointSpriteLightMapRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
@@ -6603,7 +5699,6 @@ wgr.renderers.webgl.PointSpriteLightMapRenderer.prototype = {
 };
 wgr.renderers.webgl.PointSpriteRenderer = function() {
 };
-$hxClasses["wgr.renderers.webgl.PointSpriteRenderer"] = wgr.renderers.webgl.PointSpriteRenderer;
 wgr.renderers.webgl.PointSpriteRenderer.__name__ = ["wgr","renderers","webgl","PointSpriteRenderer"];
 wgr.renderers.webgl.PointSpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.PointSpriteRenderer.prototype = {
@@ -6697,14 +5792,12 @@ wgr.renderers.webgl.ShaderWrapper = function(gl,program) {
 		i++;
 	}
 };
-$hxClasses["wgr.renderers.webgl.ShaderWrapper"] = wgr.renderers.webgl.ShaderWrapper;
 wgr.renderers.webgl.ShaderWrapper.__name__ = ["wgr","renderers","webgl","ShaderWrapper"];
 wgr.renderers.webgl.ShaderWrapper.prototype = {
 	__class__: wgr.renderers.webgl.ShaderWrapper
 };
 wgr.renderers.webgl.SpriteRenderer = function() {
 };
-$hxClasses["wgr.renderers.webgl.SpriteRenderer"] = wgr.renderers.webgl.SpriteRenderer;
 wgr.renderers.webgl.SpriteRenderer.__name__ = ["wgr","renderers","webgl","SpriteRenderer"];
 wgr.renderers.webgl.SpriteRenderer.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.SpriteRenderer.prototype = {
@@ -6740,7 +5833,6 @@ wgr.renderers.webgl.TileLayer = function() {
 	this.scrollScale = new wgr.geom.Point(1,1);
 	this.inverseTextureSize = new Float32Array(2);
 };
-$hxClasses["wgr.renderers.webgl.TileLayer"] = wgr.renderers.webgl.TileLayer;
 wgr.renderers.webgl.TileLayer.__name__ = ["wgr","renderers","webgl","TileLayer"];
 wgr.renderers.webgl.TileLayer.prototype = {
 	setTextureFromMap: function(gl,data) {
@@ -6774,7 +5866,6 @@ wgr.renderers.webgl.TileLayer.prototype = {
 };
 wgr.renderers.webgl.TileMap = function() {
 };
-$hxClasses["wgr.renderers.webgl.TileMap"] = wgr.renderers.webgl.TileMap;
 wgr.renderers.webgl.TileMap.__name__ = ["wgr","renderers","webgl","TileMap"];
 wgr.renderers.webgl.TileMap.__interfaces__ = [wgr.renderers.webgl.IRenderer];
 wgr.renderers.webgl.TileMap.prototype = {
@@ -6891,7 +5982,6 @@ wgr.renderers.webgl.WebGLBatch = function(gl) {
 	this.blendMode = 0;
 	this.dynamicSize = 1;
 };
-$hxClasses["wgr.renderers.webgl.WebGLBatch"] = wgr.renderers.webgl.WebGLBatch;
 wgr.renderers.webgl.WebGLBatch.__name__ = ["wgr","renderers","webgl","WebGLBatch"];
 wgr.renderers.webgl.WebGLBatch.prototype = {
 	Clean: function() {
@@ -7049,7 +6139,6 @@ wgr.renderers.webgl.WebGLRenderer = function(stage,camera,view,width,height,tran
 	this.InitalizeWebGlContext();
 	this.Resize(width,height);
 };
-$hxClasses["wgr.renderers.webgl.WebGLRenderer"] = wgr.renderers.webgl.WebGLRenderer;
 wgr.renderers.webgl.WebGLRenderer.__name__ = ["wgr","renderers","webgl","WebGLRenderer"];
 wgr.renderers.webgl.WebGLRenderer.prototype = {
 	InitalizeWebGlContext: function() {
@@ -7097,7 +6186,6 @@ wgr.renderers.webgl.WebGLRenderer.prototype = {
 	,__class__: wgr.renderers.webgl.WebGLRenderer
 };
 wgr.renderers.webgl.WebGLShaders = function() { };
-$hxClasses["wgr.renderers.webgl.WebGLShaders"] = wgr.renderers.webgl.WebGLShaders;
 wgr.renderers.webgl.WebGLShaders.__name__ = ["wgr","renderers","webgl","WebGLShaders"];
 wgr.renderers.webgl.WebGLShaders.CompileVertexShader = function(gl,shaderSrc) {
 	return wgr.renderers.webgl.WebGLShaders.CompileShader(gl,shaderSrc,35633);
@@ -7139,7 +6227,6 @@ wgr.texture.BaseTexture = function(source) {
 	this.width = source.width;
 	this.height = source.width;
 };
-$hxClasses["wgr.texture.BaseTexture"] = wgr.texture.BaseTexture;
 wgr.texture.BaseTexture.__name__ = ["wgr","texture","BaseTexture"];
 wgr.texture.BaseTexture.prototype = {
 	RegisterTexture: function(gl) {
@@ -7176,7 +6263,6 @@ wgr.texture.Texture = function(baseTexture,frame,pivot) {
 	this.uvs = new Float32Array(8);
 	this.updateUVS();
 };
-$hxClasses["wgr.texture.Texture"] = wgr.texture.Texture;
 wgr.texture.Texture.__name__ = ["wgr","texture","Texture"];
 wgr.texture.Texture.prototype = {
 	updateUVS: function() {
@@ -7198,7 +6284,6 @@ wgr.texture.TextureManager = function(gl) {
 	this.baseTextures = new haxe.ds.StringMap();
 	this.textures = new haxe.ds.StringMap();
 };
-$hxClasses["wgr.texture.TextureManager"] = wgr.texture.TextureManager;
 wgr.texture.TextureManager.__name__ = ["wgr","texture","TextureManager"];
 wgr.texture.TextureManager.prototype = {
 	AddTexture: function(id,image) {
@@ -7230,7 +6315,6 @@ worldEngine.World = function(worldData) {
 	this.worldBody = new physics.dynamics.Body();
 	this.worldBody.MakeStatic();
 };
-$hxClasses["worldEngine.World"] = worldEngine.World;
 worldEngine.World.__name__ = ["worldEngine","World"];
 worldEngine.World.prototype = {
 	Collide: function(body) {
@@ -7246,7 +6330,6 @@ worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
 	this.worldBounds = new physics.geometry.AABB(0,this.collisionData.h * tileSize,this.collisionData.w * tileSize,0);
 	this.worldCellSize = this.worldBounds.width();
 };
-$hxClasses["worldEngine.WorldData"] = worldEngine.WorldData;
 worldEngine.WorldData.__name__ = ["worldEngine","WorldData"];
 worldEngine.WorldData.prototype = {
 	InitalizeWorld: function() {
@@ -7276,7 +6359,6 @@ worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,worldData) {
 	this.collisionOrderX = [0,-1,1];
 	this.collisionOrderY = [2,1,0,-1,-2];
 };
-$hxClasses["worldEngine.WorldPhysicsEngine"] = worldEngine.WorldPhysicsEngine;
 worldEngine.WorldPhysicsEngine.__name__ = ["worldEngine","WorldPhysicsEngine"];
 worldEngine.WorldPhysicsEngine.__super__ = physics.collision.broadphase.managedgrid.ManagedGrid;
 worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.managedgrid.ManagedGrid.prototype,{
@@ -7427,7 +6509,6 @@ worldEngine.tiles.TileSegment = function(v0,v1,mask) {
 	this.v1 = v1;
 	this.mask = mask;
 };
-$hxClasses["worldEngine.tiles.TileSegment"] = worldEngine.tiles.TileSegment;
 worldEngine.tiles.TileSegment.__name__ = ["worldEngine","tiles","TileSegment"];
 worldEngine.tiles.TileSegment.prototype = {
 	CheckVertexPairAndApplyMask: function(c0,c1) {
@@ -7448,7 +6529,6 @@ worldEngine.tiles.Tile = function(size,originalVertMask,tileID,modifier) {
 	if((modifier & 2) > 0) this.tileID = 1073741824 | this.tileID;
 	if((modifier & 1) > 0) this.tileID = 536870912 | this.tileID;
 };
-$hxClasses["worldEngine.tiles.Tile"] = worldEngine.tiles.Tile;
 worldEngine.tiles.Tile.__name__ = ["worldEngine","tiles","Tile"];
 worldEngine.tiles.Tile.IsCollidable = function(data) {
 	return true;
@@ -7527,7 +6607,6 @@ worldEngine.tiles.TileFactory = function() {
 	this.tileTypes = new haxe.ds.StringMap();
 	this.Initalize();
 };
-$hxClasses["worldEngine.tiles.TileFactory"] = worldEngine.tiles.TileFactory;
 worldEngine.tiles.TileFactory.__name__ = ["worldEngine","tiles","TileFactory"];
 worldEngine.tiles.TileFactory.prototype = {
 	Initalize: function() {
@@ -7561,7 +6640,6 @@ worldEngine.tiles.TileFeature = function(tile) {
 	this.data = 2;
 	if(tile.vertices.length > 0) this.data |= 1; else this.data &= -2;
 };
-$hxClasses["worldEngine.tiles.TileFeature"] = worldEngine.tiles.TileFeature;
 worldEngine.tiles.TileFeature.__name__ = ["worldEngine","tiles","TileFeature"];
 worldEngine.tiles.TileFeature.prototype = {
 	HasFlagBool: function(flag) {
@@ -7612,26 +6690,24 @@ if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
 Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
-$hxClasses.Math = Math;
 Math.isFinite = function(i) {
 	return isFinite(i);
 };
 Math.isNaN = function(i1) {
 	return isNaN(i1);
 };
-String.prototype.__class__ = $hxClasses.String = String;
+String.prototype.__class__ = String;
 String.__name__ = ["String"];
-$hxClasses.Array = Array;
 Array.__name__ = ["Array"];
-Date.prototype.__class__ = $hxClasses.Date = Date;
+Date.prototype.__class__ = Date;
 Date.__name__ = ["Date"];
-var Int = $hxClasses.Int = { __name__ : ["Int"]};
-var Dynamic = $hxClasses.Dynamic = { __name__ : ["Dynamic"]};
-var Float = $hxClasses.Float = Number;
+var Int = { __name__ : ["Int"]};
+var Dynamic = { __name__ : ["Dynamic"]};
+var Float = Number;
 Float.__name__ = ["Float"];
 var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
-var Class = $hxClasses.Class = { __name__ : ["Class"]};
+var Class = { __name__ : ["Class"]};
 var Enum = { };
 Xml.Element = "element";
 Xml.PCData = "pcdata";
@@ -7640,7 +6716,6 @@ Xml.Comment = "comment";
 Xml.DocType = "doctype";
 Xml.ProcessingInstruction = "processingInstruction";
 Xml.Document = "document";
-ash.core.Entity.nameCount = 0;
 ds.IDManager.NEXT_PERSISTENT_ID = 0;
 ds.IDManager.TRANSIENT_START_ID = 10000;
 ds.IDManager.TRANSIENT_CACHE_LENGTH = 10000;
@@ -7659,6 +6734,12 @@ ds.IDManager.TRANSIENT_CACHE = (function($this) {
 	return $r;
 }(this));
 ds.IDManager.TRANSIENT_POINTER = 0;
+engine.components.CameraController.NAME = "CameraController";
+engine.components.Controls.NAME = "Controls";
+engine.components.Display.NAME = "Display";
+engine.components.Lifecycle.NAME = "Lifecycle";
+engine.components.Physics.NAME = "Physics";
+engine.components.Position.NAME = "Position";
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 game.exile.Exile.TEXTURE_CONFIG = "data/sprites.json";
 game.exile.Exile.TEXTURE_DATA = "data/sprites.png";
@@ -7666,7 +6747,7 @@ game.exile.Exile.MAP_DATA = "data/testMap.tmx";
 game.exile.Exile.TILE_SPRITE_SHEET = "data/spelunky-tiles.png";
 game.exile.Exile.TILE_MAP_DATA_1 = "data/spelunky0.png";
 game.exile.Exile.TILE_MAP_DATA_2 = "data/spelunky1.png";
-haxe.ds.ObjectMap.count = 0;
+game.exile.components.Player.NAME = "Player";
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
 	var h = new haxe.ds.StringMap();
@@ -7696,20 +6777,6 @@ physics.geometry.Shapes.CIRCLE_CIRCLE = 1;
 physics.geometry.Shapes.CIRCLE_SEGMENT = 3;
 physics.geometry.Shapes.SEGMENT_POLYGON = 6;
 utils.Base64.keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-utils.Limits.INT8_MIN = -128;
-utils.Limits.INT8_MAX = 127;
-utils.Limits.UINT8_MAX = 255;
-utils.Limits.INT16_MIN = -32768;
-utils.Limits.INT16_MAX = 32767;
-utils.Limits.UINT16_MAX = 65535;
-utils.Limits.INT32_MIN = -2147483648;
-utils.Limits.INT32_MAX = 2147483647;
-utils.Limits.UINT32_MAX = -1;
-utils.Limits.INT_BITS = 32;
-utils.Limits.FLOAT_MAX = 3.40282346638528e+38;
-utils.Limits.FLOAT_MIN = -3.40282346638528e+38;
-utils.Limits.DOUBLE_MAX = 1.79769313486231e+308;
-utils.Limits.DOUBLE_MIN = -1.79769313486231e+308;
 utils.Maths.ZERO_TOLERANCE = 1e-08;
 utils.Maths.RAD_DEG = 57.2957795130823229;
 utils.Maths.DEG_RAD = 0.0174532925199432955;
@@ -7720,7 +6787,6 @@ utils.Maths.PI = 3.141592653589793;
 utils.Maths.PI2 = 6.283185307179586;
 utils.Maths.EPS = 1e-6;
 utils.Maths.SQRT2 = 1.414213562373095;
-utils.Random.PseudoRandomSeed = 3489752;
 wgr.particle.BlockSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.particle.PointSpriteParticle.INV_ALPHA = 0.00392156862745098;
 wgr.renderers.webgl.PointSpriteLightMapRenderer.SPRITE_VERTEX_SHADER = ["precision mediump float;","uniform vec2 projectionVector;","attribute vec2 position;","attribute float size;","attribute vec4 colour;","varying vec4 vColor;","void main() {","gl_PointSize = size;","vColor = colour;","gl_Position = vec4( position.x / projectionVector.x -1.0, position.y / -projectionVector.y + 1.0 , 0.0, 1.0);","}"];
@@ -7788,5 +6854,3 @@ worldEngine.tiles.TileFeature.STYLE_OFFSET = 16;
 worldEngine.tiles.TileFeature.RANDOMDATA_OFFSET = 24;
 Main.main();
 })();
-
-//# sourceMappingURL=script.js.map

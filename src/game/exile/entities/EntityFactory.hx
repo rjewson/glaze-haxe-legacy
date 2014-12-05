@@ -1,12 +1,11 @@
 
 package game.exile.entities;
 
-import ash.core.Entity;
-import engine.components.Camera;
-import engine.components.DebugDisplay;
+import eco.core.Entity;
+import engine.components.CameraController;
+import engine.components.Controls;
 import engine.components.Display;
-import engine.components.MotionControls;
-import engine.components.Particle;
+import engine.components.Lifecycle;
 import engine.components.Physics;
 import engine.components.Position;
 import game.exile.components.Player;
@@ -28,37 +27,50 @@ class EntityFactory
         switch (name) {
             case "player":
                 var spr = createSprite("character","character1.png");
-                // spr.scale.x = -1;
+                
                 var player = new Entity()
-                    .add(new Player())
-                    .add(new Position(0,0,0))
-                    .add(new Physics(x,y,1,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-                    .add(new Display(spr))
-                    .add(new DebugDisplay())
-                    .add(new MotionControls())
-                    .add(new Camera());
-                var physics:Physics = player.components.get(Physics);
-                    physics.body.group = 1;
+                .add(new Position(100,100,0))
+                .add(new Physics(x,y,10,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
+                .add(new Display(spr))
+                .add(new CameraController())
+                .add(new Lifecycle(1000))
+                .add(new Controls())
+                .add(new Player());
+
+                player.events.add(function(type:String,data:Dynamic){
+                    trace(data);
+                });
+                // spr.scale.x = -1;
+                // var player = new Entity()
+                //     .add(new Player())
+                //     .add(new Position(0,0,0))
+                //     .add(new Physics(x,y,1,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
+                //     .add(new Display(spr))
+                //     .add(new DebugDisplay())
+                //     .add(new MotionControls())
+                //     .add(new Camera());
+                // var physics:Physics = player.components.get(Physics);
+                //     physics.body.group = 1;
                 return player;
-            case "enemy":
-                var spr = createSprite("character","character2.png");
-                spr.scale.x = -1;
-                var enemy = new Entity()
-                    .add(new Position(0,0,0))
-                    .add(new Physics(x,y,1,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-                    .add(new Display(spr))
-                    .add(new DebugDisplay());
-                return enemy;
-            case "projectile":
-                var spr = createSprite("character","projectile1.png");
-                // spr.scale.x = 2;
-                // spr.scale.y = 2;
-                var enemy = new Entity()
-                    .add(new Position(0,0,0))
-                    .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
-                    .add(new Display(spr))
-                    .add(new Particle());
-                return enemy;
+            // case "enemy":
+            //     var spr = createSprite("character","character2.png");
+            //     spr.scale.x = -1;
+            //     var enemy = new Entity()
+            //         .add(new Position(0,0,0))
+            //         .add(new Physics(x,y,1,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
+            //         .add(new Display(spr))
+            //         .add(new DebugDisplay());
+            //     return enemy;
+            // case "projectile":
+            //     var spr = createSprite("character","projectile1.png");
+            //     // spr.scale.x = 2;
+            //     // spr.scale.y = 2;
+            //     var enemy = new Entity()
+            //         .add(new Position(0,0,0))
+            //         .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
+            //         .add(new Display(spr))
+            //         .add(new Particle());
+            //     return enemy;
 
         }
         return null;

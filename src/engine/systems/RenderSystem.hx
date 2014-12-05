@@ -1,55 +1,48 @@
 
 package engine.systems;
 
-import ash.core.Engine;
-import ash.core.NodeList;
-import ash.core.System;
+import eco.core.Component;
+import eco.core.Entity;
+import eco.core.System;
+import engine.components.CameraController;
+import engine.components.Display;
 import engine.components.Position;
-import engine.nodes.RenderNode;
-import wgr.display.DisplayObject;
+import wgr.display.Camera;
 import wgr.display.DisplayObjectContainer;
 
 class RenderSystem extends System
 {
 
     public var container:DisplayObjectContainer;
+    public var camera:Camera;
+    public var cameraPosition:Position;
 
-    private var nodes:NodeList<RenderNode>;
-
-    public function new(container:DisplayObjectContainer) {
+    public function new(camera:Camera,container:DisplayObjectContainer) {
         super();
+        this.camera = camera;
         this.container = container;
     }
 
-    override public function addToEngine(engine:Engine):Void {
-        nodes = engine.getNodeList(RenderNode);
-        for (node in nodes)
-            addToDisplay(node);
-        nodes.nodeAdded.add(addToDisplay);
-        nodes.nodeRemoved.add(removeFromDisplay);
+    override public function get_registeredComponents ():Array<Class<Component>> {
+        return [Display,CameraController];
     }
 
-    private function addToDisplay(node:RenderNode):Void {
-        container.addChild(node.displayObject);
-    }
-
-    private function removeFromDisplay(node:RenderNode):Void {
-        container.removeChild(node.displayObject);
-    }
-
-    override public function update(time:Float):Void {
-        for (node in nodes)
-        {
-            var displayObject:DisplayObject = node.displayObject;
-            var position:Position = node.position;
-
-            displayObject.position.x = position.position.x;
-            displayObject.position.y = position.position.y;
-            displayObject.rotation = position.rotation * 180 / Math.PI;
+    override public function componentAdded(e:Entity,c:Class<Component>) {
+        if (c==Display) {
+            var display:engine.components.Display = cast e.getComponentByClass(c);
+            container.addChild(display.displayObject);
+        } else if (c==CameraController) {
+            var camera:CameraController = cast e.getComponent("CameraController");
+            cameraPosition = camera.getPosition();
         }
     }
 
-    override public function removeFromEngine(engine:Engine):Void {
-        nodes = null;
+    override public function componentRemoved(e:Entity,c:Class<Component>) {
+        trace("removed");
     }
+
+    override public function update(time:Float) {
+        camera.Focus(cameraPosition.position.x,cameraPosition.position.y);
+    }
+
 }

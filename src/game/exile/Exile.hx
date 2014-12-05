@@ -1,29 +1,19 @@
 
 package game.exile;
 
-import ash.core.Engine;
-import ash.core.Entity;
 import ds.Array2D;
-import engine.components.Camera;
-import engine.components.DebugDisplay;
-import engine.components.Display;
-import engine.components.MotionControls;
-import engine.components.Physics;
-import engine.components.Position;
+import eco.core.Engine;
+import eco.systems.EntityUpdater;
 import engine.core.BaseGame;
 import engine.graphics.StaticLayerDisplayManager;
 import engine.input.DigitalInput;
 import engine.map.tmx.TmxLayer;
 import engine.map.tmx.TmxMap;
-import engine.systems.CameraControlSystem;
-import engine.systems.DebugRenderSystem;
-import engine.systems.MotionControlSystem;
-import engine.systems.ParticleSystem;
+import engine.systems.InputSystem;
 import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
 import game.exile.entities.EntityFactory;
-import game.exile.systems.PlayerSystem;
 import js.Browser;
 import physics.geometry.Polygon;
 import physics.geometry.Vector2D;
@@ -85,12 +75,21 @@ class Exile extends BaseGame
 
         factory = new EntityFactory(tm);
 
-        mainEngine.addSystem(new PhysicsSystem(worldData),0);  
-        mainEngine.addSystem(new MotionControlSystem(digitalInput),1);
-        mainEngine.addSystem(new PlayerSystem(digitalInput,factory),1);
-        mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
-        mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
-        mainEngine.addSystem(new ParticleSystem( blockParticleEngine ), 6);
+        mainEngine.registerComponent(engine.components.Physics,5);
+        mainEngine.registerComponent(engine.components.Display,2);
+        mainEngine.registerComponent(engine.components.CameraController,1);
+
+        mainEngine.addSystem(new PhysicsSystem(worldData));
+        mainEngine.addSystem(new EntityUpdater(mainEngine.entities));
+        mainEngine.addSystem(new InputSystem(digitalInput,camera));
+        mainEngine.addSystem(new RenderSystem(camera,itemContainer));
+
+        // mainEngine.addSystem(new PhysicsSystem(worldData),0);  
+        // mainEngine.addSystem(new MotionControlSystem(digitalInput),1);
+        // mainEngine.addSystem(new PlayerSystem(digitalInput,factory),1);
+        // mainEngine.addSystem(new CameraControlSystem(view.camera), 4);
+        // mainEngine.addSystem(new RenderSystem( itemContainer ), 5);
+        // mainEngine.addSystem(new ParticleSystem( blockParticleEngine ), 6);
 
         // mainEngine.addSystem(new DebugRenderSystem( view.debugRenderer ), 6);
 
@@ -103,12 +102,12 @@ class Exile extends BaseGame
 
     public function createEntities() {
         mainEngine.addEntity(factory.create("player",50,50));
-        mainEngine.addEntity(factory.create("enemy",400,100));
+        // mainEngine.addEntity(factory.create("enemy",400,100));
     }
 
 
     public function tick(time:Float) {
-        digitalInput.Update(-camera.position.x,-camera.position.y);
+        //digitalInput.Update(-camera.position.x,-camera.position.y);
         mainEngine.update(time);
 
         // blockParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-100,100),utils.Random.RandomFloat(-100,100),0,0,800,0.95,true,false,null,4,255,255,255,255);

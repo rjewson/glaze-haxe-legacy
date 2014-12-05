@@ -1,9 +1,10 @@
 
 package engine.components;
 
+import eco.core.Component;
 import physics.geometry.Vector2D;
 
-class Position 
+class Position extends Component
 {
 
     public var position:Vector2D;
@@ -13,5 +14,6 @@ class Position
         position = new Vector2D(x,y);
         this.rotation = rotation;
     }
+
 
 }
