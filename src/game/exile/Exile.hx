@@ -10,6 +10,7 @@ import engine.input.DigitalInput;
 import engine.map.tmx.TmxLayer;
 import engine.map.tmx.TmxMap;
 import engine.systems.InputSystem;
+import engine.systems.ParticleSystem;
 import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
@@ -73,7 +74,9 @@ class Exile extends BaseGame
 
         mainEngine = new Engine();
 
-        factory = new EntityFactory(tm);
+        // factory = new EntityFactory(tm);
+
+        EntityFactory.instance = new EntityFactory();
 
         mainEngine.registerComponent(engine.components.Physics,5);
         mainEngine.registerComponent(engine.components.Display,2);
@@ -82,7 +85,8 @@ class Exile extends BaseGame
         mainEngine.addSystem(new PhysicsSystem(worldData));
         mainEngine.addSystem(new EntityUpdater(mainEngine.entities));
         mainEngine.addSystem(new InputSystem(digitalInput,camera));
-        mainEngine.addSystem(new RenderSystem(camera,itemContainer));
+        mainEngine.addSystem(new ParticleSystem(blockParticleEngine));
+        mainEngine.addSystem(new RenderSystem(camera,itemContainer,tm));
 
         // mainEngine.addSystem(new PhysicsSystem(worldData),0);  
         // mainEngine.addSystem(new MotionControlSystem(digitalInput),1);
@@ -101,7 +105,7 @@ class Exile extends BaseGame
     }
 
     public function createEntities() {
-        mainEngine.addEntity(factory.create("player",50,50));
+        mainEngine.addEntity(EntityFactory.instance.create("player",50,50));
         // mainEngine.addEntity(factory.create("enemy",400,100));
     }
 

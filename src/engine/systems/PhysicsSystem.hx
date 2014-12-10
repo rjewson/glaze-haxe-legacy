@@ -31,7 +31,7 @@ class PhysicsSystem extends System
 
     override public function componentRemoved(e:Entity,c:Class<Component>) {
         var physics:engine.components.Physics = cast e.getComponentByClass(c);
-        trace("removed Physics");
+        physicsEngine.RemoveBody(physics.body);
     }
 
     override public function update(time:Float) {

@@ -2,9 +2,13 @@
 package game.exile.components;
 
 import eco.core.Component;
+import eco.core.Entity;
 import engine.components.Controls;
 import engine.components.Physics;
+import engine.components.Position;
 import engine.input.DigitalInput;
+import game.exile.components.ProjectileA;
+import game.exile.entities.EntityFactory;
 import physics.dynamics.Body;
 import physics.geometry.Vector2D;
 
@@ -28,14 +32,12 @@ class Player extends Component
         force = new Vector2D();
     }
 
-    override public function onAdded() {
+    override public function onStarted() {
+        controls = cast owner.getComponent("Controls");
+        physics = cast owner.getComponent("Physics");
     }
 
     override public function update(time:Float) {
-
-        controls = cast owner.getComponent("Controls");
-        physics = cast owner.getComponent("Physics");
-
         processInputs();
     }
 
@@ -54,6 +56,27 @@ class Player extends Component
         force.y += down ? 10 : 0;
 
         physics.body.AddForce( force );
+
+        if (controls.digitalInput.Pressed(200)) {
+
+            var position:Position = cast owner.getComponentByClass(Position);
+            var viewPos = controls.digitalInput.mousePosition.plus(controls.digitalInput.mouseOffset);
+            var startVelocity = viewPos.minusEquals(position.position).unitEquals().multEquals(15);
+
+            var projectile = new Entity();
+            projectile.add(new ProjectileA( position.position , startVelocity ));
+
+            owner.engine.addEntity(projectile);
+
+            // var position:Position = cast owner.getComponentByClass(Position);
+            // var projectile = EntityFactory.instance.create("projectile",position.position.x,position.position.y);
+            // var physics:Physics = cast projectile.getComponentByClass(Physics);
+            // physics.body.SetMass(0.1);
+            // physics.body.group = 1;
+            // var viewPos = controls.digitalInput.mousePosition.plus(controls.digitalInput.mouseOffset);
+            // physics.body.SetVelocity(viewPos.minusEquals(position.position).unitEquals().multEquals(15));
+            // owner.engine.addEntity(projectile);
+        }
     }
 
 }

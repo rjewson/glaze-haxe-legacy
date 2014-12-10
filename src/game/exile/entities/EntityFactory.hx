@@ -9,6 +9,7 @@ import engine.components.Lifecycle;
 import engine.components.Physics;
 import engine.components.Position;
 import game.exile.components.Player;
+import game.exile.entities.EntityFactory;
 import physics.geometry.Polygon;
 import physics.geometry.Vector2D;
 import wgr.display.Sprite;
@@ -17,21 +18,18 @@ import wgr.texture.TextureManager;
 class EntityFactory 
 {
 
-    public var tm:TextureManager;
+    public static var instance:EntityFactory;
 
-    public function new(tm:TextureManager) {
-        this.tm = tm;
+    public function new() {
     }
 
     public function create(name:String,x:Float,y:Float):Entity {
         switch (name) {
-            case "player":
-                var spr = createSprite("character","character1.png");
-                
+            case "player":                
                 var player = new Entity()
                 .add(new Position(100,100,0))
                 .add(new Physics(x,y,10,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-                .add(new Display(spr))
+                .add(new Display("character","character1.png"))
                 .add(new CameraController())
                 .add(new Lifecycle(1000))
                 .add(new Controls())
@@ -40,6 +38,8 @@ class EntityFactory
                 player.events.add(function(type:String,data:Dynamic){
                     trace(data);
                 });
+                var physics:Physics = cast player.getComponentByClass(Physics);
+                physics.body.group = 1;
                 // spr.scale.x = -1;
                 // var player = new Entity()
                 //     .add(new Player())
@@ -61,30 +61,18 @@ class EntityFactory
             //         .add(new Display(spr))
             //         .add(new DebugDisplay());
             //     return enemy;
-            // case "projectile":
-            //     var spr = createSprite("character","projectile1.png");
-            //     // spr.scale.x = 2;
-            //     // spr.scale.y = 2;
-            //     var enemy = new Entity()
-            //         .add(new Position(0,0,0))
-            //         .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
-            //         .add(new Display(spr))
-            //         .add(new Particle());
-            //     return enemy;
+            case "projectile":
+                // spr.scale.x = 2;
+                // spr.scale.y = 2;
+                var projectile = new Entity()
+                    .add(new Position(0,0,0))
+                    .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
+                    .add(new Display("character","projectile1.png"));
+                    //.add(new Particle());
+                return projectile;
 
         }
         return null;
-    }
-
-    private function createSprite(id:String,tid:String) {
-        var s = new Sprite();
-        s.id = id;
-        s.texture = tm.textures.get(tid);
-        s.position.x = 0;
-        s.position.y = 0;
-        s.pivot.x = s.texture.frame.width * s.texture.pivot.x;
-        s.pivot.y = s.texture.frame.height * s.texture.pivot.y;
-        return s;
     }
 
 }

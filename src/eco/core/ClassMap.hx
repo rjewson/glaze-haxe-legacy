@@ -33,6 +33,12 @@ class ClassMap
     }
 
     public function componentRemoved(e:Entity,c:Class<Component>) {
+        var className = Type.getClassName(c);
+        var systems = map.get(className);
+        if (systems!=null) {
+            for (system in systems) 
+                system.componentRemoved(e,c);
+        }
     }
 
 }

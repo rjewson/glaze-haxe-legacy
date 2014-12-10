@@ -93,4 +93,15 @@ class ManagedGrid extends PhysicsEngine
             cell.AddBody(body);
     }
 
+    override public function RemoveBody(body : Body) : Void {
+        for (cell in grid.data) {        
+            var index = cell.dynamicItems.indexOf(body);
+            if (index>=0) {
+                cell.dynamicItems.splice(index,1);
+                trace("remooved");
+                return;
+            }
+        }
+    }
+
 }

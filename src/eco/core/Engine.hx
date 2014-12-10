@@ -34,7 +34,7 @@ class Engine
         componentRemoved = new Signal2<Entity, Class<Component>>();
 
         componentAdded.add(componentSystemMap.componentAdded);
-        componentAdded.add(componentSystemMap.componentRemoved);
+        componentRemoved.add(componentSystemMap.componentRemoved);
 
         updating = false;
 

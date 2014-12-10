@@ -69,13 +69,16 @@ class Entity
         for (component in components) {
             engine.componentRemoved.dispatch(this,Type.getClass(component));
         }        
+        
         this.engine = null;
     }
 
     public function update(time:Float) {
         for (component in components) {
-            // if (component.priority==0)
-            //     break;
+            if (!component.started) {
+                component.started = true;
+                component.onStarted();
+            }
             component.update(time);
         }
     }
