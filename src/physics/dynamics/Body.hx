@@ -21,6 +21,9 @@ class Body
 	public var id : Int;
 	public var transient : Bool;
 	
+	public var next:Body;
+	public var prev:Body;
+
 	public var position:Vector2D;
 	public var prevPosition : Vector2D; 
 	public var tempPosition : Vector2D; 
@@ -71,6 +74,9 @@ class Body
 	public var broadphaseData1:Int;
 	public var broadphaseData2:Int;
 	
+	public var userData1:Dynamic;
+	public var userData2:Dynamic;
+
 	public var relativePoints:VertexList;
 	
 	public var createdMS:Float;
@@ -95,7 +101,7 @@ class Body
 		SetAngle(0);
 		SetMass(1);
 		SetMaximumScalarVelocity(20);
-		maxAcceleration = 5;
+		maxAcceleration = 50;
 		motion = Constants.WAKE_MOTION;
 		
 		damping = 1;
@@ -345,7 +351,7 @@ class Body
 	}	
 	
 	public function OnCollision(contact:BodyContact):Void {
-		
+		trace("hit");
 	}	
 	
 	public function OnEndCollision(contact:BodyContact):Void {

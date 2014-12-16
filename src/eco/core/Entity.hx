@@ -2,6 +2,7 @@
 package eco.core;
 
 import eco.core.Component;
+import eco.core.Entity;
 import eco.signals.Signal2;
 
 class Entity 
@@ -99,6 +100,13 @@ class Entity
 
     public function registerEvent(type:String,listener:Dynamic->Void) {
         
+    }
+
+    public static function Create(components:Array<Component>):Entity {
+        var entity = new Entity();
+        for (component in components)
+            entity.add(component);
+        return entity;
     }
 
 }

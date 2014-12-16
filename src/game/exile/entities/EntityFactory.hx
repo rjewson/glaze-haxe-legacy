@@ -28,7 +28,7 @@ class EntityFactory
             case "player":                
                 var player = new Entity()
                 .add(new Position(100,100,0))
-                .add(new Physics(x,y,10,1,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
+                .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
                 .add(new Display("character","character1.png"))
                 .add(new CameraController())
                 .add(new Lifecycle(1000))

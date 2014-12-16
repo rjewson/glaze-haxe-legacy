@@ -37,6 +37,7 @@ class Cell
     }
 
     public function AddBody(body:Body) {
+        body.broadphaseData1 = index;
         if (body.isStatic) {
             staticItems.push(body);
         } else {
@@ -50,6 +51,7 @@ class Cell
         } else {
             dynamicItems.remove(body);
         }
+        body.broadphaseData1 = -1;
     }
 
 }   

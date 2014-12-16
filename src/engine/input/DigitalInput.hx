@@ -22,7 +22,7 @@ class DigitalInput
         mousePosition = new Vector2D();
         mousePreviousPosition = new Vector2D();
         mouseOffset = new Vector2D();
-        frameRef = 1;       
+        frameRef = 2;       
     }
     
     public function InputTarget(target : EventTarget) : Void {

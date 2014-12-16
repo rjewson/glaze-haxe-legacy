@@ -17,6 +17,7 @@ class Physics extends Component
         body = new Body();
         body.SetStaticPosition(new Vector2D(x,y));
         body.SetVelocity(new Vector2D(velocityX,velocityY));
+        body.userData1 = this;
         for (shape in shapes)
             body.AddFeature(shape,new physics.dynamics.Material());
     }

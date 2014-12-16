@@ -136,6 +136,10 @@ class PhysicsEngine
 		return null;
 	}
 	
+	public function Search(position:Vector2D,radius:Float):Array<Body> {
+		return null;
+	}
+
 	public function ProcessAction(action : IBroadphaseAction) : Void {
 		
 	}
