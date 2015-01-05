@@ -72,6 +72,17 @@ class ActionResultCollection
 		
 	}
 	
+	public function RemoveBody(body:Body) {
+		var i = 0;
+		while (i<results.length) {
+			if (results[i].body==body) {
+				results.splice(i,1);
+				resultCount--;
+				break;
+			}
+		}
+	}
+
 	public function Sort():Void {
 		quicksort( results, 0, resultCount-1 );
 		quicksort( opaqueBodies, 0, opaqueBodyCount-1 );

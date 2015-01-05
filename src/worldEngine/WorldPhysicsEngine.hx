@@ -10,7 +10,6 @@ import physics.geometry.Ray;
 import physics.geometry.Vector2D;
 import worldEngine.tiles.Tile;
 import worldEngine.World;
-
 /**
  * ...
  * @author rje

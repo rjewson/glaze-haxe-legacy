@@ -2,11 +2,13 @@
 package game.exile.components;
 
 import eco.core.Component;
+import engine.action.Trace;
 import engine.components.Display;
 import engine.components.Lifecycle;
 import engine.components.ParticleEmitters;
 import engine.components.Physics;
 import engine.components.Position;
+import engine.components.Script;
 import engine.components.Steering;
 import physics.dynamics.Arbiter;
 import physics.geometry.Circle;
@@ -22,6 +24,8 @@ class ProjectileA extends Component
     private var startVelocity:Vector2D;
     private var physics:Physics;
 
+    private var script:Script;
+
     private var totalContactCount:Int = 0;
 
     public function new(startPosition:Vector2D,startVelocity:Vector2D) {
@@ -30,6 +34,7 @@ class ProjectileA extends Component
     }
 
     override public function onAdded() {
+        owner.name = "ProjectileA";
         var shape = new Circle(6,new Vector2D(0,0));
         physics = new Physics(startPosition.x,startPosition.y,0,0,[shape]);
         physics.body.SetMass(0.1);
@@ -38,12 +43,13 @@ class ProjectileA extends Component
         physics.body.SetVelocity(startVelocity);
 
         owner
-            .add(new Position(0,0,0))
+            .add(new Position())
             .add(physics)
             .add(new Display("character","projectile1.png"))
             .add(new Lifecycle(utils.Random.RandomInteger(1000,1500)))
-            .add(new ParticleEmitters([new RandomSpray(60,60)]))
-            .add(new Steering());
+            .add(new ParticleEmitters([new RandomSpray(60,60)]));
+            // .add(new Steering());
+
 
         owner.events.add(function(type:String,data:Dynamic){
             if (type=="lc")
@@ -56,7 +62,7 @@ class ProjectileA extends Component
         if (arbiter.isSensor)
             return;
         totalContactCount++;
-        trace(totalContactCount);
+        // trace(totalContactCount);
         // intraStepContactCount++;
         if (totalContactCount>1 || arbiter.OpposingBody(physics.body).id > 0) {
             //destroy();

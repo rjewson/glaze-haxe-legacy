@@ -13,12 +13,15 @@ class DLL<T:(DLLNode<T>)>
     public var head:T;
     public var tail:T;
 
-    public function new() {
+    public var length:Int;
 
+    public function new() {
+        length = 0;
     }
 
     //Linked List Functions
     public inline function insertAfter(node:T,newNode:T) {
+        length++;
         newNode.prev = node;
         newNode.next = node.next;
         if (node.next==null)
@@ -29,6 +32,7 @@ class DLL<T:(DLLNode<T>)>
     }
 
     public inline function insertBefore(node:T,newNode:T) {
+        length++;
         newNode.prev = node.prev;
         newNode.next = node;
         if (node.prev == null)
@@ -40,6 +44,7 @@ class DLL<T:(DLLNode<T>)>
 
     public inline function insertBeginning(newNode:T) {
         if (head == null) {
+            length++;
             head = newNode;
             tail = newNode;
             newNode.prev = null;
@@ -56,6 +61,7 @@ class DLL<T:(DLLNode<T>)>
      }
 
     public inline function remove(node:T):T {
+        length--;
         var next = node.next;
         if (node.prev == null)
             head = node.next;

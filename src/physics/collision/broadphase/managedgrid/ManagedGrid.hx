@@ -6,7 +6,9 @@ import ds.Grid2D;
 import physics.collision.broadphase.managedgrid.Cell;
 import physics.collision.narrowphase.INarrowphase;
 import physics.dynamics.Body;
+import physics.geometry.Vector2D;
 import physics.PhysicsEngine;
+import physics.collision.broadphase.action.ActionResultCollection;
 
 class ManagedGrid extends PhysicsEngine
 {
@@ -98,9 +100,20 @@ class ManagedGrid extends PhysicsEngine
         var index = cell.dynamicItems.indexOf(body);
         if (index>=0) {
             cell.dynamicItems.splice(index,1);
-            trace("remooved");
             return;
         }
+    }
+
+    override public function Search(position:Vector2D,radius:Float):ActionResultCollection {
+                
+        actionResultCollection.Reset();
+        
+        for (cell in grid.data) {        
+            cell.SearchCell(position,radius,actionResultCollection);
+        }
+
+        return actionResultCollection;
+
     }
 
 }

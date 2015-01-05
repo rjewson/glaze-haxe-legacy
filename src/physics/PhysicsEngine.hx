@@ -1,6 +1,5 @@
 package physics;
 import haxe.Timer;
-import physics.collision.broadphase.action.IBroadphaseAction;
 import physics.collision.narrowphase.INarrowphase;
 import physics.collision.narrowphase.sat.SAT;
 import physics.dynamics.Body;
@@ -12,7 +11,7 @@ import physics.geometry.Polygon;
 import physics.geometry.Ray;
 import physics.geometry.Shapes;
 import physics.geometry.Vector2D;
-import physics.signals.ChannelSignalData;
+import physics.collision.broadphase.action.ActionResultCollection;
 
 /**
  * ...
@@ -44,6 +43,8 @@ class PhysicsEngine
 	
 	public var contactManager : BodyContactManager;
 		
+    public var actionResultCollection:ActionResultCollection;
+
 	public function new(fps : Float, pps : Float, narrowphase:INarrowphase) 
 	{
 		this.fps = fps;
@@ -70,6 +71,8 @@ class PhysicsEngine
 		masslessForces = new Vector2D();
 
 		damping = 0.995;
+
+        actionResultCollection = new ActionResultCollection();
 
 	}
 
@@ -136,13 +139,13 @@ class PhysicsEngine
 		return null;
 	}
 	
-	public function Search(position:Vector2D,radius:Float):Array<Body> {
+	public function Search(position:Vector2D,radius:Float):ActionResultCollection {
 		return null;
 	}
 
-	public function ProcessAction(action : IBroadphaseAction) : Void {
+	// public function ProcessAction(action : IBroadphaseAction) : Void {
 		
-	}
+	// }
 	
 	public function ProcessShapes(position:Vector2D, range:Float, action:GeometricShape -> Vector2D -> Void ) {
 

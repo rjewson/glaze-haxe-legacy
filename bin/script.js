@@ -1,4 +1,5 @@
 (function () { "use strict";
+var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -88,6 +89,26 @@ List.prototype = {
 		if(this.h == null) this.h = x; else this.q[1] = x;
 		this.q = x;
 		this.length++;
+	}
+	,clear: function() {
+		this.h = null;
+		this.q = null;
+		this.length = 0;
+	}
+	,remove: function(v) {
+		var prev = null;
+		var l = this.h;
+		while(l != null) {
+			if(l[0] == v) {
+				if(prev == null) this.h = l[1]; else prev[1] = l[1];
+				if(this.q == l) this.q = prev;
+				this.length--;
+				return true;
+			}
+			prev = l;
+			l = l[1];
+		}
+		return false;
 	}
 	,iterator: function() {
 		return { h : this.h, hasNext : function() {
@@ -311,6 +332,31 @@ Xml.prototype = {
 			return this.x[this.cur++];
 		}};
 	}
+	,elements: function() {
+		if(this._children == null) throw "bad nodetype";
+		return { cur : 0, x : this._children, hasNext : function() {
+			var k = this.cur;
+			var l = this.x.length;
+			while(k < l) {
+				if(this.x[k].nodeType == Xml.Element) break;
+				k += 1;
+			}
+			this.cur = k;
+			return k < l;
+		}, next : function() {
+			var k1 = this.cur;
+			var l1 = this.x.length;
+			while(k1 < l1) {
+				var n = this.x[k1];
+				k1 += 1;
+				if(n.nodeType == Xml.Element) {
+					this.cur = k1;
+					return n;
+				}
+			}
+			return null;
+		}};
+	}
 	,elementsNamed: function(name) {
 		if(this._children == null) throw "bad nodetype";
 		return { cur : 0, x : this._children, hasNext : function() {
@@ -336,6 +382,21 @@ Xml.prototype = {
 			}
 			return null;
 		}};
+	}
+	,firstChild: function() {
+		if(this._children == null) throw "bad nodetype";
+		return this._children[0];
+	}
+	,firstElement: function() {
+		if(this._children == null) throw "bad nodetype";
+		var cur = 0;
+		var l = this._children.length;
+		while(cur < l) {
+			var n = this._children[cur];
+			if(n.nodeType == Xml.Element) return n;
+			cur++;
+		}
+		return null;
 	}
 	,addChild: function(x) {
 		if(this._children == null) throw "bad nodetype";
@@ -456,12 +517,16 @@ ds.AABB.prototype = {
 };
 ds.HitBehaviour = { __ename__ : true, __constructs__ : ["SKIP","INCLUDE","INCLUDE_AND_STOP","STOP"] };
 ds.HitBehaviour.SKIP = ["SKIP",0];
+ds.HitBehaviour.SKIP.toString = $estr;
 ds.HitBehaviour.SKIP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE = ["INCLUDE",1];
+ds.HitBehaviour.INCLUDE.toString = $estr;
 ds.HitBehaviour.INCLUDE.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE_AND_STOP = ["INCLUDE_AND_STOP",2];
+ds.HitBehaviour.INCLUDE_AND_STOP.toString = $estr;
 ds.HitBehaviour.INCLUDE_AND_STOP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.STOP = ["STOP",3];
+ds.HitBehaviour.STOP.toString = $estr;
 ds.HitBehaviour.STOP.__enum__ = ds.HitBehaviour;
 ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowthFactor) {
 	if(poolGrowthFactor == null) poolGrowthFactor = 2;
@@ -1044,6 +1109,60 @@ ds.Array2D.prototype = {
 	}
 	,__class__: ds.Array2D
 };
+ds.DLLNode = function() { };
+ds.DLLNode.__name__ = ["ds","DLLNode"];
+ds.DLLNode.prototype = {
+	__class__: ds.DLLNode
+};
+ds.DLL = function() {
+	this.length = 0;
+};
+ds.DLL.__name__ = ["ds","DLL"];
+ds.DLL.prototype = {
+	insertAfter: function(node,newNode) {
+		this.length++;
+		newNode.prev = node;
+		newNode.next = node.next;
+		if(node.next == null) this.tail = newNode; else node.next.prev = newNode;
+		node.next = newNode;
+	}
+	,insertBefore: function(node,newNode) {
+		this.length++;
+		newNode.prev = node.prev;
+		newNode.next = node;
+		if(node.prev == null) this.head = newNode; else node.prev.next = newNode;
+		node.prev = newNode;
+	}
+	,insertBeginning: function(newNode) {
+		if(this.head == null) {
+			this.length++;
+			this.head = newNode;
+			this.tail = newNode;
+			newNode.prev = null;
+			newNode.next = null;
+		} else this.insertBefore(this.head,newNode);
+	}
+	,insertEnd: function(newNode) {
+		if(this.tail == null) {
+			if(this.head == null) {
+				this.length++;
+				this.head = newNode;
+				this.tail = newNode;
+				newNode.prev = null;
+				newNode.next = null;
+			} else this.insertBefore(this.head,newNode);
+		} else this.insertAfter(this.tail,newNode);
+	}
+	,remove: function(node) {
+		this.length--;
+		var next = node.next;
+		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
+		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
+		node.prev = node.next = null;
+		return next;
+	}
+	,__class__: ds.DLL
+};
 ds.Grid2D = function(gridWidth,gridHeight,cellSize) {
 	this.initalize(gridWidth,gridHeight,cellSize);
 };
@@ -1131,10 +1250,13 @@ ds.aabbtree.DebugRenderer.prototype = {
 };
 ds.aabbtree.InsertChoice = { __ename__ : true, __constructs__ : ["PARENT","DESCEND_LEFT","DESCEND_RIGHT"] };
 ds.aabbtree.InsertChoice.PARENT = ["PARENT",0];
+ds.aabbtree.InsertChoice.PARENT.toString = $estr;
 ds.aabbtree.InsertChoice.PARENT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_LEFT = ["DESCEND_LEFT",1];
+ds.aabbtree.InsertChoice.DESCEND_LEFT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
+ds.aabbtree.InsertChoice.DESCEND_RIGHT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.IInsertStrategy = function() { };
 ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
@@ -1306,6 +1428,7 @@ eco.core.Component.prototype = {
 eco.core.Engine = function() {
 	this.entities = new Array();
 	this.systems = new Array();
+	this.systemMap = new haxe.ds.StringMap();
 	this.componentSystemMap = new eco.core.ClassMap();
 	this.componentAdded = new eco.signals.Signal2();
 	this.componentRemoved = new eco.signals.Signal2();
@@ -1329,6 +1452,8 @@ eco.core.Engine.prototype = {
 	}
 	,addSystem: function(system) {
 		this.systems.push(system);
+		var key = Type.getClassName(Type.getClass(system));
+		this.systemMap.set(key,system);
 		this.componentSystemMap.registerSystem(system);
 		system.onAdded(this);
 	}
@@ -1337,7 +1462,13 @@ eco.core.Engine.prototype = {
 		if(i >= 0) {
 			this.systems.splice(i,1);
 			system.onRemoved();
+			var key = Type.getClassName(Type.getClass(system));
+			this.systemMap.remove(key);
 		}
+	}
+	,getSystemByClass: function(system) {
+		var key = Type.getClassName(system);
+		return this.systemMap.get(key);
 	}
 	,registerComponent: function(component,priority) {
 		var registeredName = Type.getClassName(component).split(".").pop();
@@ -1367,7 +1498,8 @@ eco.core.Engine.prototype = {
 	}
 	,__class__: eco.core.Engine
 };
-eco.core.Entity = function() {
+eco.core.Entity = function(name) {
+	this.name = name;
 	this.components = [];
 	this.componentMap = { };
 	this.events = new eco.signals.Signal2();
@@ -1678,7 +1810,431 @@ engine.GameLoop.prototype = {
 	}
 	,__class__: engine.GameLoop
 };
+engine.action = {};
+engine.action.Action = function() {
+	this.lanes = 0;
+	this.duration = 0;
+	this.elapsed = 0;
+	this.finished = false;
+	this.started = false;
+	this.blocking = false;
+};
+engine.action.Action.__name__ = ["engine","action","Action"];
+engine.action.Action.__interfaces__ = [ds.DLLNode];
+engine.action.Action.prototype = {
+	update: function(time) {
+		this.elapsed += time;
+	}
+	,onStart: function() {
+		this.started = true;
+	}
+	,onEnd: function() {
+	}
+	,onAdded: function() {
+	}
+	,insertInFrontOfMe: function(action) {
+		if(this.list == null) return;
+		this.list.insertBefter(this,action);
+	}
+	,getRootOwner: function() {
+		var _list = this.list;
+		while(true) {
+			if(_list.list == null) break;
+			_list = _list.list;
+		}
+		return _list.owner;
+	}
+	,__class__: engine.action.Action
+};
+engine.action.ActionList = function() {
+	engine.action.Action.call(this);
+	this.actions = new ds.DLL();
+};
+engine.action.ActionList.__name__ = ["engine","action","ActionList"];
+engine.action.ActionList.__super__ = engine.action.Action;
+engine.action.ActionList.prototype = $extend(engine.action.Action.prototype,{
+	update: function(time) {
+		var action = this.actions.head;
+		while(action != null) {
+			if(!action.started) action.onStart();
+			action.update(time);
+			if(action.blocking) break;
+			if(action.finished) {
+				action.onEnd();
+				this.actions.remove(action);
+			}
+			action = action.next;
+		}
+	}
+	,insertAfter: function(action,newAction) {
+		action.list = this;
+		this.actions.insertAfter(action,newAction);
+	}
+	,insertBefter: function(action,newAction) {
+		action.list = this;
+		this.actions.insertBefore(action,newAction);
+	}
+	,insertBegining: function(newAction) {
+		newAction.list = this;
+		this.actions.insertBeginning(newAction);
+	}
+	,insertEnd: function(newAction) {
+		newAction.list = this;
+		this.actions.insertEnd(newAction);
+	}
+	,remove: function(action) {
+		action.list = null;
+		this.actions.remove(action);
+	}
+	,__class__: engine.action.ActionList
+});
+engine.action.Delay = function(delay) {
+	engine.action.Action.call(this);
+	this.delay = delay;
+	this.blocking = true;
+};
+engine.action.Delay.__name__ = ["engine","action","Delay"];
+engine.action.Delay.__super__ = engine.action.Action;
+engine.action.Delay.prototype = $extend(engine.action.Action.prototype,{
+	update: function(time) {
+		this.elapsed += time;
+		if(this.elapsed > this.delay) {
+			this.blocking = false;
+			this.finished = true;
+		}
+	}
+	,__class__: engine.action.Delay
+});
+engine.action.GetVisibleEntities = function(range) {
+	engine.action.Action.call(this);
+	this.range = range;
+};
+engine.action.GetVisibleEntities.__name__ = ["engine","action","GetVisibleEntities"];
+engine.action.GetVisibleEntities.__super__ = engine.action.Action;
+engine.action.GetVisibleEntities.prototype = $extend(engine.action.Action.prototype,{
+	onStart: function() {
+		engine.action.Action.prototype.onStart.call(this);
+		var owner = this.getRootOwner();
+		var physicsSystem = owner.engine.getSystemByClass(engine.systems.PhysicsSystem);
+		this.physicsEngine = physicsSystem.physicsEngine;
+		this.physics = owner.componentMap[engine.components.Physics.NAME];
+	}
+	,update: function(time) {
+		this.physicsEngine.Search(this.physics.body.position,this.range);
+		this.physicsEngine.actionResultCollection.RemoveBody(this.physics.body);
+		if(this.physicsEngine.actionResultCollection.resultCount > 0) console.log(this.physicsEngine.actionResultCollection);
+	}
+	,__class__: engine.action.GetVisibleEntities
+});
+engine.action.Trace = function() {
+	engine.action.Action.call(this);
+};
+engine.action.Trace.__name__ = ["engine","action","Trace"];
+engine.action.Trace.__super__ = engine.action.Action;
+engine.action.Trace.prototype = $extend(engine.action.Action.prototype,{
+	update: function(time) {
+		this.insertInFrontOfMe(new engine.action.Delay(2000));
+	}
+	,__class__: engine.action.Trace
+});
 engine.ai = {};
+engine.ai.behaviors = {};
+engine.ai.behaviors.Behavior = function() {
+	this.status = engine.ai.behaviors.BehaviorStatus.Invalid;
+};
+engine.ai.behaviors.Behavior.__name__ = ["engine","ai","behaviors","Behavior"];
+engine.ai.behaviors.Behavior.prototype = {
+	initialize: function() {
+	}
+	,terminate: function(status) {
+	}
+	,update: function(context) {
+		return this.status;
+	}
+	,get_terminated: function() {
+		return this.status == engine.ai.behaviors.BehaviorStatus.Success || this.status == engine.ai.behaviors.BehaviorStatus.Failure;
+	}
+	,get_running: function() {
+		return this.status == engine.ai.behaviors.BehaviorStatus.Running;
+	}
+	,reset: function() {
+		this.status = engine.ai.behaviors.BehaviorStatus.Invalid;
+	}
+	,abort: function() {
+		this.terminate(engine.ai.behaviors.BehaviorStatus.Aborted);
+		this.status = engine.ai.behaviors.BehaviorStatus.Aborted;
+	}
+	,tick: function(context) {
+		if(this.status != engine.ai.behaviors.BehaviorStatus.Running) this.initialize();
+		this.status = this.update(context);
+		if(this.status != engine.ai.behaviors.BehaviorStatus.Running) this.terminate(this.status);
+		return this.status;
+	}
+	,__class__: engine.ai.behaviors.Behavior
+};
+engine.ai.behaviors.Action = function(action) {
+	engine.ai.behaviors.Behavior.call(this);
+	this.action = action;
+};
+engine.ai.behaviors.Action.__name__ = ["engine","ai","behaviors","Action"];
+engine.ai.behaviors.Action.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.Action.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	update: function(context) {
+		var f = Reflect.field(context,this.action);
+		if(Reflect.isFunction(f)) {
+			var result = f.apply(context,[]);
+			if(js.Boot.__instanceof(result,engine.ai.behaviors.BehaviorStatus)) return result;
+		}
+		return engine.ai.behaviors.BehaviorStatus.Failure;
+	}
+	,__class__: engine.ai.behaviors.Action
+});
+engine.ai.behaviors.Composite = function() {
+	engine.ai.behaviors.Behavior.call(this);
+	this.children = new List();
+};
+engine.ai.behaviors.Composite.__name__ = ["engine","ai","behaviors","Composite"];
+engine.ai.behaviors.Composite.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.Composite.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	addChild: function(child) {
+		this.children.add(child);
+	}
+	,removeChild: function(child) {
+		this.children.remove(child);
+	}
+	,removeAll: function() {
+		this.children.clear();
+	}
+	,__class__: engine.ai.behaviors.Composite
+});
+engine.ai.behaviors.Selector = function() {
+	engine.ai.behaviors.Composite.call(this);
+};
+engine.ai.behaviors.Selector.__name__ = ["engine","ai","behaviors","Selector"];
+engine.ai.behaviors.Selector.__super__ = engine.ai.behaviors.Composite;
+engine.ai.behaviors.Selector.prototype = $extend(engine.ai.behaviors.Composite.prototype,{
+	initialize: function() {
+		this._current = this.children.iterator();
+		this._currentBehavior = this._current.next();
+	}
+	,update: function(context) {
+		while(this._currentBehavior != null) {
+			var status = this._currentBehavior.tick(context);
+			if(status != engine.ai.behaviors.BehaviorStatus.Failure) return status;
+			if(this._current.hasNext()) this._currentBehavior = this._current.next(); else break;
+		}
+		return engine.ai.behaviors.BehaviorStatus.Failure;
+	}
+	,__class__: engine.ai.behaviors.Selector
+});
+engine.ai.behaviors.ActiveSelector = function() {
+	engine.ai.behaviors.Selector.call(this);
+};
+engine.ai.behaviors.ActiveSelector.__name__ = ["engine","ai","behaviors","ActiveSelector"];
+engine.ai.behaviors.ActiveSelector.__super__ = engine.ai.behaviors.Selector;
+engine.ai.behaviors.ActiveSelector.prototype = $extend(engine.ai.behaviors.Selector.prototype,{
+	initialize: function() {
+		this._current = this.children.iterator();
+		while(this._current.hasNext()) this._currentBehavior = this._current.next();
+	}
+	,update: function(context) {
+		var previousBehavior = this._currentBehavior;
+		engine.ai.behaviors.Selector.prototype.initialize.call(this);
+		var result = engine.ai.behaviors.Selector.prototype.update.call(this,context);
+		if(this._currentBehavior != previousBehavior) previousBehavior.terminate(engine.ai.behaviors.BehaviorStatus.Aborted);
+		return result;
+	}
+	,__class__: engine.ai.behaviors.ActiveSelector
+});
+engine.ai.behaviors.BehaviorStatus = { __ename__ : true, __constructs__ : ["Invalid","Success","Running","Failure","Aborted"] };
+engine.ai.behaviors.BehaviorStatus.Invalid = ["Invalid",0];
+engine.ai.behaviors.BehaviorStatus.Invalid.toString = $estr;
+engine.ai.behaviors.BehaviorStatus.Invalid.__enum__ = engine.ai.behaviors.BehaviorStatus;
+engine.ai.behaviors.BehaviorStatus.Success = ["Success",1];
+engine.ai.behaviors.BehaviorStatus.Success.toString = $estr;
+engine.ai.behaviors.BehaviorStatus.Success.__enum__ = engine.ai.behaviors.BehaviorStatus;
+engine.ai.behaviors.BehaviorStatus.Running = ["Running",2];
+engine.ai.behaviors.BehaviorStatus.Running.toString = $estr;
+engine.ai.behaviors.BehaviorStatus.Running.__enum__ = engine.ai.behaviors.BehaviorStatus;
+engine.ai.behaviors.BehaviorStatus.Failure = ["Failure",3];
+engine.ai.behaviors.BehaviorStatus.Failure.toString = $estr;
+engine.ai.behaviors.BehaviorStatus.Failure.__enum__ = engine.ai.behaviors.BehaviorStatus;
+engine.ai.behaviors.BehaviorStatus.Aborted = ["Aborted",4];
+engine.ai.behaviors.BehaviorStatus.Aborted.toString = $estr;
+engine.ai.behaviors.BehaviorStatus.Aborted.__enum__ = engine.ai.behaviors.BehaviorStatus;
+engine.ai.behaviors.BehaviorTree = function() { };
+engine.ai.behaviors.BehaviorTree.__name__ = ["engine","ai","behaviors","BehaviorTree"];
+engine.ai.behaviors.BehaviorTree.fromXml = function(xmlData) {
+	var xml = Xml.parse(xmlData);
+	var selector = new engine.ai.behaviors.Selector();
+	if(xml != null) {
+		xml = xml.firstElement();
+		engine.ai.behaviors.BehaviorTree.compositeFromXml(xml,selector);
+	}
+	return selector;
+};
+engine.ai.behaviors.BehaviorTree.compositeFromXml = function(xml,composite) {
+	var $it0 = xml.elements();
+	while( $it0.hasNext() ) {
+		var element = $it0.next();
+		composite.addChild(engine.ai.behaviors.BehaviorTree.behaviorFromXml(element));
+	}
+};
+engine.ai.behaviors.BehaviorTree.behaviorFromXml = function(xml) {
+	var _g = xml.get_nodeName();
+	switch(_g) {
+	case "action":
+		return new engine.ai.behaviors.Action(xml.firstChild().get_nodeValue());
+	case "sequence":
+		var sequence = new engine.ai.behaviors.Sequence();
+		engine.ai.behaviors.BehaviorTree.compositeFromXml(xml,sequence);
+		return sequence;
+	case "parallel":
+		var success;
+		if(xml.exists("success")) success = engine.ai.behaviors.BehaviorTree.policyFromString(xml.get("success")); else success = engine.ai.behaviors.Policy.RequireOne;
+		var failure;
+		if(xml.exists("failure")) failure = engine.ai.behaviors.BehaviorTree.policyFromString(xml.get("failure")); else failure = engine.ai.behaviors.Policy.RequireOne;
+		var parallel = new engine.ai.behaviors.Parallel(success,failure);
+		engine.ai.behaviors.BehaviorTree.compositeFromXml(xml,parallel);
+		return parallel;
+	case "repeat":
+		var behavior = engine.ai.behaviors.BehaviorTree.behaviorFromXml(xml.firstElement());
+		var count;
+		if(xml.exists("count")) count = Std.parseInt(xml.get("count")); else count = 1;
+		var repeat = new engine.ai.behaviors.Repeat(behavior,count);
+		return repeat;
+	case "active":
+		var active = new engine.ai.behaviors.ActiveSelector();
+		engine.ai.behaviors.BehaviorTree.compositeFromXml(xml,active);
+		return active;
+	case "selector":
+		var selector = new engine.ai.behaviors.Selector();
+		engine.ai.behaviors.BehaviorTree.compositeFromXml(xml,selector);
+		return selector;
+	default:
+		throw "Unrecognized behavior type : " + xml.get_nodeName();
+	}
+};
+engine.ai.behaviors.BehaviorTree.policyFromString = function(policy) {
+	switch(policy) {
+	case "one":
+		return engine.ai.behaviors.Policy.RequireOne;
+	case "all":
+		return engine.ai.behaviors.Policy.RequireAll;
+	default:
+		throw "Invalid policy, expected `one` or `all`.";
+	}
+};
+engine.ai.behaviors.Decorator = function(child) {
+	engine.ai.behaviors.Behavior.call(this);
+	this.child = child;
+};
+engine.ai.behaviors.Decorator.__name__ = ["engine","ai","behaviors","Decorator"];
+engine.ai.behaviors.Decorator.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.Decorator.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	__class__: engine.ai.behaviors.Decorator
+});
+engine.ai.behaviors.Policy = { __ename__ : true, __constructs__ : ["RequireOne","RequireAll"] };
+engine.ai.behaviors.Policy.RequireOne = ["RequireOne",0];
+engine.ai.behaviors.Policy.RequireOne.toString = $estr;
+engine.ai.behaviors.Policy.RequireOne.__enum__ = engine.ai.behaviors.Policy;
+engine.ai.behaviors.Policy.RequireAll = ["RequireAll",1];
+engine.ai.behaviors.Policy.RequireAll.toString = $estr;
+engine.ai.behaviors.Policy.RequireAll.__enum__ = engine.ai.behaviors.Policy;
+engine.ai.behaviors.Parallel = function(success,failure) {
+	engine.ai.behaviors.Composite.call(this);
+	this._successPolicy = success;
+	this._failurePolicy = failure;
+};
+engine.ai.behaviors.Parallel.__name__ = ["engine","ai","behaviors","Parallel"];
+engine.ai.behaviors.Parallel.__super__ = engine.ai.behaviors.Composite;
+engine.ai.behaviors.Parallel.prototype = $extend(engine.ai.behaviors.Composite.prototype,{
+	update: function(context) {
+		var successCount = 0;
+		var failureCount = 0;
+		var $it0 = this.children.iterator();
+		while( $it0.hasNext() ) {
+			var child = $it0.next();
+			if(!(child.status == engine.ai.behaviors.BehaviorStatus.Success || child.status == engine.ai.behaviors.BehaviorStatus.Failure)) child.tick(context);
+			var _g = child.status;
+			switch(_g[1]) {
+			case 1:
+				successCount += 1;
+				if(this._successPolicy == engine.ai.behaviors.Policy.RequireOne) return engine.ai.behaviors.BehaviorStatus.Success;
+				break;
+			case 3:
+				failureCount += 1;
+				if(this._failurePolicy == engine.ai.behaviors.Policy.RequireOne) return engine.ai.behaviors.BehaviorStatus.Failure;
+				break;
+			default:
+			}
+		}
+		if(this._failurePolicy == engine.ai.behaviors.Policy.RequireAll && failureCount == this.children.length) return engine.ai.behaviors.BehaviorStatus.Failure;
+		if(this._successPolicy == engine.ai.behaviors.Policy.RequireAll && successCount == this.children.length) return engine.ai.behaviors.BehaviorStatus.Success;
+		return engine.ai.behaviors.BehaviorStatus.Running;
+	}
+	,terminate: function(status) {
+		var $it0 = this.children.iterator();
+		while( $it0.hasNext() ) {
+			var child = $it0.next();
+			if(child.status == engine.ai.behaviors.BehaviorStatus.Running) child.abort();
+		}
+	}
+	,__class__: engine.ai.behaviors.Parallel
+});
+engine.ai.behaviors.Repeat = function(child,count) {
+	if(count == null) count = 0;
+	this._counter = 0;
+	this.count = 0;
+	engine.ai.behaviors.Decorator.call(this,child);
+	this.count = count;
+};
+engine.ai.behaviors.Repeat.__name__ = ["engine","ai","behaviors","Repeat"];
+engine.ai.behaviors.Repeat.__super__ = engine.ai.behaviors.Decorator;
+engine.ai.behaviors.Repeat.prototype = $extend(engine.ai.behaviors.Decorator.prototype,{
+	initialize: function() {
+		this._counter = 0;
+	}
+	,update: function(context) {
+		try {
+			while(true) {
+				var _g = this.child.tick(context);
+				switch(_g[1]) {
+				case 2:
+					throw "__break__";
+					break;
+				case 3:
+					return engine.ai.behaviors.BehaviorStatus.Failure;
+				default:
+					if(++this._counter == this.count) return engine.ai.behaviors.BehaviorStatus.Success;
+				}
+				this.child.reset();
+			}
+		} catch( e ) { if( e != "__break__" ) throw e; }
+		return engine.ai.behaviors.BehaviorStatus.Invalid;
+	}
+	,__class__: engine.ai.behaviors.Repeat
+});
+engine.ai.behaviors.Sequence = function() {
+	engine.ai.behaviors.Composite.call(this);
+};
+engine.ai.behaviors.Sequence.__name__ = ["engine","ai","behaviors","Sequence"];
+engine.ai.behaviors.Sequence.__super__ = engine.ai.behaviors.Composite;
+engine.ai.behaviors.Sequence.prototype = $extend(engine.ai.behaviors.Composite.prototype,{
+	initialize: function() {
+		this._current = this.children.iterator();
+		this._currentBehavior = this._current.next();
+	}
+	,update: function(context) {
+		while(this._currentBehavior != null) {
+			var status = this._currentBehavior.tick(context);
+			if(status != engine.ai.behaviors.BehaviorStatus.Success) return status;
+			if(this._current.hasNext()) this._currentBehavior = this._current.next(); else break;
+		}
+		return engine.ai.behaviors.BehaviorStatus.Success;
+	}
+	,__class__: engine.ai.behaviors.Sequence
+});
 engine.ai.steering = {};
 engine.ai.steering.SteeringBehavior = function(a_agent,a_calculationMethod) {
 	if(a_calculationMethod == null) a_calculationMethod = 2;
@@ -2000,10 +2556,10 @@ engine.ai.steering.behaviours.Seek.calc = function(agent,target,seekDistSq) {
 	if(seekDistSq < 0 && d < -seekDistSq) return engine.ai.steering.behaviours.Seek.wanderResult; else if(seekDistSq > 0 && d > seekDistSq) return engine.ai.steering.behaviours.Seek.wanderResult; else {
 		var t = Math.sqrt(d);
 		engine.ai.steering.behaviours.Seek.wanderResult.x = dX / t;
-		engine.ai.steering.behaviours.Seek.wanderResult.x *= 1;
+		engine.ai.steering.behaviours.Seek.wanderResult.x *= 5;
 		engine.ai.steering.behaviours.Seek.wanderResult.x -= agent.position.x - agent.prevPosition.x;
 		engine.ai.steering.behaviours.Seek.wanderResult.y = dY / t;
-		engine.ai.steering.behaviours.Seek.wanderResult.y *= 1;
+		engine.ai.steering.behaviours.Seek.wanderResult.y *= 5;
 		engine.ai.steering.behaviours.Seek.wanderResult.y -= agent.position.y - agent.prevPosition.y;
 		return engine.ai.steering.behaviours.Seek.wanderResult;
 	}
@@ -2137,6 +2693,9 @@ engine.components.Physics.prototype = $extend(eco.core.Component.prototype,{
 	,__class__: engine.components.Physics
 });
 engine.components.Position = function(x,y,rotation) {
+	if(rotation == null) rotation = 0.0;
+	if(y == null) y = 0.0;
+	if(x == null) x = 0.0;
 	eco.core.Component.call(this);
 	this.position = new physics.geometry.Vector2D(x,y);
 	this.rotation = rotation;
@@ -2149,8 +2708,29 @@ engine.components.Position.prototype = $extend(eco.core.Component.prototype,{
 	}
 	,__class__: engine.components.Position
 });
+engine.components.Script = function() {
+	eco.core.Component.call(this);
+	this.actionList = new engine.action.ActionList();
+	this.bt = new engine.ai.behaviors.Sequence();
+};
+engine.components.Script.__name__ = ["engine","components","Script"];
+engine.components.Script.__super__ = eco.core.Component;
+engine.components.Script.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Script";
+	}
+	,onAdded: function() {
+		this.actionList.owner = this.owner;
+	}
+	,update: function(time) {
+		this.actionList.update(time);
+	}
+	,__class__: engine.components.Script
+});
 engine.components.Steering = function() {
 	eco.core.Component.call(this);
+	this.maxSteeringForcePerStep = 5;
+	this.maxAcceleration = 1;
 };
 engine.components.Steering.__name__ = ["engine","components","Steering"];
 engine.components.Steering.__super__ = eco.core.Component;
@@ -2859,6 +3439,10 @@ game.exile.components.Player.prototype = $extend(eco.core.Component.prototype,{
 		this.position = this.owner.componentMap[engine.components.Position.NAME];
 		this.controls = this.owner.componentMap[engine.components.Controls.NAME];
 		this.physics = this.owner.componentMap[engine.components.Physics.NAME];
+		var script = new engine.components.Script();
+		script.actionList.insertEnd(new engine.action.Trace());
+		script.actionList.insertEnd(new engine.action.GetVisibleEntities(100));
+		this.owner.add(script);
 	}
 	,update: function(time) {
 		this.processInputs();
@@ -2896,13 +3480,14 @@ game.exile.components.ProjectileA.prototype = $extend(eco.core.Component.prototy
 	}
 	,onAdded: function() {
 		var _g = this;
+		this.owner.name = "ProjectileA";
 		var shape = new physics.geometry.Circle(6,new physics.geometry.Vector2D(0,0));
 		this.physics = new engine.components.Physics(this.startPosition.x,this.startPosition.y,0,0,[shape]);
 		this.physics.body.SetMass(0.1);
 		this.physics.body.group = 1;
 		this.physics.body.features[0].contactCallback = $bind(this,this.OnContact);
 		this.physics.body.SetVelocity(this.startVelocity);
-		this.owner.add(new engine.components.Position(0,0,0)).add(this.physics).add(new engine.components.Display("character","projectile1.png")).add(new engine.components.Lifecycle(Math.floor(Math.random() * 500 + 1000))).add(new engine.components.ParticleEmitters([new wgr.particle.emitter.RandomSpray(60,60)])).add(new engine.components.Steering());
+		this.owner.add(new engine.components.Position()).add(this.physics).add(new engine.components.Display("character","projectile1.png")).add(new engine.components.Lifecycle(Math.floor(Math.random() * 500 + 1000))).add(new engine.components.ParticleEmitters([new wgr.particle.emitter.RandomSpray(60,60)]));
 		this.owner.events.add(function(type,data) {
 			if(type == "lc") _g.destroy();
 		});
@@ -2910,7 +3495,6 @@ game.exile.components.ProjectileA.prototype = $extend(eco.core.Component.prototy
 	,OnContact: function(arbiter) {
 		if(arbiter.isSensor) return;
 		this.totalContactCount++;
-		console.log(this.totalContactCount);
 		if(this.totalContactCount > 1 || (this.physics.body.id == arbiter.feature1.body.id?arbiter.feature2.body:arbiter.feature1.body).id > 0) {
 		}
 	}
@@ -3519,6 +4103,7 @@ physics.PhysicsEngine.prototype = {
 		this.forces = new physics.geometry.Vector2D();
 		this.masslessForces = new physics.geometry.Vector2D();
 		this.damping = 0.995;
+		this.actionResultCollection = new physics.collision.broadphase.action.ActionResultCollection();
 	}
 	,Step: function() {
 		this.step++;
@@ -3563,8 +4148,6 @@ physics.PhysicsEngine.prototype = {
 	,Search: function(position,radius) {
 		return null;
 	}
-	,ProcessAction: function(action) {
-	}
 	,ProcessShapes: function(position,range,action) {
 	}
 	,__class__: physics.PhysicsEngine
@@ -3572,15 +4155,6 @@ physics.PhysicsEngine.prototype = {
 physics.collision = {};
 physics.collision.broadphase = {};
 physics.collision.broadphase.action = {};
-physics.collision.broadphase.action.ActionParams = function() {
-};
-physics.collision.broadphase.action.ActionParams.__name__ = ["physics","collision","broadphase","action","ActionParams"];
-physics.collision.broadphase.action.ActionParams.prototype = {
-	PreProcess: function() {
-		this.radiusSqrd = this.radius * this.radius;
-	}
-	,__class__: physics.collision.broadphase.action.ActionParams
-};
 physics.collision.broadphase.action.ActionResult = function() {
 };
 physics.collision.broadphase.action.ActionResult.__name__ = ["physics","collision","broadphase","action","ActionResult"];
@@ -3633,6 +4207,14 @@ physics.collision.broadphase.action.ActionResultCollection.prototype = {
 			result.distanceSqrd = distanceSqrd;
 		}
 	}
+	,RemoveBody: function(body) {
+		var i = 0;
+		while(i < this.results.length) if(this.results[i].body == body) {
+			this.results.splice(i,1);
+			this.resultCount--;
+			break;
+		}
+	}
 	,Sort: function() {
 		this.quicksort(this.results,0,this.resultCount - 1);
 		this.quicksort(this.opaqueBodies,0,this.opaqueBodyCount - 1);
@@ -3657,11 +4239,6 @@ physics.collision.broadphase.action.ActionResultCollection.prototype = {
 	}
 	,__class__: physics.collision.broadphase.action.ActionResultCollection
 };
-physics.collision.broadphase.action.IBroadphaseAction = function() { };
-physics.collision.broadphase.action.IBroadphaseAction.__name__ = ["physics","collision","broadphase","action","IBroadphaseAction"];
-physics.collision.broadphase.action.IBroadphaseAction.prototype = {
-	__class__: physics.collision.broadphase.action.IBroadphaseAction
-};
 physics.collision.broadphase.managedgrid = {};
 physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
 	this.index = index;
@@ -3684,6 +4261,21 @@ physics.collision.broadphase.managedgrid.Cell.prototype = {
 	,RemoveBody: function(body) {
 		if(body.isStatic) HxOverrides.remove(this.staticItems,body); else HxOverrides.remove(this.dynamicItems,body);
 		body.broadphaseData1 = -1;
+	}
+	,SearchList: function(list,position,radius,actionResultCollection) {
+		var radiusSqrd = radius * radius;
+		var _g = 0;
+		while(_g < list.length) {
+			var body = list[_g];
+			++_g;
+			var dX = position.x - body.averageCenter.x;
+			var dY = position.y - body.averageCenter.y;
+			var dSqrd = dX * dX + dY * dY;
+			if(dSqrd <= radiusSqrd - body.radiusSqrd) actionResultCollection.AddResult(body,dSqrd);
+		}
+	}
+	,SearchCell: function(position,radius,result) {
+		this.SearchList(this.dynamicItems,position,radius,result);
 	}
 	,__class__: physics.collision.broadphase.managedgrid.Cell
 };
@@ -3783,9 +4375,19 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 		var index = HxOverrides.indexOf(cell.dynamicItems,body,0);
 		if(index >= 0) {
 			cell.dynamicItems.splice(index,1);
-			console.log("remooved");
 			return;
 		}
+	}
+	,Search: function(position,radius) {
+		this.actionResultCollection.Reset();
+		var _g = 0;
+		var _g1 = this.grid.data;
+		while(_g < _g1.length) {
+			var cell = _g1[_g];
+			++_g;
+			cell.SearchCell(position,radius,this.actionResultCollection);
+		}
+		return this.actionResultCollection;
 	}
 	,__class__: physics.collision.broadphase.managedgrid.ManagedGrid
 });
@@ -4844,13 +5446,6 @@ physics.geometry.VertexList.prototype = {
 	}
 	,__class__: physics.geometry.VertexList
 };
-physics.signals = {};
-physics.signals.ChannelSignalData = function() {
-};
-physics.signals.ChannelSignalData.__name__ = ["physics","signals","ChannelSignalData"];
-physics.signals.ChannelSignalData.prototype = {
-	__class__: physics.signals.ChannelSignalData
-};
 var utils = {};
 utils.EventTarget = function() {
 	this.listeners = new haxe.ds.StringMap();
@@ -5399,7 +5994,6 @@ wgr.display.Stage.prototype = $extend(wgr.display.DisplayObjectContainer.prototy
 		}
 	}
 	,Flatten: function() {
-		console.log("Flatten");
 		this.renderHead = null;
 		this.renderTail = null;
 		this.renderCount = 0;
@@ -6526,7 +7120,7 @@ wgr.renderers.webgl.WebGLBatch.prototype = {
 	,__class__: wgr.renderers.webgl.WebGLBatch
 };
 wgr.renderers.webgl.WebGLRenderer = function(stage,camera,view,width,height,transparent,antialias) {
-	if(antialias == null) antialias = true;
+	if(antialias == null) antialias = false;
 	if(transparent == null) transparent = false;
 	if(height == null) height = 600;
 	if(width == null) width = 800;
@@ -7204,6 +7798,7 @@ engine.components.Lifecycle.NAME = "Lifecycle";
 engine.components.ParticleEmitters.NAME = "ParticleEmitters";
 engine.components.Physics.NAME = "Physics";
 engine.components.Position.NAME = "Position";
+engine.components.Script.NAME = "Script";
 engine.components.Steering.NAME = "Steering";
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 game.exile.Exile.TEXTURE_CONFIG = "data/sprites.json";

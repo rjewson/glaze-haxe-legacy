@@ -4,6 +4,7 @@ package eco.core;
 import eco.core.ClassMap;
 import eco.core.Component;
 import eco.core.Entity;
+import eco.core.System;
 import eco.signals.Signal2;
 import haxe.ds.HashMap;
 
@@ -13,6 +14,7 @@ class Engine
     public var entities:Array<Entity>;
 
     public var systems:Array<System>;
+    public var systemMap:Map<String,System>;
 
     public var componentSystemMap:ClassMap;
 
@@ -27,6 +29,8 @@ class Engine
 
         entities = new Array<Entity>();
         systems = new Array<System>();
+
+        systemMap = new Map<String,System>();
 
         componentSystemMap = new ClassMap();
 
@@ -57,6 +61,7 @@ class Engine
 
     public function addSystem(system:System) {
         systems.push(system);
+        systemMap.set(Type.getClassName(Type.getClass(system)),system);
         componentSystemMap.registerSystem(system);
         system.onAdded(this);
     }
@@ -66,7 +71,12 @@ class Engine
         if (i>=0) {
             systems.splice(i,1);
             system.onRemoved();
+            systemMap.remove(Type.getClassName(Type.getClass(system)));
         }
+    }
+
+    public function getSystemByClass(system:Class<System>):System {
+        return systemMap.get(Type.getClassName(system));
     }
 
     public function registerComponent(component:Class<Component>,priority:Int) {

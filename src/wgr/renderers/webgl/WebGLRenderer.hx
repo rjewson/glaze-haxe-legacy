@@ -32,7 +32,7 @@ class WebGLRenderer
 
     public var renderers:Array<IRenderer>;
 
-    public function new(stage:Stage,camera:Camera,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=true) {
+    public function new(stage:Stage,camera:Camera,view:CanvasElement,width:Int = 800,height:Int=600,transparent:Bool=false,antialias:Bool=false) {
         this.stage = stage;
         this.camera = camera;
         this.view = view;

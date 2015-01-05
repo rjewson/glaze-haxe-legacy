@@ -8,6 +8,8 @@ import eco.signals.Signal2;
 class Entity 
 {
 
+    public var name:String;
+
     public var components:Array<Component>;
     public var componentMap:Dynamic<Component>;
 
@@ -15,7 +17,8 @@ class Entity
 
     public var events:Signal2<String,Dynamic>;
 
-    public function new() {
+    public function new(name:String = null) {
+        this.name = name;
         components = [];
         componentMap = {};
         events = new Signal2<String,Dynamic>();

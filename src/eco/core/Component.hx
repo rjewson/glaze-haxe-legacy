@@ -20,7 +20,6 @@ class Component {
     }
 
     public function onStarted() {
-        
     }
 
     public function update(time:Float) {

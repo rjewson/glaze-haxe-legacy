@@ -39,7 +39,7 @@ class Stage extends DisplayObjectContainer
      *   Depth-first Pre-order traversal of tree
      */
     public function Flatten() {
-        trace("Flatten");
+        //trace("Flatten");
         renderHead = null;
         renderTail = null;
         renderCount = 0;

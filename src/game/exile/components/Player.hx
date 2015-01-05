@@ -3,9 +3,12 @@ package game.exile.components;
 
 import eco.core.Component;
 import eco.core.Entity;
+import engine.action.GetVisibleEntities;
+import engine.action.Trace;
 import engine.components.Controls;
 import engine.components.Physics;
 import engine.components.Position;
+import engine.components.Script;
 import engine.input.DigitalInput;
 import game.exile.components.ProjectileA;
 import game.exile.entities.EntityFactory;
@@ -37,6 +40,11 @@ class Player extends Component
         position = cast owner.getComponentByClass(Position);
         controls = cast owner.getComponentByClass(Controls);
         physics = cast owner.getComponentByClass(Physics);
+
+        var script = new Script();
+        script.actionList.insertEnd(new Trace());
+        script.actionList.insertEnd(new GetVisibleEntities(100));
+        owner.add(script);
     }
 
     override public function update(time:Float) {
