@@ -1,4 +1,5 @@
 (function () { "use strict";
+var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -516,12 +517,16 @@ ds.AABB.prototype = {
 };
 ds.HitBehaviour = { __ename__ : true, __constructs__ : ["SKIP","INCLUDE","INCLUDE_AND_STOP","STOP"] };
 ds.HitBehaviour.SKIP = ["SKIP",0];
+ds.HitBehaviour.SKIP.toString = $estr;
 ds.HitBehaviour.SKIP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE = ["INCLUDE",1];
+ds.HitBehaviour.INCLUDE.toString = $estr;
 ds.HitBehaviour.INCLUDE.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE_AND_STOP = ["INCLUDE_AND_STOP",2];
+ds.HitBehaviour.INCLUDE_AND_STOP.toString = $estr;
 ds.HitBehaviour.INCLUDE_AND_STOP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.STOP = ["STOP",3];
+ds.HitBehaviour.STOP.toString = $estr;
 ds.HitBehaviour.STOP.__enum__ = ds.HitBehaviour;
 ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowthFactor) {
 	if(poolGrowthFactor == null) poolGrowthFactor = 2;
@@ -1245,10 +1250,13 @@ ds.aabbtree.DebugRenderer.prototype = {
 };
 ds.aabbtree.InsertChoice = { __ename__ : true, __constructs__ : ["PARENT","DESCEND_LEFT","DESCEND_RIGHT"] };
 ds.aabbtree.InsertChoice.PARENT = ["PARENT",0];
+ds.aabbtree.InsertChoice.PARENT.toString = $estr;
 ds.aabbtree.InsertChoice.PARENT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_LEFT = ["DESCEND_LEFT",1];
+ds.aabbtree.InsertChoice.DESCEND_LEFT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
+ds.aabbtree.InsertChoice.DESCEND_RIGHT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.IInsertStrategy = function() { };
 ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
@@ -2066,14 +2074,19 @@ engine.ai.behaviors.BehaviorContext.prototype = {
 };
 engine.ai.behaviors.BehaviorStatus = { __ename__ : true, __constructs__ : ["Invalid","Success","Running","Failure","Aborted"] };
 engine.ai.behaviors.BehaviorStatus.Invalid = ["Invalid",0];
+engine.ai.behaviors.BehaviorStatus.Invalid.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Invalid.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Success = ["Success",1];
+engine.ai.behaviors.BehaviorStatus.Success.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Success.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Running = ["Running",2];
+engine.ai.behaviors.BehaviorStatus.Running.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Running.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Failure = ["Failure",3];
+engine.ai.behaviors.BehaviorStatus.Failure.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Failure.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Aborted = ["Aborted",4];
+engine.ai.behaviors.BehaviorStatus.Aborted.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Aborted.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorTree = function() { };
 engine.ai.behaviors.BehaviorTree.__name__ = ["engine","ai","behaviors","BehaviorTree"];
@@ -2149,8 +2162,10 @@ engine.ai.behaviors.Decorator.prototype = $extend(engine.ai.behaviors.Behavior.p
 });
 engine.ai.behaviors.Policy = { __ename__ : true, __constructs__ : ["RequireOne","RequireAll"] };
 engine.ai.behaviors.Policy.RequireOne = ["RequireOne",0];
+engine.ai.behaviors.Policy.RequireOne.toString = $estr;
 engine.ai.behaviors.Policy.RequireOne.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Policy.RequireAll = ["RequireAll",1];
+engine.ai.behaviors.Policy.RequireAll.toString = $estr;
 engine.ai.behaviors.Policy.RequireAll.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Parallel = function(success,failure) {
 	engine.ai.behaviors.Composite.call(this);
