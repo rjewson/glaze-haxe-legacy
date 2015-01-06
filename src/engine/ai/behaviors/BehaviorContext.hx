@@ -7,14 +7,17 @@ import eco.signals.Signal0;
 class BehaviorContext 
 {
 
-    public function entity:Entity;
+    public var entity:Entity;
 
-    public function data:Map<String,Dynamic>;
+    public var data:Map<String,Dynamic>;
 
-    public function event:Signal0;
+    public var event:Signal0;
+
+    public var time:Float;
 
     public function new(entity:Entity) {
         this.entity = entity;
+        this.time = 0;
     }
 
 }

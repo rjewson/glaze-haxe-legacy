@@ -19,7 +19,7 @@ class Behavior
 	/**
 	 * Called when the behavior initializes (should be overridden in sub classes)
 	 */
-	private function initialize():Void { }
+	private function initialize(context:BehaviorContext):Void { }
 	/**
 	 * Called when the behavior terminates (should be overridden in sub classes)
 	 * @param status the status causing termination
@@ -29,7 +29,7 @@ class Behavior
 	 * Called when the behavior updates (should be overridden in sub classes)
 	 * @return The behavior status from that update
 	 */
-	private function update(context:Dynamic):BehaviorStatus { return status; }
+	private function update(context:BehaviorContext):BehaviorStatus { return status; }
 
 	/**
 	 * Specifies if the behavior is terminated
@@ -70,11 +70,11 @@ class Behavior
 	 * Advances the behavior logic (initializes, updates, and terminates when necessary)
 	 * @return The behavior status
 	 */
-	public function tick(?context:Dynamic):BehaviorStatus
+	public function tick(context:BehaviorContext):BehaviorStatus
 	{
 		if (status != Running)
 		{
-			initialize();
+			initialize(context);
 		}
 
 		status = update(context);

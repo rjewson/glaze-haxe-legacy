@@ -22,12 +22,12 @@ class Repeat extends Decorator
 		this.count = count;
 	}
 
-	override private function initialize()
+	override private function initialize(context:BehaviorContext)
 	{
 		_counter = 0;
 	}
 
-	override private function update(context:Dynamic):BehaviorStatus
+	override private function update(context:BehaviorContext):BehaviorStatus
 	{
 		while(true)
 		{

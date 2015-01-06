@@ -1,5 +1,4 @@
 (function () { "use strict";
-var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -517,16 +516,12 @@ ds.AABB.prototype = {
 };
 ds.HitBehaviour = { __ename__ : true, __constructs__ : ["SKIP","INCLUDE","INCLUDE_AND_STOP","STOP"] };
 ds.HitBehaviour.SKIP = ["SKIP",0];
-ds.HitBehaviour.SKIP.toString = $estr;
 ds.HitBehaviour.SKIP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE = ["INCLUDE",1];
-ds.HitBehaviour.INCLUDE.toString = $estr;
 ds.HitBehaviour.INCLUDE.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE_AND_STOP = ["INCLUDE_AND_STOP",2];
-ds.HitBehaviour.INCLUDE_AND_STOP.toString = $estr;
 ds.HitBehaviour.INCLUDE_AND_STOP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.STOP = ["STOP",3];
-ds.HitBehaviour.STOP.toString = $estr;
 ds.HitBehaviour.STOP.__enum__ = ds.HitBehaviour;
 ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowthFactor) {
 	if(poolGrowthFactor == null) poolGrowthFactor = 2;
@@ -1250,13 +1245,10 @@ ds.aabbtree.DebugRenderer.prototype = {
 };
 ds.aabbtree.InsertChoice = { __ename__ : true, __constructs__ : ["PARENT","DESCEND_LEFT","DESCEND_RIGHT"] };
 ds.aabbtree.InsertChoice.PARENT = ["PARENT",0];
-ds.aabbtree.InsertChoice.PARENT.toString = $estr;
 ds.aabbtree.InsertChoice.PARENT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_LEFT = ["DESCEND_LEFT",1];
-ds.aabbtree.InsertChoice.DESCEND_LEFT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
-ds.aabbtree.InsertChoice.DESCEND_RIGHT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.IInsertStrategy = function() { };
 ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
@@ -1747,6 +1739,24 @@ eco.signals.SignalBase.prototype = {
 	}
 	,__class__: eco.signals.SignalBase
 };
+eco.signals.Signal0 = function() {
+	eco.signals.SignalBase.call(this);
+};
+eco.signals.Signal0.__name__ = ["eco","signals","Signal0"];
+eco.signals.Signal0.__super__ = eco.signals.SignalBase;
+eco.signals.Signal0.prototype = $extend(eco.signals.SignalBase.prototype,{
+	dispatch: function() {
+		this.startDispatch();
+		var node = this.head;
+		while(node != null) {
+			node.listener();
+			if(node.once) this.remove(node.listener);
+			node = node.next;
+		}
+		this.endDispatch();
+	}
+	,__class__: eco.signals.Signal0
+});
 eco.signals.Signal2 = function() {
 	eco.signals.SignalBase.call(this);
 };
@@ -1944,7 +1954,7 @@ engine.ai.behaviors.Behavior = function() {
 };
 engine.ai.behaviors.Behavior.__name__ = ["engine","ai","behaviors","Behavior"];
 engine.ai.behaviors.Behavior.prototype = {
-	initialize: function() {
+	initialize: function(context) {
 	}
 	,terminate: function(status) {
 	}
@@ -1965,7 +1975,7 @@ engine.ai.behaviors.Behavior.prototype = {
 		this.status = engine.ai.behaviors.BehaviorStatus.Aborted;
 	}
 	,tick: function(context) {
-		if(this.status != engine.ai.behaviors.BehaviorStatus.Running) this.initialize();
+		if(this.status != engine.ai.behaviors.BehaviorStatus.Running) this.initialize(context);
 		this.status = this.update(context);
 		if(this.status != engine.ai.behaviors.BehaviorStatus.Running) this.terminate(this.status);
 		return this.status;
@@ -2013,7 +2023,7 @@ engine.ai.behaviors.Selector = function() {
 engine.ai.behaviors.Selector.__name__ = ["engine","ai","behaviors","Selector"];
 engine.ai.behaviors.Selector.__super__ = engine.ai.behaviors.Composite;
 engine.ai.behaviors.Selector.prototype = $extend(engine.ai.behaviors.Composite.prototype,{
-	initialize: function() {
+	initialize: function(context) {
 		this._current = this.children.iterator();
 		this._currentBehavior = this._current.next();
 	}
@@ -2033,34 +2043,37 @@ engine.ai.behaviors.ActiveSelector = function() {
 engine.ai.behaviors.ActiveSelector.__name__ = ["engine","ai","behaviors","ActiveSelector"];
 engine.ai.behaviors.ActiveSelector.__super__ = engine.ai.behaviors.Selector;
 engine.ai.behaviors.ActiveSelector.prototype = $extend(engine.ai.behaviors.Selector.prototype,{
-	initialize: function() {
+	initialize: function(context) {
 		this._current = this.children.iterator();
 		while(this._current.hasNext()) this._currentBehavior = this._current.next();
 	}
 	,update: function(context) {
 		var previousBehavior = this._currentBehavior;
-		engine.ai.behaviors.Selector.prototype.initialize.call(this);
+		engine.ai.behaviors.Selector.prototype.initialize.call(this,context);
 		var result = engine.ai.behaviors.Selector.prototype.update.call(this,context);
 		if(this._currentBehavior != previousBehavior) previousBehavior.terminate(engine.ai.behaviors.BehaviorStatus.Aborted);
 		return result;
 	}
 	,__class__: engine.ai.behaviors.ActiveSelector
 });
+engine.ai.behaviors.BehaviorContext = function(entity) {
+	this.entity = entity;
+	this.time = 0;
+};
+engine.ai.behaviors.BehaviorContext.__name__ = ["engine","ai","behaviors","BehaviorContext"];
+engine.ai.behaviors.BehaviorContext.prototype = {
+	__class__: engine.ai.behaviors.BehaviorContext
+};
 engine.ai.behaviors.BehaviorStatus = { __ename__ : true, __constructs__ : ["Invalid","Success","Running","Failure","Aborted"] };
 engine.ai.behaviors.BehaviorStatus.Invalid = ["Invalid",0];
-engine.ai.behaviors.BehaviorStatus.Invalid.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Invalid.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Success = ["Success",1];
-engine.ai.behaviors.BehaviorStatus.Success.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Success.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Running = ["Running",2];
-engine.ai.behaviors.BehaviorStatus.Running.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Running.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Failure = ["Failure",3];
-engine.ai.behaviors.BehaviorStatus.Failure.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Failure.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Aborted = ["Aborted",4];
-engine.ai.behaviors.BehaviorStatus.Aborted.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Aborted.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorTree = function() { };
 engine.ai.behaviors.BehaviorTree.__name__ = ["engine","ai","behaviors","BehaviorTree"];
@@ -2136,10 +2149,8 @@ engine.ai.behaviors.Decorator.prototype = $extend(engine.ai.behaviors.Behavior.p
 });
 engine.ai.behaviors.Policy = { __ename__ : true, __constructs__ : ["RequireOne","RequireAll"] };
 engine.ai.behaviors.Policy.RequireOne = ["RequireOne",0];
-engine.ai.behaviors.Policy.RequireOne.toString = $estr;
 engine.ai.behaviors.Policy.RequireOne.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Policy.RequireAll = ["RequireAll",1];
-engine.ai.behaviors.Policy.RequireAll.toString = $estr;
 engine.ai.behaviors.Policy.RequireAll.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Parallel = function(success,failure) {
 	engine.ai.behaviors.Composite.call(this);
@@ -2192,7 +2203,7 @@ engine.ai.behaviors.Repeat = function(child,count) {
 engine.ai.behaviors.Repeat.__name__ = ["engine","ai","behaviors","Repeat"];
 engine.ai.behaviors.Repeat.__super__ = engine.ai.behaviors.Decorator;
 engine.ai.behaviors.Repeat.prototype = $extend(engine.ai.behaviors.Decorator.prototype,{
-	initialize: function() {
+	initialize: function(context) {
 		this._counter = 0;
 	}
 	,update: function(context) {
@@ -2221,7 +2232,7 @@ engine.ai.behaviors.Sequence = function() {
 engine.ai.behaviors.Sequence.__name__ = ["engine","ai","behaviors","Sequence"];
 engine.ai.behaviors.Sequence.__super__ = engine.ai.behaviors.Composite;
 engine.ai.behaviors.Sequence.prototype = $extend(engine.ai.behaviors.Composite.prototype,{
-	initialize: function() {
+	initialize: function(context) {
 		this._current = this.children.iterator();
 		this._currentBehavior = this._current.next();
 	}
@@ -2234,6 +2245,45 @@ engine.ai.behaviors.Sequence.prototype = $extend(engine.ai.behaviors.Composite.p
 		return engine.ai.behaviors.BehaviorStatus.Success;
 	}
 	,__class__: engine.ai.behaviors.Sequence
+});
+engine.ai.behaviors.actions = {};
+engine.ai.behaviors.actions.Delay = function(delay) {
+	engine.ai.behaviors.Behavior.call(this);
+	this.delay = delay;
+};
+engine.ai.behaviors.actions.Delay.__name__ = ["engine","ai","behaviors","actions","Delay"];
+engine.ai.behaviors.actions.Delay.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.actions.Delay.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	initialize: function(context) {
+		console.log("initalize");
+		this.elapsed = 0;
+	}
+	,terminate: function(status) {
+		console.log("terminate:" + Std.string(status));
+	}
+	,update: function(context) {
+		this.elapsed += context.time;
+		if(this.elapsed > this.delay) return engine.ai.behaviors.BehaviorStatus.Success;
+		return engine.ai.behaviors.BehaviorStatus.Running;
+	}
+	,__class__: engine.ai.behaviors.actions.Delay
+});
+engine.ai.behaviors.actions.GetLocalEntities = function(range) {
+	engine.ai.behaviors.Behavior.call(this);
+	this.range = range;
+};
+engine.ai.behaviors.actions.GetLocalEntities.__name__ = ["engine","ai","behaviors","actions","GetLocalEntities"];
+engine.ai.behaviors.actions.GetLocalEntities.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.actions.GetLocalEntities.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	initialize: function(context) {
+		var physicsSystem = context.entity.engine.getSystemByClass(engine.systems.PhysicsSystem);
+		this.physicsEngine = physicsSystem.physicsEngine;
+	}
+	,update: function(context) {
+		console.log(this.physicsEngine.step);
+		return engine.ai.behaviors.BehaviorStatus.Success;
+	}
+	,__class__: engine.ai.behaviors.actions.GetLocalEntities
 });
 engine.ai.steering = {};
 engine.ai.steering.SteeringBehavior = function(a_agent,a_calculationMethod) {
@@ -2721,9 +2771,14 @@ engine.components.Script.prototype = $extend(eco.core.Component.prototype,{
 	}
 	,onAdded: function() {
 		this.actionList.owner = this.owner;
+		this.bc = new engine.ai.behaviors.BehaviorContext(this.owner);
+		this.bt.addChild(new engine.ai.behaviors.actions.Delay(1000));
+		this.bt.addChild(new engine.ai.behaviors.actions.GetLocalEntities(1000));
 	}
 	,update: function(time) {
 		this.actionList.update(time);
+		this.bc.time = time;
+		this.bt.tick(this.bc);
 	}
 	,__class__: engine.components.Script
 });

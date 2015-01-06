@@ -27,7 +27,7 @@ class Parallel extends Composite
 		_failurePolicy = failure;
 	}
 
-	override private function update(context:Dynamic):BehaviorStatus
+	override private function update(context:BehaviorContext):BehaviorStatus
 	{
 		var successCount:Int = 0,
 			failureCount:Int = 0;

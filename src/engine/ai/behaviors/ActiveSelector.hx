@@ -6,7 +6,7 @@ package engine.ai.behaviors;
 class ActiveSelector extends Selector
 {
 
-	override private function initialize()
+	override private function initialize(context:BehaviorContext)
 	{
 		// get last iterator value
 		_current = children.iterator();
@@ -16,11 +16,11 @@ class ActiveSelector extends Selector
 		}
 	}
 
-	override private function update(context:Dynamic):BehaviorStatus
+	override private function update(context:BehaviorContext):BehaviorStatus
 	{
 		var previousBehavior:Behavior = _currentBehavior;
 
-		super.initialize();
+		super.initialize(context);
 		var result = super.update(context);
 
 		if (_currentBehavior != previousBehavior)

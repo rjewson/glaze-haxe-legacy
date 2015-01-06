@@ -6,13 +6,13 @@ package engine.ai.behaviors;
 class Sequence extends Composite
 {
 
-	override private function initialize()
+	override private function initialize(context:BehaviorContext)
 	{
 		_current = children.iterator();
 		_currentBehavior = _current.next();
 	}
 
-	override private function update(context:Dynamic):BehaviorStatus
+	override private function update(context:BehaviorContext):BehaviorStatus
 	{
 		while (_currentBehavior != null)
 		{
