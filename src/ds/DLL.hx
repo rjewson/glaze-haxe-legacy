@@ -72,7 +72,7 @@ class DLL<T:(DLLNode<T>)>
         else
             node.next.prev = node.prev;
         node.prev = node.next = null;
-        return next;
+        return node;
     }
 
     //TODO Iterate,Sort

@@ -26,6 +26,15 @@
 	"spriteSourceSize": {"x":0,"y":0,"w":8,"h":8},
 	"sourceSize": {"w":8,"h":8},
 	"pivot": {"x":0.5,"y":0.5}
+},
+"turretA.png":
+{
+	"frame": {"x":2,"y":84,"w":28,"h":24},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":24},
+	"sourceSize": {"w":28,"h":24},
+	"pivot": {"x":0.5,"y":0.5}
 }},
 "meta": {
 	"app": "http://www.codeandweb.com/texturepacker",
@@ -34,6 +43,6 @@
 	"format": "RGBA8888",
 	"size": {"w":128,"h":128},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:37c382f42bf9582ec11e64d239da3bfc:fc28d5119f1ecc33ad7c7a8c8e8b7843:1eabdf11f75e3a4fe3147baf7b5be24b$"
+	"smartupdate": "$TexturePacker:SmartUpdate:f1dce586b8b1b55da98dd714e73c3a1e:753e479e5a0dbd21abe5fbd4b90f8702:1eabdf11f75e3a4fe3147baf7b5be24b$"
 }
 }

@@ -2,7 +2,6 @@
 package game.exile.components;
 
 import eco.core.Component;
-import engine.action.Trace;
 import engine.components.Display;
 import engine.components.Lifecycle;
 import engine.components.ParticleEmitters;

@@ -8,7 +8,6 @@ import physics.collision.narrowphase.INarrowphase;
 import physics.dynamics.Body;
 import physics.geometry.Vector2D;
 import physics.PhysicsEngine;
-import physics.collision.broadphase.action.ActionResultCollection;
 
 class ManagedGrid extends PhysicsEngine
 {
@@ -104,16 +103,10 @@ class ManagedGrid extends PhysicsEngine
         }
     }
 
-    override public function Search(position:Vector2D,radius:Float):ActionResultCollection {
-                
-        actionResultCollection.Reset();
-        
+    override public function Search(position:Vector2D,radius:Float,result:Body->Float->Void):Void {
         for (cell in grid.data) {        
-            cell.SearchCell(position,radius,actionResultCollection);
+            cell.SearchCell(position,radius,result);
         }
-
-        return actionResultCollection;
-
     }
 
 }

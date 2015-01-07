@@ -3,6 +3,7 @@ package game.exile;
 
 import ds.Array2D;
 import eco.core.Engine;
+import eco.core.Entity.Create;
 import eco.systems.EntityUpdater;
 import engine.core.BaseGame;
 import engine.graphics.StaticLayerDisplayManager;
@@ -14,6 +15,7 @@ import engine.systems.ParticleSystem;
 import engine.systems.PhysicsSystem;
 import engine.systems.RenderSystem;
 import engine.view.View;
+import game.exile.components.GunTurret;
 import game.exile.entities.EntityFactory;
 import js.Browser;
 import physics.geometry.Polygon;
@@ -106,6 +108,7 @@ class Exile extends BaseGame
 
     public function createEntities() {
         mainEngine.addEntity(EntityFactory.instance.create("player",50,50));
+        mainEngine.addEntity(Create([new GunTurret(new Vector2D(200,100))]));
         // mainEngine.addEntity(factory.create("enemy",400,100));
     }
 

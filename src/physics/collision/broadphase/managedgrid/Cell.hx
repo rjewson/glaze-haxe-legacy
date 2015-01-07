@@ -3,7 +3,6 @@ package physics.collision.broadphase.managedgrid;
  
 import physics.dynamics.Body;
 import physics.geometry.AABB;
-import physics.collision.broadphase.action.ActionResultCollection;
 import physics.geometry.Vector2D;
 
 
@@ -57,18 +56,19 @@ class Cell
         body.broadphaseData1 = -1;
     }
 
-    function SearchList(list:Array<Body>, position:Vector2D,radius:Float, actionResultCollection:ActionResultCollection):Void {
+    function SearchList(list:Array<Body>, position:Vector2D,radius:Float, result:Body->Float->Void):Void {
         var radiusSqrd = radius*radius;
         for (body in list) {
                 var dX : Float = position.x - body.averageCenter.x;
                 var dY : Float = position.y - body.averageCenter.y;
                 var dSqrd : Float = dX * dX + dY * dY;
                 if (dSqrd <= (radiusSqrd - body.radiusSqrd)) {
-                    actionResultCollection.AddResult(body,dSqrd);
+                    result(body,dSqrd);
+                    //actionResultCollection.AddResult(body,dSqrd);
                 }
         }
     }
-    public function SearchCell(position:Vector2D,radius:Float,result:ActionResultCollection):Void {
+    public function SearchCell(position:Vector2D,radius:Float,result:Body->Float->Void):Void {
         SearchList(dynamicItems,position,radius,result);
         //SearchList(sleepingItems, action, actionResultCollection);
         //SearchList(staticItems, action, actionResultCollection);

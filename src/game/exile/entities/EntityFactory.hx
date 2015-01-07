@@ -61,15 +61,15 @@ class EntityFactory
             //         .add(new Display(spr))
             //         .add(new DebugDisplay());
             //     return enemy;
-            case "projectile":
+            case "turret":
                 // spr.scale.x = 2;
                 // spr.scale.y = 2;
-                var projectile = new Entity()
+                var turret = new Entity()
                     .add(new Position(0,0,0))
                     .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(16,16),new Vector2D(0,0))]))
                     .add(new Display("character","projectile1.png"));
                     //.add(new Particle());
-                return projectile;
+                return turret;
 
         }
         return null;

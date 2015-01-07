@@ -1,5 +1,4 @@
 (function () { "use strict";
-var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -517,16 +516,12 @@ ds.AABB.prototype = {
 };
 ds.HitBehaviour = { __ename__ : true, __constructs__ : ["SKIP","INCLUDE","INCLUDE_AND_STOP","STOP"] };
 ds.HitBehaviour.SKIP = ["SKIP",0];
-ds.HitBehaviour.SKIP.toString = $estr;
 ds.HitBehaviour.SKIP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE = ["INCLUDE",1];
-ds.HitBehaviour.INCLUDE.toString = $estr;
 ds.HitBehaviour.INCLUDE.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.INCLUDE_AND_STOP = ["INCLUDE_AND_STOP",2];
-ds.HitBehaviour.INCLUDE_AND_STOP.toString = $estr;
 ds.HitBehaviour.INCLUDE_AND_STOP.__enum__ = ds.HitBehaviour;
 ds.HitBehaviour.STOP = ["STOP",3];
-ds.HitBehaviour.STOP.toString = $estr;
 ds.HitBehaviour.STOP.__enum__ = ds.HitBehaviour;
 ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowthFactor) {
 	if(poolGrowthFactor == null) poolGrowthFactor = 2;
@@ -536,7 +531,7 @@ ds.AABBTree = function(fattenDelta,insertStrategy,initialPoolCapacity,poolGrowth
 	this.maxId = 0;
 	this.numLeaves = 0;
 	this.numNodes = 0;
-	this.isValidationEnabled = false;
+	this.isValidationEnabled = true;
 	this.fattenDelta = fattenDelta;
 	if(insertStrategy != null) this.insertStrategy = insertStrategy; else this.insertStrategy = new ds.aabbtree.InsertStrategyPerimeter();
 	this.pool = new ds.aabbtree.NodePool(initialPoolCapacity,poolGrowthFactor);
@@ -577,7 +572,7 @@ ds.AABBTree.sqr = function(x) {
 	return x * x;
 };
 ds.AABBTree.assert = function(cond) {
-	return;
+	if(!cond) throw "ASSERT FAILED!";
 };
 ds.AABBTree.prototype = {
 	get_numNodes: function() {
@@ -643,10 +638,13 @@ ds.AABBTree.prototype = {
 			node = this.nodes[this.balance(node.id)];
 			left = node.left;
 			right = node.right;
+			ds.AABBTree.assert(left != null);
+			ds.AABBTree.assert(right != null);
 			node.invHeight = 1 + Std["int"](Math.max(left.invHeight,right.invHeight));
 			node.aabb.asUnionOf(left.aabb,right.aabb);
 			node = node.parent;
 		}
+		this.validate();
 		return leafNode.id;
 	}
 	,updateLeaf: function(leafId,x,y,width,height,dx,dy) {
@@ -655,6 +653,7 @@ ds.AABBTree.prototype = {
 		if(height == null) height = 0;
 		if(width == null) width = 0;
 		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
 		var newAABB = new ds.AABB(x,y,width,height);
 		if(leafNode.aabb.contains(newAABB)) return false;
 		var data = leafNode.data;
@@ -670,10 +669,12 @@ ds.AABBTree.prototype = {
 			height -= dy;
 		} else height += dy;
 		var newId = this.insertLeaf(data,x,y,width,height);
+		ds.AABBTree.assert(newId == leafId);
 		return true;
 	}
 	,removeLeaf: function(leafId) {
 		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
 		this.leaves.remove(leafId);
 		if(leafNode == this.root) {
 			this.disposeNode(leafId);
@@ -700,9 +701,21 @@ ds.AABBTree.prototype = {
 			this.root = sibling;
 			this.root.parent = null;
 		}
+		ds.AABBTree.assert(parent.id != -1);
 		this.disposeNode(parent.id);
 		this.disposeNode(leafId);
-		null;
+		ds.AABBTree.assert(this.numLeaves == ((function($this) {
+			var $r;
+			var _g = [];
+			var $it0 = $this.leaves.keys();
+			while( $it0.hasNext() ) {
+				var k = $it0.next();
+				_g.push(k);
+			}
+			$r = _g;
+			return $r;
+		}(this))).length);
+		this.validate();
 	}
 	,clear: function(resetPool) {
 		if(resetPool == null) resetPool = false;
@@ -776,7 +789,7 @@ ds.AABBTree.prototype = {
 			count--;
 		}
 		this.root = this.nodes[leafIds[0]];
-		null;
+		this.validate();
 	}
 	,getLeavesData: function(into) {
 		var res;
@@ -800,10 +813,12 @@ ds.AABBTree.prototype = {
 	}
 	,getData: function(leafId) {
 		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
 		return leafNode.data;
 	}
 	,getFatAABB: function(leafId) {
 		var leafNode = this.nodes[leafId];
+		ds.AABBTree.assert(leafNode.left == null);
 		return leafNode.aabb.clone();
 	}
 	,query: function(x,y,width,height,strictMode,into,callback) {
@@ -904,6 +919,7 @@ ds.AABBTree.prototype = {
 		return newId;
 	}
 	,disposeNode: function(id) {
+		ds.AABBTree.assert(this.nodes[id] != null);
 		var node = this.nodes[id];
 		if(node.left == null) this.numLeaves--;
 		this.nodes[node.id] = null;
@@ -912,6 +928,7 @@ ds.AABBTree.prototype = {
 	}
 	,balance: function(nodeId) {
 		var A = this.nodes[nodeId];
+		ds.AABBTree.assert(A != null);
 		if(A.left == null || A.invHeight < 2) return A.id;
 		var B = A.left;
 		var C = A.right;
@@ -928,6 +945,7 @@ ds.AABBTree.prototype = {
 			var i = _g1++;
 			var node = this.nodes[i];
 			if(node.invHeight <= 1 || node == null) continue;
+			ds.AABBTree.assert(!(node.left == null));
 			var left = node.left;
 			var right = node.right;
 			var balance = Math.abs(right.invHeight - left.invHeight);
@@ -942,7 +960,10 @@ ds.AABBTree.prototype = {
 		rightNode.parent = parentNode.parent;
 		parentNode.parent = rightNode;
 		if(rightNode.parent != null) {
-			if(rightNode.parent.left == parentNode) rightNode.parent.left = rightNode; else rightNode.parent.right = rightNode;
+			if(rightNode.parent.left == parentNode) rightNode.parent.left = rightNode; else {
+				ds.AABBTree.assert(rightNode.parent.right == parentNode);
+				rightNode.parent.right = rightNode;
+			}
 		} else this.root = rightNode;
 		if(F.invHeight > G.invHeight) {
 			rightNode.right = F;
@@ -970,7 +991,10 @@ ds.AABBTree.prototype = {
 		leftNode.parent = parentNode.parent;
 		parentNode.parent = leftNode;
 		if(leftNode.parent != null) {
-			if(leftNode.parent.left == parentNode) leftNode.parent.left = leftNode; else leftNode.parent.right = leftNode;
+			if(leftNode.parent.left == parentNode) leftNode.parent.left = leftNode; else {
+				ds.AABBTree.assert(leftNode.parent.right == parentNode);
+				leftNode.parent.right = leftNode;
+			}
 		} else this.root = leftNode;
 		if(D.invHeight > E.invHeight) {
 			leftNode.right = D;
@@ -992,6 +1016,7 @@ ds.AABBTree.prototype = {
 		return leftNode.id;
 	}
 	,getNode: function(id) {
+		ds.AABBTree.assert(id >= 0 && this.nodes[id] != null);
 		return this.nodes[id];
 	}
 	,validateNode: function(id) {
@@ -1000,13 +1025,18 @@ ds.AABBTree.prototype = {
 		var stack = [root];
 		while(stack.length > 0) {
 			var node = stack.pop();
+			ds.AABBTree.assert(node != null);
 			var left = node.left;
 			var right = node.right;
 			if(node.left == null) {
+				ds.AABBTree.assert(left == null);
+				ds.AABBTree.assert(right == null);
 				node.invHeight = 0;
 				ds.AABBTree.assert(this.leaves.get(node.id) >= 0);
 				continue;
 			}
+			ds.AABBTree.assert(left.id >= 0);
+			ds.AABBTree.assert(right.id >= 0);
 			ds.AABBTree.assert(node.invHeight == 1 + Math.max(left.invHeight,right.invHeight));
 			aabb.asUnionOf(left.aabb,right.aabb);
 			ds.AABBTree.assert(Math.abs(node.aabb.minX - aabb.minX) < 0.000001);
@@ -1016,7 +1046,8 @@ ds.AABBTree.prototype = {
 		}
 	}
 	,validate: function() {
-		return;
+		if(this.root != null) this.validateNode(this.root.id);
+		ds.AABBTree.assert(this.numLeaves >= 0 && this.numLeaves <= this.get_numNodes());
 	}
 	,__class__: ds.AABBTree
 };
@@ -1159,7 +1190,7 @@ ds.DLL.prototype = {
 		if(node.prev == null) this.head = node.next; else node.prev.next = node.next;
 		if(node.next == null) this.tail = node.prev; else node.next.prev = node.prev;
 		node.prev = node.next = null;
-		return next;
+		return node;
 	}
 	,__class__: ds.DLL
 };
@@ -1250,13 +1281,10 @@ ds.aabbtree.DebugRenderer.prototype = {
 };
 ds.aabbtree.InsertChoice = { __ename__ : true, __constructs__ : ["PARENT","DESCEND_LEFT","DESCEND_RIGHT"] };
 ds.aabbtree.InsertChoice.PARENT = ["PARENT",0];
-ds.aabbtree.InsertChoice.PARENT.toString = $estr;
 ds.aabbtree.InsertChoice.PARENT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_LEFT = ["DESCEND_LEFT",1];
-ds.aabbtree.InsertChoice.DESCEND_LEFT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_LEFT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT = ["DESCEND_RIGHT",2];
-ds.aabbtree.InsertChoice.DESCEND_RIGHT.toString = $estr;
 ds.aabbtree.InsertChoice.DESCEND_RIGHT.__enum__ = ds.aabbtree.InsertChoice;
 ds.aabbtree.IInsertStrategy = function() { };
 ds.aabbtree.IInsertStrategy.__name__ = ["ds","aabbtree","IInsertStrategy"];
@@ -1828,133 +1856,6 @@ engine.GameLoop.prototype = {
 	}
 	,__class__: engine.GameLoop
 };
-engine.action = {};
-engine.action.Action = function() {
-	this.lanes = 0;
-	this.duration = 0;
-	this.elapsed = 0;
-	this.finished = false;
-	this.started = false;
-	this.blocking = false;
-};
-engine.action.Action.__name__ = ["engine","action","Action"];
-engine.action.Action.__interfaces__ = [ds.DLLNode];
-engine.action.Action.prototype = {
-	update: function(time) {
-		this.elapsed += time;
-	}
-	,onStart: function() {
-		this.started = true;
-	}
-	,onEnd: function() {
-	}
-	,onAdded: function() {
-	}
-	,insertInFrontOfMe: function(action) {
-		if(this.list == null) return;
-		this.list.insertBefter(this,action);
-	}
-	,getRootOwner: function() {
-		var _list = this.list;
-		while(true) {
-			if(_list.list == null) break;
-			_list = _list.list;
-		}
-		return _list.owner;
-	}
-	,__class__: engine.action.Action
-};
-engine.action.ActionList = function() {
-	engine.action.Action.call(this);
-	this.actions = new ds.DLL();
-};
-engine.action.ActionList.__name__ = ["engine","action","ActionList"];
-engine.action.ActionList.__super__ = engine.action.Action;
-engine.action.ActionList.prototype = $extend(engine.action.Action.prototype,{
-	update: function(time) {
-		var action = this.actions.head;
-		while(action != null) {
-			if(!action.started) action.onStart();
-			action.update(time);
-			if(action.blocking) break;
-			if(action.finished) {
-				action.onEnd();
-				this.actions.remove(action);
-			}
-			action = action.next;
-		}
-	}
-	,insertAfter: function(action,newAction) {
-		action.list = this;
-		this.actions.insertAfter(action,newAction);
-	}
-	,insertBefter: function(action,newAction) {
-		action.list = this;
-		this.actions.insertBefore(action,newAction);
-	}
-	,insertBegining: function(newAction) {
-		newAction.list = this;
-		this.actions.insertBeginning(newAction);
-	}
-	,insertEnd: function(newAction) {
-		newAction.list = this;
-		this.actions.insertEnd(newAction);
-	}
-	,remove: function(action) {
-		action.list = null;
-		this.actions.remove(action);
-	}
-	,__class__: engine.action.ActionList
-});
-engine.action.Delay = function(delay) {
-	engine.action.Action.call(this);
-	this.delay = delay;
-	this.blocking = true;
-};
-engine.action.Delay.__name__ = ["engine","action","Delay"];
-engine.action.Delay.__super__ = engine.action.Action;
-engine.action.Delay.prototype = $extend(engine.action.Action.prototype,{
-	update: function(time) {
-		this.elapsed += time;
-		if(this.elapsed > this.delay) {
-			this.blocking = false;
-			this.finished = true;
-		}
-	}
-	,__class__: engine.action.Delay
-});
-engine.action.GetVisibleEntities = function(range) {
-	engine.action.Action.call(this);
-	this.range = range;
-};
-engine.action.GetVisibleEntities.__name__ = ["engine","action","GetVisibleEntities"];
-engine.action.GetVisibleEntities.__super__ = engine.action.Action;
-engine.action.GetVisibleEntities.prototype = $extend(engine.action.Action.prototype,{
-	onStart: function() {
-		engine.action.Action.prototype.onStart.call(this);
-		var owner = this.getRootOwner();
-		var physicsSystem = owner.engine.getSystemByClass(engine.systems.PhysicsSystem);
-		this.physicsEngine = physicsSystem.physicsEngine;
-		this.physics = owner.componentMap[engine.components.Physics.NAME];
-	}
-	,update: function(time) {
-		this.physicsEngine.Search(this.physics.body.position,this.range);
-		this.physicsEngine.actionResultCollection.RemoveBody(this.physics.body);
-		if(this.physicsEngine.actionResultCollection.resultCount > 0) console.log(this.physicsEngine.actionResultCollection);
-	}
-	,__class__: engine.action.GetVisibleEntities
-});
-engine.action.Trace = function() {
-	engine.action.Action.call(this);
-};
-engine.action.Trace.__name__ = ["engine","action","Trace"];
-engine.action.Trace.__super__ = engine.action.Action;
-engine.action.Trace.prototype = $extend(engine.action.Action.prototype,{
-	update: function(time) {
-		this.insertInFrontOfMe(new engine.action.Delay(2000));
-	}
-	,__class__: engine.action.Trace
-});
 engine.ai = {};
 engine.ai.behaviors = {};
 engine.ai.behaviors.Behavior = function() {
@@ -2074,19 +1975,14 @@ engine.ai.behaviors.BehaviorContext.prototype = {
 };
 engine.ai.behaviors.BehaviorStatus = { __ename__ : true, __constructs__ : ["Invalid","Success","Running","Failure","Aborted"] };
 engine.ai.behaviors.BehaviorStatus.Invalid = ["Invalid",0];
-engine.ai.behaviors.BehaviorStatus.Invalid.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Invalid.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Success = ["Success",1];
-engine.ai.behaviors.BehaviorStatus.Success.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Success.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Running = ["Running",2];
-engine.ai.behaviors.BehaviorStatus.Running.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Running.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Failure = ["Failure",3];
-engine.ai.behaviors.BehaviorStatus.Failure.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Failure.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorStatus.Aborted = ["Aborted",4];
-engine.ai.behaviors.BehaviorStatus.Aborted.toString = $estr;
 engine.ai.behaviors.BehaviorStatus.Aborted.__enum__ = engine.ai.behaviors.BehaviorStatus;
 engine.ai.behaviors.BehaviorTree = function() { };
 engine.ai.behaviors.BehaviorTree.__name__ = ["engine","ai","behaviors","BehaviorTree"];
@@ -2162,10 +2058,8 @@ engine.ai.behaviors.Decorator.prototype = $extend(engine.ai.behaviors.Behavior.p
 });
 engine.ai.behaviors.Policy = { __ename__ : true, __constructs__ : ["RequireOne","RequireAll"] };
 engine.ai.behaviors.Policy.RequireOne = ["RequireOne",0];
-engine.ai.behaviors.Policy.RequireOne.toString = $estr;
 engine.ai.behaviors.Policy.RequireOne.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Policy.RequireAll = ["RequireAll",1];
-engine.ai.behaviors.Policy.RequireAll.toString = $estr;
 engine.ai.behaviors.Policy.RequireAll.__enum__ = engine.ai.behaviors.Policy;
 engine.ai.behaviors.Parallel = function(success,failure) {
 	engine.ai.behaviors.Composite.call(this);
@@ -2286,6 +2180,7 @@ engine.ai.behaviors.actions.Delay.prototype = $extend(engine.ai.behaviors.Behavi
 engine.ai.behaviors.actions.GetLocalEntities = function(range) {
 	engine.ai.behaviors.Behavior.call(this);
 	this.range = range;
+	this.entityCollection = new engine.ds.EntityCollection();
 };
 engine.ai.behaviors.actions.GetLocalEntities.__name__ = ["engine","ai","behaviors","actions","GetLocalEntities"];
 engine.ai.behaviors.actions.GetLocalEntities.__super__ = engine.ai.behaviors.Behavior;
@@ -2293,10 +2188,20 @@ engine.ai.behaviors.actions.GetLocalEntities.prototype = $extend(engine.ai.behav
 	initialize: function(context) {
 		var physicsSystem = context.entity.engine.getSystemByClass(engine.systems.PhysicsSystem);
 		this.physicsEngine = physicsSystem.physicsEngine;
+		this.physics = context.entity.componentMap[engine.components.Physics.NAME];
 	}
 	,update: function(context) {
-		console.log(this.physicsEngine.step);
-		return engine.ai.behaviors.BehaviorStatus.Success;
+		this.entityCollection.clear();
+		this.physicsEngine.Search(this.physics.body.position,this.range,$bind(this,this.BodyToEntityCollection));
+		if(this.entityCollection.entities.length > 0) {
+			console.log("Found items=" + this.entityCollection.entities.length);
+			return engine.ai.behaviors.BehaviorStatus.Success;
+		}
+		return engine.ai.behaviors.BehaviorStatus.Failure;
+	}
+	,BodyToEntityCollection: function(body,distanceSqrd) {
+		console.log("+");
+		this.entityCollection.addItem(body.userData1);
 	}
 	,__class__: engine.ai.behaviors.actions.GetLocalEntities
 });
@@ -2775,7 +2680,6 @@ engine.components.Position.prototype = $extend(eco.core.Component.prototype,{
 });
 engine.components.Script = function() {
 	eco.core.Component.call(this);
-	this.actionList = new engine.action.ActionList();
 	this.bt = new engine.ai.behaviors.Sequence();
 };
 engine.components.Script.__name__ = ["engine","components","Script"];
@@ -2785,13 +2689,9 @@ engine.components.Script.prototype = $extend(eco.core.Component.prototype,{
 		return "Script";
 	}
 	,onAdded: function() {
-		this.actionList.owner = this.owner;
 		this.bc = new engine.ai.behaviors.BehaviorContext(this.owner);
-		this.bt.addChild(new engine.ai.behaviors.actions.Delay(1000));
-		this.bt.addChild(new engine.ai.behaviors.actions.GetLocalEntities(1000));
 	}
 	,update: function(time) {
-		this.actionList.update(time);
 		this.bc.time = time;
 		this.bt.tick(this.bc);
 	}
@@ -2843,6 +2743,40 @@ engine.core.BaseGame.prototype = {
 	,prepareRenderer: function() {
 	}
 	,__class__: engine.core.BaseGame
+};
+engine.ds = {};
+engine.ds.EntityCollection = function() {
+	this.entities = new ds.DLL();
+};
+engine.ds.EntityCollection.__name__ = ["engine","ds","EntityCollection"];
+engine.ds.EntityCollection.prototype = {
+	get_length: function() {
+		return this.entities.length;
+	}
+	,addItem: function(entity) {
+		var item;
+		if(engine.ds.EntityCollection.itempool.length == 0) item = new engine.ds.EntityCollectionItem(); else item = engine.ds.EntityCollection.itempool.remove(engine.ds.EntityCollection.itempool.tail);
+		item.entity = entity;
+		this.entities.insertBeginning(item);
+		return item;
+	}
+	,clear: function() {
+		while(this.entities.length > 0) {
+			var item = this.entities.remove(this.entities.tail);
+			item.reset();
+			engine.ds.EntityCollection.itempool.insertEnd(item);
+		}
+	}
+	,__class__: engine.ds.EntityCollection
+};
+engine.ds.EntityCollectionItem = function() {
+};
+engine.ds.EntityCollectionItem.__name__ = ["engine","ds","EntityCollectionItem"];
+engine.ds.EntityCollectionItem.__interfaces__ = [ds.DLLNode];
+engine.ds.EntityCollectionItem.prototype = {
+	reset: function() {
+	}
+	,__class__: engine.ds.EntityCollectionItem
 };
 engine.graphics = {};
 engine.graphics.IGameGraphics = function() { };
@@ -3455,6 +3389,7 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	}
 	,createEntities: function() {
 		this.mainEngine.addEntity(game.exile.entities.EntityFactory.instance.create("player",50,50));
+		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.GunTurret(new physics.geometry.Vector2D(200,100))]));
 	}
 	,tick: function(time) {
 		this.mainEngine.update(time);
@@ -3495,6 +3430,31 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,__class__: game.exile.Exile
 });
 game.exile.components = {};
+game.exile.components.GunTurret = function(startPosition) {
+	eco.core.Component.call(this);
+	this.startPosition = startPosition;
+};
+game.exile.components.GunTurret.__name__ = ["game","exile","components","GunTurret"];
+game.exile.components.GunTurret.__super__ = eco.core.Component;
+game.exile.components.GunTurret.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "GunTurret";
+	}
+	,onStarted: function() {
+		var script = new engine.components.Script();
+		script.bt.addChild(new engine.ai.behaviors.actions.Delay(1000));
+		script.bt.addChild(new engine.ai.behaviors.actions.GetLocalEntities(100));
+		this.owner.add(script);
+	}
+	,onAdded: function() {
+		this.owner.name = "GunTurret";
+		var shape = new physics.geometry.Circle(30,new physics.geometry.Vector2D(0,0));
+		this.physics = new engine.components.Physics(this.startPosition.x,this.startPosition.y,0,0,[shape]);
+		this.physics.body.MakeStatic();
+		this.owner.add(new engine.components.Position()).add(this.physics).add(new engine.components.Display("turret","turretA.png"));
+	}
+	,__class__: game.exile.components.GunTurret
+});
 game.exile.components.Player = function() {
 	eco.core.Component.call(this);
 	this.force = new physics.geometry.Vector2D();
@@ -3509,10 +3469,6 @@ game.exile.components.Player.prototype = $extend(eco.core.Component.prototype,{
 		this.position = this.owner.componentMap[engine.components.Position.NAME];
 		this.controls = this.owner.componentMap[engine.components.Controls.NAME];
 		this.physics = this.owner.componentMap[engine.components.Physics.NAME];
-		var script = new engine.components.Script();
-		script.actionList.insertEnd(new engine.action.Trace());
-		script.actionList.insertEnd(new engine.action.GetVisibleEntities(100));
-		this.owner.add(script);
 	}
 	,update: function(time) {
 		this.processInputs();
@@ -3590,9 +3546,9 @@ game.exile.entities.EntityFactory.prototype = {
 			var physics1 = player.componentMap[engine.components.Physics.NAME];
 			physics1.body.group = 1;
 			return player;
-		case "projectile":
-			var projectile = new eco.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display("character","projectile1.png"));
-			return projectile;
+		case "turret":
+			var turret = new eco.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display("character","projectile1.png"));
+			return turret;
 		}
 		return null;
 	}
@@ -4173,7 +4129,6 @@ physics.PhysicsEngine.prototype = {
 		this.forces = new physics.geometry.Vector2D();
 		this.masslessForces = new physics.geometry.Vector2D();
 		this.damping = 0.995;
-		this.actionResultCollection = new physics.collision.broadphase.action.ActionResultCollection();
 	}
 	,Step: function() {
 		this.step++;
@@ -4215,7 +4170,7 @@ physics.PhysicsEngine.prototype = {
 	,CastRay: function(ray) {
 		return null;
 	}
-	,Search: function(position,radius) {
+	,Search: function(position,radius,result) {
 		return null;
 	}
 	,ProcessShapes: function(position,range,action) {
@@ -4224,91 +4179,6 @@ physics.PhysicsEngine.prototype = {
 };
 physics.collision = {};
 physics.collision.broadphase = {};
-physics.collision.broadphase.action = {};
-physics.collision.broadphase.action.ActionResult = function() {
-};
-physics.collision.broadphase.action.ActionResult.__name__ = ["physics","collision","broadphase","action","ActionResult"];
-physics.collision.broadphase.action.ActionResult.prototype = {
-	Reset: function() {
-		this.body = null;
-		this.distanceSqrd = 0;
-	}
-	,__class__: physics.collision.broadphase.action.ActionResult
-};
-physics.collision.broadphase.action.ActionResultCollection = function() {
-	this.results = new Array();
-	this.opaqueBodies = new Array();
-};
-physics.collision.broadphase.action.ActionResultCollection.__name__ = ["physics","collision","broadphase","action","ActionResultCollection"];
-physics.collision.broadphase.action.ActionResultCollection.prototype = {
-	Reset: function() {
-		var _g1 = 0;
-		var _g = this.resultCount;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this.results[i].Reset();
-		}
-		this.resultCount = 0;
-		var _g11 = 0;
-		var _g2 = this.opaqueBodyCount;
-		while(_g11 < _g2) {
-			var i1 = _g11++;
-			this.opaqueBodies[i1].Reset();
-		}
-		this.opaqueBodyCount = 0;
-		this.furthestDistSqrd = 0;
-	}
-	,AddResult: function(body,distanceSqrd) {
-		var result;
-		this.resultCount++;
-		if(this.resultCount > this.results.length) {
-			result = new physics.collision.broadphase.action.ActionResult();
-			this.results.push(result);
-		} else result = this.results[this.resultCount - 1];
-		result.body = body;
-		result.distanceSqrd = distanceSqrd;
-		if(body.isOpaque) {
-			this.opaqueBodyCount++;
-			if(this.opaqueBodyCount > this.opaqueBodies.length) {
-				result = new physics.collision.broadphase.action.ActionResult();
-				this.opaqueBodies.push(result);
-			} else result = this.opaqueBodies[this.opaqueBodyCount - 1];
-			result.body = body;
-			result.distanceSqrd = distanceSqrd;
-		}
-	}
-	,RemoveBody: function(body) {
-		var i = 0;
-		while(i < this.results.length) if(this.results[i].body == body) {
-			this.results.splice(i,1);
-			this.resultCount--;
-			break;
-		}
-	}
-	,Sort: function() {
-		this.quicksort(this.results,0,this.resultCount - 1);
-		this.quicksort(this.opaqueBodies,0,this.opaqueBodyCount - 1);
-	}
-	,quicksort: function(arrayInput,left,right) {
-		var i = left;
-		var j = right;
-		var pivotPoint = arrayInput[Math.round((left + right) * .5)];
-		while(i <= j) {
-			while(arrayInput[i].distanceSqrd < pivotPoint.distanceSqrd) i++;
-			while(arrayInput[j].distanceSqrd > pivotPoint.distanceSqrd) j--;
-			if(i <= j) {
-				var tempStore = arrayInput[i];
-				arrayInput[i] = arrayInput[j];
-				i++;
-				arrayInput[j] = tempStore;
-				j--;
-			}
-		}
-		if(left < j) this.quicksort(arrayInput,left,j);
-		if(i < right) this.quicksort(arrayInput,i,right);
-	}
-	,__class__: physics.collision.broadphase.action.ActionResultCollection
-};
 physics.collision.broadphase.managedgrid = {};
 physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
 	this.index = index;
@@ -4332,7 +4202,7 @@ physics.collision.broadphase.managedgrid.Cell.prototype = {
 		if(body.isStatic) HxOverrides.remove(this.staticItems,body); else HxOverrides.remove(this.dynamicItems,body);
 		body.broadphaseData1 = -1;
 	}
-	,SearchList: function(list,position,radius,actionResultCollection) {
+	,SearchList: function(list,position,radius,result) {
 		var radiusSqrd = radius * radius;
 		var _g = 0;
 		while(_g < list.length) {
@@ -4341,7 +4211,7 @@ physics.collision.broadphase.managedgrid.Cell.prototype = {
 			var dX = position.x - body.averageCenter.x;
 			var dY = position.y - body.averageCenter.y;
 			var dSqrd = dX * dX + dY * dY;
-			if(dSqrd <= radiusSqrd - body.radiusSqrd) actionResultCollection.AddResult(body,dSqrd);
+			if(dSqrd <= radiusSqrd - body.radiusSqrd) result(body,dSqrd);
 		}
 	}
 	,SearchCell: function(position,radius,result) {
@@ -4448,16 +4318,14 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			return;
 		}
 	}
-	,Search: function(position,radius) {
-		this.actionResultCollection.Reset();
+	,Search: function(position,radius,result) {
 		var _g = 0;
 		var _g1 = this.grid.data;
 		while(_g < _g1.length) {
 			var cell = _g1[_g];
 			++_g;
-			cell.SearchCell(position,radius,this.actionResultCollection);
+			cell.SearchCell(position,radius,result);
 		}
-		return this.actionResultCollection;
 	}
 	,__class__: physics.collision.broadphase.managedgrid.ManagedGrid
 });
@@ -7870,6 +7738,12 @@ engine.components.Physics.NAME = "Physics";
 engine.components.Position.NAME = "Position";
 engine.components.Script.NAME = "Script";
 engine.components.Steering.NAME = "Steering";
+engine.ds.EntityCollection.itempool = (function($this) {
+	var $r;
+	var pool = new ds.DLL();
+	$r = pool;
+	return $r;
+}(this));
 engine.map.tmx.TmxLayer.BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 game.exile.Exile.TEXTURE_CONFIG = "data/sprites.json";
 game.exile.Exile.TEXTURE_DATA = "data/sprites.png";
@@ -7877,6 +7751,7 @@ game.exile.Exile.MAP_DATA = "data/testMap.tmx";
 game.exile.Exile.TILE_SPRITE_SHEET = "data/spelunky-tiles.png";
 game.exile.Exile.TILE_MAP_DATA_1 = "data/spelunky0.png";
 game.exile.Exile.TILE_MAP_DATA_2 = "data/spelunky1.png";
+game.exile.components.GunTurret.NAME = "GunTurret";
 game.exile.components.Player.NAME = "Player";
 game.exile.components.ProjectileA.NAME = "ProjectileA";
 haxe.xml.Parser.escapes = (function($this) {
@@ -8000,3 +7875,5 @@ worldEngine.tiles.TileFeature.STYLE_OFFSET = 16;
 worldEngine.tiles.TileFeature.RANDOMDATA_OFFSET = 24;
 Main.main();
 })();
+
+//# sourceMappingURL=script.js.map
