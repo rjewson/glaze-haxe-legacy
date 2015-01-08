@@ -15,6 +15,8 @@ class GetLocalEntities extends Behavior
     private var physicsEngine:PhysicsEngine;
     private var physics:Physics;
 
+    private var initialized:Bool = false;
+
     public var entityCollection:EntityCollection;
 
     public function new(range:Float) {
@@ -24,26 +26,26 @@ class GetLocalEntities extends Behavior
     }
 
     override private function initialize(context:BehaviorContext):Void {
-        //js.Lib.debug();
-        var physicsSystem:PhysicsSystem = cast context.entity.engine.getSystemByClass(PhysicsSystem);
-        physicsEngine = physicsSystem.physicsEngine;
-        physics = cast context.entity.getComponentByClass(Physics);
+        if (!initialized) {
+            var physicsSystem:PhysicsSystem = cast context.entity.engine.getSystemByClass(PhysicsSystem);
+            physicsEngine = physicsSystem.physicsEngine;
+            physics = cast context.entity.getComponentByClass(Physics);
+            initialized = true;
+        }
     }
 
     override private function update(context:BehaviorContext):BehaviorStatus { 
-        //js.Lib.debug();
         entityCollection.clear();
         physicsEngine.Search( physics.body.position , range, BodyToEntityCollection);
-        //physicsEngine.actionResultCollection.RemoveBody(physics.body);
         if(entityCollection.length>0) {
-            trace("Found items="+entityCollection.length);
+            //trace("Found items="+entityCollection.length);
+            context.data.set("entities",entityCollection);
             return Success;
         }
         return Failure;
     }
 
     private function BodyToEntityCollection(body:Body,distanceSqrd:Float):Void {
-        trace("+");
         entityCollection.addItem(cast body.userData1);
     }
 

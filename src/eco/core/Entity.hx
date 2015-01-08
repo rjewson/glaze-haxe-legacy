@@ -1,11 +1,18 @@
 
 package eco.core;
 
+#if macro
+import haxe.macro.Context;
+import haxe.macro.Expr;
+import haxe.macro.Type;
+using haxe.macro.ExprTools;
+#end
+
 import eco.core.Component;
 import eco.core.Entity;
 import eco.signals.Signal2;
 
-class Entity 
+@:final class Entity 
 {
 
     public var name:String;
@@ -92,13 +99,19 @@ class Entity
             return b.priority - a.priority;
         });
     }
-
+ 
     public inline function getComponent(name:String):Component {
         return untyped componentMap[name];
     }
 
     public inline function getComponentByClass(component:Class<Component>):Component {
         return untyped componentMap[component.NAME];
+    }
+
+    //Hmmm more than a litte dirty, should be a macro i think...
+    //Pretty much just optimized for speed
+    public inline function get<A:Component> (componentClass :Class<A>) :A {
+        return untyped componentMap[componentClass.NAME];
     }
 
     public function registerEvent(type:String,listener:Dynamic->Void) {

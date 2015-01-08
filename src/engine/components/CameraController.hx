@@ -15,8 +15,7 @@ class CameraController extends Component
     }
 
     public function getPosition():Position {
-        var position:Position = cast owner.getComponent("Position");
-        return position;
+        return owner.get(Position);
     }
 
 }

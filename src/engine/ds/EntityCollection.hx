@@ -36,11 +36,23 @@ class EntityCollection
         return item;
     }
 
+    public function getItem(entity:Entity):EntityCollectionItem {
+        var item = entities.head;
+        while (item!=null) {
+            if (item.entity==entity)
+                return item;
+        }        
+        return null;
+    }
+
+    public inline function removeItem(item:EntityCollectionItem):Void {
+        item.reset();
+        engine.ds.EntityCollection.itempool.insertEnd(item);
+    }
+
     public function clear() {
         while (entities.length>0) {
-            var item = entities.remove(entities.tail);
-            item.reset();
-            engine.ds.EntityCollection.itempool.insertEnd(item);
+            removeItem(entities.remove(entities.tail));
         }
     }
 

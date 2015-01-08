@@ -10,18 +10,19 @@ class Action extends Behavior
 	 * Action constructor
 	 * @param action the callback method when this behavior runs
 	 */
-	public function new(action:String)
+	public function new(action:String,actionContext:Dynamic)
 	{
 		super();
 		this.action = action;
+		this.actionContext = actionContext;
 	}
 
-	override public function update(context:Dynamic):BehaviorStatus
+	override public function update(context:BehaviorContext):BehaviorStatus
 	{
-		var f = Reflect.field(context, action);
+		var f = Reflect.field(actionContext, action);
 		if (Reflect.isFunction(f))
 		{
-			var result = Reflect.callMethod(context, f, []);
+			var result = Reflect.callMethod(actionContext, f, [context]);
 			if (Std.is(result, BehaviorStatus))
 			{
 				return result;
@@ -31,5 +32,6 @@ class Action extends Behavior
 	}
 
 	private var action:String;
+	private var actionContext:Dynamic;
 
 }

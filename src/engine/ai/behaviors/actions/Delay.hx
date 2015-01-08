@@ -16,12 +16,10 @@ class Delay extends Behavior
     }
 
     override private function initialize(context:BehaviorContext):Void {
-        trace("initalize");
         elapsed = 0;
     }
 
     override private function terminate(status:BehaviorStatus):Void { 
-        trace("terminate:"+status);
     }
 
     override private function update(context:BehaviorContext):BehaviorStatus { 

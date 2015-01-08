@@ -37,7 +37,7 @@ class BehaviorTree
 		switch (xml.nodeName)
 		{
 			case "action":
-				return new Action(xml.firstChild().nodeValue);
+				return null;//new Action(xml.firstChild().nodeValue);
 			case "sequence":
 				var sequence = new Sequence();
 				compositeFromXml(xml, sequence);

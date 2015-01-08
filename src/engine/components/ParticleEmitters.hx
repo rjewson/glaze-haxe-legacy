@@ -18,7 +18,7 @@ class ParticleEmitters extends Component
     }
 
     override public function onAdded() {
-        position = cast owner.getComponent("Position");
+        position = owner.get(Position);
     }
 
     public function AddEmitter(emitter:IParticleEmitter,forceEmit:Bool) {

@@ -26,7 +26,7 @@ class Display extends Component
     // }
 
     override public function onAdded() {
-        position = cast owner.getComponent("Position");
+        position = owner.get(Position);
     }
 
     override public function update(time:Float) {

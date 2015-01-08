@@ -23,7 +23,7 @@ class Physics extends Component
     }
 
     override public function onAdded() {
-        this.position = cast owner.getComponent("Position");
+        this.position = owner.get(Position);
         this.position.position = body.position;
     }
 
