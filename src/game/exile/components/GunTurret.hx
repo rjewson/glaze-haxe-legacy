@@ -6,6 +6,7 @@ import eco.core.Entity.Create;
 import engine.ai.behaviors.Action;
 import engine.ai.behaviors.actions.Delay;
 import engine.ai.behaviors.actions.FilterPrioritizeEntities;
+import engine.ai.behaviors.actions.FilterVisibleEntities;
 import engine.ai.behaviors.actions.GetLocalEntities;
 import engine.ai.behaviors.BehaviorContext;
 import engine.ai.behaviors.BehaviorStatus;
@@ -28,9 +29,10 @@ class GunTurret extends Component
 
     override public function onStarted() {
         var script = new Script();
-        script.bt.addChild(new Delay(1000));
-        script.bt.addChild(new GetLocalEntities(100));
+        script.bt.addChild(new Delay(1500));
+        script.bt.addChild(new GetLocalEntities(400));
         script.bt.addChild(new FilterPrioritizeEntities());
+        script.bt.addChild(new FilterVisibleEntities(0));
         script.bt.addChild(new Action("fire",this));
         owner.add(script);
     }
@@ -51,7 +53,7 @@ class GunTurret extends Component
         trace("BANG");
         var position = owner.get(Position);
 
-        var target = new Vector2D(300,100);
+        var target = context.data.get("target");
 
         var startVelocity = target.minusEquals(position.position).unitEquals().multEquals(15);
 

@@ -18,145 +18,145 @@ class Vector2D
 		this.y = y;
 	}
 	
-	inline public function setTo(x : Float, y:Float):Vector2D {
+	public function setTo(x : Float, y:Float):Vector2D {
 		this.x = x;
 		this.y = y;
 		return this;
 	}
 	
-	inline public function copy(v : Vector2D) : Void {
+	public function copy(v : Vector2D) : Void {
 		this.x = v.x;
 		this.y = v.y;
 	}
 	
-	inline public function dot(v : Vector2D) : Float {
+	public function dot(v : Vector2D) : Float {
 		return x * v.x + y * v.y;
 	}
 
-	inline public function cross(v : Vector2D) : Float {
+	public function cross(v : Vector2D) : Float {
 		return x * v.y - y * v.x;
 	}
 
 	
 	//Plus
-	inline public function plus(v : Vector2D) : Vector2D {
+	public function plus(v : Vector2D) : Vector2D {
 		return new Vector2D(x + v.x, y + v.y);
 	}
 
-	inline public function plus2(x : Float, y : Float) : Vector2D {
+	public function plus2(x : Float, y : Float) : Vector2D {
 		return new Vector2D(this.x + x, this.y + y);
 	}
 
-	inline public function plusEquals(v : Vector2D) : Vector2D {
+	public function plusEquals(v : Vector2D) : Vector2D {
 		x += v.x;
 		y += v.y;
 		return this;
 	}
 	
-	inline public function plusEquals2(x : Float, y : Float) : Vector2D {
+	public function plusEquals2(x : Float, y : Float) : Vector2D {
 		this.x += x;
 		this.y += y;
 		return this;
 	}
 
-	inline public function minus(v : Vector2D) : Vector2D {
+	public function minus(v : Vector2D) : Vector2D {
 		return new Vector2D(x - v.x, y - v.y);
 	}
 
-	inline public function minus2(x : Float, y : Float) : Vector2D {
+	public function minus2(x : Float, y : Float) : Vector2D {
 		return new Vector2D(this.x - x, this.y - y);
 	}
 
-	inline public function minusEquals(v : Vector2D) : Vector2D {
+	public function minusEquals(v : Vector2D) : Vector2D {
 		x -= v.x;
 		y -= v.y;
 		return this;
 	}
 
-	inline public function minusEquals2(x : Float, y : Float) : Vector2D {
+	public function minusEquals2(x : Float, y : Float) : Vector2D {
 		this.x -= x;
 		this.y -= y;
 		return this;
 	}
 
-	inline public function mult(s : Float) : Vector2D {
+	public function mult(s : Float) : Vector2D {
 		return new Vector2D(x * s, y * s);
 	}
 
-	inline public function multEquals(s : Float) : Vector2D {
+	public function multEquals(s : Float) : Vector2D {
 		x *= s;
 		y *= s;
 		return this;
 	}
 
-	inline public function times(v : Vector2D) : Vector2D {
+	public function times(v : Vector2D) : Vector2D {
 		return new Vector2D(x * v.x, y * v.y);
 	}
 
-	inline public function times2(x : Float, y : Float) : Vector2D {
+	public function times2(x : Float, y : Float) : Vector2D {
 		return new Vector2D(this.x * x, this.y * y);
 	}
 
-	inline public function timesEquals(v : Vector2D) : Vector2D {
+	public function timesEquals(v : Vector2D) : Vector2D {
 		x *= v.x;
 		y *= v.y;
 		return this;
 	}
 
-	inline public function timesEquals2(x : Float, y : Float) : Vector2D {
+	public function timesEquals2(x : Float, y : Float) : Vector2D {
 		this.x *= x;
 		this.y *= y;
 		return this;
 	}
 
-	inline public function div(s : Float) : Vector2D {
+	public function div(s : Float) : Vector2D {
 		if (s == 0) s = 0.0001;
 		return new Vector2D(x / s, y / s);
 	}
 
-	inline public function divEquals(s : Float) : Vector2D {
+	public function divEquals(s : Float) : Vector2D {
 		if (s == 0) s = 0.0001;
 		x /= s;
 		y /= s;
 		return this;
 	}
 	
-	inline public function length() : Float {
+	public function length() : Float {
 		return Math.sqrt(x * x + y * y);
 	}
 
-	inline public function lengthSqr() : Float {
+	public function lengthSqr() : Float {
 		return x * x + y * y;
 	}	
 	
-	inline public function unit() : Vector2D {
+	public function unit() : Vector2D {
 		var t = Math.sqrt(x * x + y * y) + Maths.ZERO_TOLERANCE;
 		return new Vector2D(x / t, y / t);
 	}	
 	
-	inline public function unitEquals() : Vector2D {
+	public function unitEquals() : Vector2D {
 		var t = Math.sqrt(x * x + y * y) + Maths.ZERO_TOLERANCE;
 		x /= t;
 		y /= t;
 		return this;
 	}
 	
-	inline public function leftHandNormal() : Vector2D {
+	public function leftHandNormal() : Vector2D {
 		return new Vector2D(this.y, -this.x);
 	}	
 	
-	inline public function leftHandNormalEquals() : Vector2D {
+	public function leftHandNormalEquals() : Vector2D {
 		var t = x;
 		x = y;
 		y = -t;
 		return this;
 	}
 
-	inline public function rightHandNormal() : Vector2D {
+	public function rightHandNormal() : Vector2D {
 		return new Vector2D(-this.y, this.x);
 	}
 		
-	inline public function rightHandNormalEquals() : Vector2D {
+	public function rightHandNormalEquals() : Vector2D {
 		var t = x;
 		x = -y;
 		y = x;
@@ -168,7 +168,7 @@ class Vector2D
 		return delta.length();
 	}
 
-	public inline function distanceSqrd(v:Vector2D):Float {
+	public function distanceSqrd(v:Vector2D):Float {
 		var dX = this.x - v.x;
 		var dY = this.y - v.y;
 		return dX * dX + dY * dY;
@@ -205,11 +205,11 @@ class Vector2D
 		return this;
 	}
 	
-	inline public function isEquals(v:Vector2D) : Bool {
+	public function isEquals(v:Vector2D) : Bool {
 		return (this.x==v.x)&&(this.y==v.y);
 	}
 
-	inline public function equalsZero() : Bool {
+	public function equalsZero() : Bool {
 		return this.x == 0 && this.y == 0;
 	}
 	

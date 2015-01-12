@@ -19,28 +19,28 @@ import wgr.particle.emitter.RandomSpray;
 class ProjectileA extends Component 
 {
 
-    private var startPosition:Vector2D;
-    private var startVelocity:Vector2D;
+    // private var startPosition:Vector2D;
+    // private var startVelocity:Vector2D;
     private var physics:Physics;
 
     private var script:Script;
 
     private var totalContactCount:Int = 0;
 
-    public function new(startPosition:Vector2D,startVelocity:Vector2D) {
-        this.startPosition = startPosition;
-        this.startVelocity = startVelocity;
+    public function new(startPosition:Vector2D,startVelocity:Vector2D,group:Int=0) {
+        // this.startPosition = startPosition;
+        // this.startVelocity = startVelocity;
+        var shape = new Circle(6,new Vector2D(0,0));
+        physics = new Physics(startPosition.x,startPosition.y,0,0,[shape]);
+        physics.body.SetMass(0.1);
+        physics.body.group = group;
+        physics.body.features[0].contactCallback = OnContact;
+        physics.body.SetVelocity(startVelocity);
     }
 
     override public function onAdded() {
         owner.name = "ProjectileA";
-        var shape = new Circle(6,new Vector2D(0,0));
-        physics = new Physics(startPosition.x,startPosition.y,0,0,[shape]);
-        physics.body.SetMass(0.1);
-        physics.body.group = 1;
-        physics.body.features[0].contactCallback = OnContact;
-        physics.body.SetVelocity(startVelocity);
-
+        
         owner
             .add(new Position())
             .add(physics)

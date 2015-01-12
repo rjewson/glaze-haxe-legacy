@@ -32,7 +32,7 @@ class SAT implements INarrowphase
 		result = new Arbiter();
 	}
 	
-	inline public function CollideBodies(body1:Body, body2:Body, n:Vector2D = null):Void {
+	public function CollideBodies(body1:Body, body2:Body, n:Vector2D = null):Void {
 		// if (body1.features.length == 1 && body2.features.length == 1) {
 		// 	//bypass AABB comparison
 		// 	CollideFeatures(body1.features[0], body2.features[0], n);
@@ -175,7 +175,7 @@ class SAT implements INarrowphase
 		return circle2circleQuery(circle1.transformedCentre.x + circle1Pos.x, circle1.transformedCentre.y + circle1Pos.y, circle2.transformedCentre.x + circle2Pos.x, circle2.transformedCentre.y + circle2Pos.y, circle1.radius, circle2.radius, arbiter);
 	}
 	
-	inline static function circle2circleQuery( p1x:Float, p1y:Float , p2x:Float, p2y:Float , r1:Float , r2:Float, arbiter:Arbiter ):Bool {
+	static function circle2circleQuery( p1x:Float, p1y:Float , p2x:Float, p2y:Float , r1:Float , r2:Float, arbiter:Arbiter ):Bool {
 		var minDist = r1+r2;
 		var x = p2x - p1x;
 		var y = p2y - p1y;

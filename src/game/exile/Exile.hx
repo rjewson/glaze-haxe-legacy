@@ -109,6 +109,7 @@ class Exile extends BaseGame
     public function createEntities() {
         mainEngine.addEntity(EntityFactory.instance.create("player",50,50));
         mainEngine.addEntity(Create([new GunTurret(new Vector2D(200,100))]));
+        mainEngine.addEntity(Create([new GunTurret(new Vector2D(400,400))]));
         // mainEngine.addEntity(factory.create("enemy",400,100));
     }
 

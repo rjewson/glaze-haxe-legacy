@@ -69,7 +69,7 @@ class Player extends Component
             // projectile.add(new ProjectileA( position.position , startVelocity ));
             // owner.engine.addEntity(projectile);
 
-            owner.engine.addEntity(Entity.Create([new ProjectileA( position.position , startVelocity)]));
+            owner.engine.addEntity(Entity.Create([new ProjectileA( position.position , startVelocity, 1)]));
         }
     }
 

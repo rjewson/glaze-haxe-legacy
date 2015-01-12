@@ -8,8 +8,6 @@ import physics.dynamics.Feature;
 
 class GeometricShape 
 {
-
-	public static var nextUID:Int = 0;
 	
 	public var typeID:Int;
 	
@@ -18,15 +16,12 @@ class GeometricShape
 	public var aabb:AABB;
 	
 	public var area : Float;
-	
-	public var UID:Int;
-	
+		
 	public function new(typeID:Int, offset:Vector2D) 
 	{
 		this.typeID = typeID;
 		this.offset = offset;
 		aabb = new AABB();
-		UID = nextUID++;
 	}
 	
 	public function Update(rotation : Vector2D) : Void {

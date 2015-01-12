@@ -135,6 +135,8 @@ List.prototype = {
 var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
+	console.log("fish");
+	var vA = new math.Vector2Default(0,0);
 	var exile = new game.exile.Exile();
 	window.document.getElementById("stopbutton").addEventListener("click",function(event) {
 		exile.gameLoop.stop();
@@ -2175,11 +2177,52 @@ engine.ai.behaviors.actions.FilterPrioritizeEntities.prototype = $extend(engine.
 	update: function(context) {
 		if(Object.prototype.hasOwnProperty.call(context.data,"entities")) {
 			var entityCollection = context.data.entities;
+			var entity = entityCollection.entities.head.entity;
+			var position = entity.componentMap[engine.components.Position.NAME];
+			var value = position.position.clone();
+			context.data.target = value;
 			return engine.ai.behaviors.BehaviorStatus.Success;
 		}
 		return engine.ai.behaviors.BehaviorStatus.Failure;
 	}
 	,__class__: engine.ai.behaviors.actions.FilterPrioritizeEntities
+});
+engine.ai.behaviors.actions.FilterVisibleEntities = function(range,breakOnFirstVisible) {
+	if(breakOnFirstVisible == null) breakOnFirstVisible = true;
+	this.initialized = false;
+	engine.ai.behaviors.Behavior.call(this);
+	this.range = range;
+	this.breakOnFirstVisible = breakOnFirstVisible;
+};
+engine.ai.behaviors.actions.FilterVisibleEntities.__name__ = ["engine","ai","behaviors","actions","FilterVisibleEntities"];
+engine.ai.behaviors.actions.FilterVisibleEntities.__super__ = engine.ai.behaviors.Behavior;
+engine.ai.behaviors.actions.FilterVisibleEntities.prototype = $extend(engine.ai.behaviors.Behavior.prototype,{
+	initialize: function(context) {
+		if(!this.initialized) {
+			var physicsSystem = context.entity.engine.getSystemByClass(engine.systems.PhysicsSystem);
+			this.physicsEngine = physicsSystem.physicsEngine;
+			this.ray = new physics.geometry.Ray();
+			this.sourcePosition = context.entity.componentMap[engine.components.Position.NAME];
+			this.initialized = true;
+		}
+	}
+	,update: function(context) {
+		if(Object.prototype.hasOwnProperty.call(context.data,"entities")) {
+			var entityCollection = context.data.entities;
+			var item = entityCollection.entities.head;
+			while(item != null) {
+				var itemPosition = item.entity.componentMap[engine.components.Position.NAME];
+				this.ray.SetParams(this.sourcePosition.position,itemPosition.position,0);
+				this.physicsEngine.CastRay(this.ray);
+				if(this.ray.Seen()) {
+					if(this.breakOnFirstVisible) return engine.ai.behaviors.BehaviorStatus.Success;
+				}
+				item = item.next;
+			}
+		}
+		return engine.ai.behaviors.BehaviorStatus.Failure;
+	}
+	,__class__: engine.ai.behaviors.actions.FilterVisibleEntities
 });
 engine.ai.behaviors.actions.GetLocalEntities = function(range) {
 	this.initialized = false;
@@ -2208,7 +2251,7 @@ engine.ai.behaviors.actions.GetLocalEntities.prototype = $extend(engine.ai.behav
 		return engine.ai.behaviors.BehaviorStatus.Failure;
 	}
 	,BodyToEntityCollection: function(body,distanceSqrd) {
-		this.entityCollection.addItem(body.userData1);
+		this.entityCollection.addItem(body.userData1.owner);
 	}
 	,__class__: engine.ai.behaviors.actions.GetLocalEntities
 });
@@ -2296,10 +2339,10 @@ engine.ai.steering.SteeringBehavior.prototype = {
 		this.force.clampMax(this.agent.maxAcceleration);
 	}
 	,accumulateForce: function(a_runningTotal,a_forceToAdd) {
-		var magnitudeSoFar = Math.sqrt(a_runningTotal.x * a_runningTotal.x + a_runningTotal.y * a_runningTotal.y);
+		var magnitudeSoFar = a_runningTotal.length();
 		var magnitudeRemaining = this.agent.maxAcceleration - magnitudeSoFar;
 		if(magnitudeRemaining <= 0) return false;
-		var magnitudeToAdd = Math.sqrt(a_forceToAdd.x * a_forceToAdd.x + a_forceToAdd.y * a_forceToAdd.y);
+		var magnitudeToAdd = a_forceToAdd.length();
 		if(magnitudeToAdd < magnitudeRemaining) {
 			a_runningTotal.x += a_forceToAdd.x;
 			a_runningTotal.y += a_forceToAdd.y;
@@ -2472,8 +2515,8 @@ physics.geometry.Vector2D.prototype = {
 		return this;
 	}
 	,distance: function(v) {
-		var delta = new physics.geometry.Vector2D(v.x - this.x,v.y - this.y);
-		return Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+		var delta = v.minus(this);
+		return delta.length();
 	}
 	,distanceSqrd: function(v) {
 		var dX = this.x - v.x;
@@ -2481,12 +2524,12 @@ physics.geometry.Vector2D.prototype = {
 		return dX * dX + dY * dY;
 	}
 	,clampMax: function(max) {
-		var l = Math.sqrt(this.x * this.x + this.y * this.y);
+		var l = this.length();
 		if(l > max) this.multEquals(max / l);
 		return this;
 	}
 	,interpolate: function(v,t) {
-		return this.mult(1 - t).plus(new physics.geometry.Vector2D(v.x * t,v.y * t));
+		return this.mult(1 - t).plus(v.mult(t));
 	}
 	,rotate: function(angle) {
 		var a = angle * Math.PI / 180;
@@ -3401,6 +3444,7 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 	,createEntities: function() {
 		this.mainEngine.addEntity(game.exile.entities.EntityFactory.instance.create("player",50,50));
 		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.GunTurret(new physics.geometry.Vector2D(200,100))]));
+		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.GunTurret(new physics.geometry.Vector2D(400,400))]));
 	}
 	,tick: function(time) {
 		this.mainEngine.update(time);
@@ -3453,9 +3497,10 @@ game.exile.components.GunTurret.prototype = $extend(eco.core.Component.prototype
 	}
 	,onStarted: function() {
 		var script = new engine.components.Script();
-		script.bt.addChild(new engine.ai.behaviors.actions.Delay(1000));
-		script.bt.addChild(new engine.ai.behaviors.actions.GetLocalEntities(100));
+		script.bt.addChild(new engine.ai.behaviors.actions.Delay(1500));
+		script.bt.addChild(new engine.ai.behaviors.actions.GetLocalEntities(400));
 		script.bt.addChild(new engine.ai.behaviors.actions.FilterPrioritizeEntities());
+		script.bt.addChild(new engine.ai.behaviors.actions.FilterVisibleEntities(0));
 		script.bt.addChild(new engine.ai.behaviors.Action("fire",this));
 		this.owner.add(script);
 	}
@@ -3469,7 +3514,7 @@ game.exile.components.GunTurret.prototype = $extend(eco.core.Component.prototype
 	,fire: function(context) {
 		console.log("BANG");
 		var position = this.owner.componentMap[engine.components.Position.NAME];
-		var target = new physics.geometry.Vector2D(300,100);
+		var target = context.data.target;
 		var startVelocity = target.minusEquals(position.position).unitEquals().multEquals(15);
 		this.owner.engine.addEntity(eco.core.Entity.Create([new game.exile.components.ProjectileA(position.position,startVelocity)]));
 		return engine.ai.behaviors.BehaviorStatus.Success;
@@ -3508,16 +3553,21 @@ game.exile.components.Player.prototype = $extend(eco.core.Component.prototype,{
 		if(this.controls.digitalInput.JustPressed(200)) {
 			var viewPos = this.controls.digitalInput.mousePosition.plus(this.controls.digitalInput.mouseOffset);
 			var startVelocity = viewPos.minusEquals(this.position.position).unitEquals().multEquals(15);
-			this.owner.engine.addEntity(eco.core.Entity.Create([new game.exile.components.ProjectileA(this.position.position,startVelocity)]));
+			this.owner.engine.addEntity(eco.core.Entity.Create([new game.exile.components.ProjectileA(this.position.position,startVelocity,1)]));
 		}
 	}
 	,__class__: game.exile.components.Player
 });
-game.exile.components.ProjectileA = function(startPosition,startVelocity) {
+game.exile.components.ProjectileA = function(startPosition,startVelocity,group) {
+	if(group == null) group = 0;
 	this.totalContactCount = 0;
 	eco.core.Component.call(this);
-	this.startPosition = startPosition;
-	this.startVelocity = startVelocity;
+	var shape = new physics.geometry.Circle(6,new physics.geometry.Vector2D(0,0));
+	this.physics = new engine.components.Physics(startPosition.x,startPosition.y,0,0,[shape]);
+	this.physics.body.SetMass(0.1);
+	this.physics.body.group = group;
+	this.physics.body.features[0].contactCallback = $bind(this,this.OnContact);
+	this.physics.body.SetVelocity(startVelocity);
 };
 game.exile.components.ProjectileA.__name__ = ["game","exile","components","ProjectileA"];
 game.exile.components.ProjectileA.__super__ = eco.core.Component;
@@ -3528,12 +3578,6 @@ game.exile.components.ProjectileA.prototype = $extend(eco.core.Component.prototy
 	,onAdded: function() {
 		var _g = this;
 		this.owner.name = "ProjectileA";
-		var shape = new physics.geometry.Circle(6,new physics.geometry.Vector2D(0,0));
-		this.physics = new engine.components.Physics(this.startPosition.x,this.startPosition.y,0,0,[shape]);
-		this.physics.body.SetMass(0.1);
-		this.physics.body.group = 1;
-		this.physics.body.features[0].contactCallback = $bind(this,this.OnContact);
-		this.physics.body.SetVelocity(this.startVelocity);
 		this.owner.add(new engine.components.Position()).add(this.physics).add(new engine.components.Display("character","projectile1.png")).add(new engine.components.Lifecycle(Math.floor(Math.random() * 500 + 1000))).add(new engine.components.ParticleEmitters([new wgr.particle.emitter.RandomSpray(60,60)]));
 		this.owner.events.add(function(type,data) {
 			if(type == "lc") _g.destroy();
@@ -4129,6 +4173,21 @@ js.html._CanvasElement.CanvasUtil.getContextWebGL = function(canvas,attribs) {
 	}
 	return null;
 };
+var math = {};
+math.Vector2Default = function(x,y) {
+	this.x = x;
+	this.y = y;
+};
+math.Vector2Default.__name__ = ["math","Vector2Default"];
+math.Vector2Default.prototype = {
+	__class__: math.Vector2Default
+};
+math._Vector2 = {};
+math._Vector2.Vector2_Impl_ = function() { };
+math._Vector2.Vector2_Impl_.__name__ = ["math","_Vector2","Vector2_Impl_"];
+math._Vector2.Vector2_Impl_._new = function(x,y) {
+	return new math.Vector2Default(x,y);
+};
 physics.Constants = function() { };
 physics.Constants.__name__ = ["physics","Constants"];
 physics.PhysicsEngine = function(fps,pps,narrowphase) {
@@ -4467,7 +4526,7 @@ physics.collision.narrowphase.sat.SAT.circle2poly = function(circle,circlePos,po
 physics.collision.narrowphase.sat.SAT.circle2segment = function(circle,circlePos,segment,segmentPos,arbiter) {
 	var tAP = segment.tA.plus(segmentPos);
 	var tCP = circle.transformedCentre.plus(circlePos);
-	var closest_t = segment.delta.dot(new physics.geometry.Vector2D(tCP.x - tAP.x,tCP.y - tAP.y)) / segment.delta.lengthSqr();
+	var closest_t = segment.delta.dot(tCP.minus(tAP)) / segment.delta.lengthSqr();
 	if(closest_t < 0) closest_t = 0;
 	if(closest_t > 1) closest_t = 1;
 	var closest = tAP.plus(segment.delta.mult(closest_t));
@@ -4588,7 +4647,7 @@ physics.dynamics.Arbiter.prototype = {
 		if(!this.isSensor) {
 			var normal = this.contacts[0].normal;
 			var depth = this.contacts[0].penDist;
-			var mtd = new physics.geometry.Vector2D(normal.x * depth,normal.y * depth);
+			var mtd = normal.mult(depth);
 			var te = this.feature1.material.elasticity + this.feature2.material.elasticity;
 			var sumInvMass = this.feature1.body.invMass + this.feature2.body.invMass;
 			var tf = utils.Maths.Clamp(1 - (this.feature1.material.friction + this.feature2.material.friction),0,1);
@@ -4916,6 +4975,13 @@ physics.dynamics.BodyContactManager.prototype = {
 	}
 	,__class__: physics.dynamics.BodyContactManager
 };
+physics.dynamics.BodyType = { __ename__ : true, __constructs__ : ["Dynamic","Static","Kinematic"] };
+physics.dynamics.BodyType.Dynamic = ["Dynamic",0];
+physics.dynamics.BodyType.Dynamic.__enum__ = physics.dynamics.BodyType;
+physics.dynamics.BodyType.Static = ["Static",1];
+physics.dynamics.BodyType.Static.__enum__ = physics.dynamics.BodyType;
+physics.dynamics.BodyType.Kinematic = ["Kinematic",2];
+physics.dynamics.BodyType.Kinematic.__enum__ = physics.dynamics.BodyType;
 physics.dynamics.Contact = function() {
 	this.point = new physics.geometry.Vector2D();
 	this.normal = new physics.geometry.Vector2D();
@@ -5021,7 +5087,6 @@ physics.geometry.GeometricShape = function(typeID,offset) {
 	this.typeID = typeID;
 	this.offset = offset;
 	this.aabb = new physics.geometry.AABB();
-	this.UID = physics.geometry.GeometricShape.nextUID++;
 };
 physics.geometry.GeometricShape.__name__ = ["physics","geometry","GeometricShape"];
 physics.geometry.GeometricShape.prototype = {
@@ -5076,9 +5141,9 @@ physics.geometry.Circle.prototype = $extend(physics.geometry.GeometricShape.prot
 	,IntersectSegment: function(a,b,feature) {
 		var tA = a.minus(this.transformedCentre).minus(feature.position);
 		var tB = b.minus(this.transformedCentre).minus(feature.position);
-		var qa = a.x * a.x + a.y * a.y - 2 * (a.x * b.x + a.y * b.y) + (b.x * b.x + b.y * b.y);
-		var qb = -2 * (a.x * a.x + a.y * a.y) + 2 * (a.x * b.x + a.y * b.y);
-		var qc = a.x * a.x + a.y * a.y - this.radius * this.radius;
+		var qa = a.dot(a) - 2 * a.dot(b) + b.dot(b);
+		var qb = -2 * a.dot(a) + 2 * a.dot(b);
+		var qc = a.dot(a) - this.radius * this.radius;
 		var det = qb * qb - 4 * qa * qc;
 		if(det >= 0.0) {
 			var t = (-qb - Math.sqrt(det)) / (2 * qa);
@@ -5126,10 +5191,10 @@ physics.geometry.Polygon.prototype = $extend(physics.geometry.GeometricShape.pro
 			v2 = originalVertices[(i + 2) % this.vertexCount];
 			a = new physics.geometry.Vector2D(v0.x + this.offset.x,v0.y + this.offset.y);
 			b = new physics.geometry.Vector2D(v1.x + this.offset.x,v1.y + this.offset.y);
-			n = new physics.geometry.Vector2D(b.x - a.x,b.y - a.y).rightHandNormal().unit();
+			n = b.minus(a).rightHandNormal().unit();
 			this.vertices.push(a);
 			this.transformedVertices.push(a.clone());
-			axis = new physics.geometry.Axis(n,n.x * a.x + n.y * a.y);
+			axis = new physics.geometry.Axis(n,n.dot(a));
 			this.axes.push(axis);
 			this.transformedAxes.push(axis.clone());
 			this.area += v1.x * (v2.y - v0.y);
@@ -5261,7 +5326,7 @@ physics.geometry.Ray.prototype = {
 	SetParams: function(origin,target,range) {
 		this.origin = origin;
 		this.target = target;
-		this.delta = new physics.geometry.Vector2D(target.x - origin.x,target.y - origin.y);
+		this.delta = target.minus(origin);
 		var m = this.delta.length();
 		if(m == 0) m = 0.0000001;
 		this.direction = this.delta.mult(1 / m);
@@ -5278,6 +5343,9 @@ physics.geometry.Ray.prototype = {
 		return this.lastIntersectFeature == null || this.lastIntersectDistance >= this.range;
 	}
 	,Seen2: function() {
+		return this.lastIntersectDistance >= this.range;
+	}
+	,Seen3: function() {
 		return this.lastIntersectDistance >= this.range;
 	}
 	,TestFeature: function(feature) {
@@ -7513,7 +7581,7 @@ worldEngine.tiles.Tile.prototype = $extend(physics.geometry.Polygon.prototype,{
 			var i2 = _g3++;
 			var v0 = this.unscaledVerts[i2];
 			var v1 = this.unscaledVerts[(i2 + 1) % numVerts];
-			var n = new physics.geometry.Vector2D(v1.x - v0.x,v1.y - v0.y).rightHandNormal().unit();
+			var n = v1.minus(v0).rightHandNormal().unit();
 			var _g12 = 0;
 			var _g21 = worldEngine.tiles.Tile.VERT_TO_SEG_DEF;
 			while(_g12 < _g21.length) {
@@ -7541,7 +7609,7 @@ worldEngine.tiles.Tile.prototype = $extend(physics.geometry.Polygon.prototype,{
 		}
 	}
 	,CheckVertexPair: function(v0,v1,c0,c1) {
-		return v0.x == c0.x && v0.y == c0.y && (v1.x == c1.x && v1.y == c1.y) || v0.x == c1.x && v0.y == c1.y && (v1.x == c0.x && v1.y == c0.y);
+		return v0.isEquals(c0) && v1.isEquals(c1) || v0.isEquals(c1) && v1.isEquals(c0);
 	}
 	,rotateClockwise: function(verts) {
 		var result = [];

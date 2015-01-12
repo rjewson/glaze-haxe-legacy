@@ -29,7 +29,7 @@ class GetLocalEntities extends Behavior
         if (!initialized) {
             var physicsSystem:PhysicsSystem = cast context.entity.engine.getSystemByClass(PhysicsSystem);
             physicsEngine = physicsSystem.physicsEngine;
-            physics = cast context.entity.getComponentByClass(Physics);
+            physics = context.entity.get(Physics);
             initialized = true;
         }
     }
@@ -46,7 +46,7 @@ class GetLocalEntities extends Behavior
     }
 
     private function BodyToEntityCollection(body:Body,distanceSqrd:Float):Void {
-        entityCollection.addItem(cast body.userData1);
+        entityCollection.addItem(cast body.userData1.owner);
     }
 
 }

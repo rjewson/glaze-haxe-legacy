@@ -1,11 +1,15 @@
 package ;
 
 import js.Browser;
+import math.Vector2;
 
 class Main 
 {
 
 	public static function main() {
+trace("fish");
+        var vA = new Vector2(0,0);
+
         var exile = new game.exile.Exile();
 
         Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
@@ -15,7 +19,7 @@ class Main
             exile.gameLoop.start();
         });
         Browser.document.getElementById("debugbutton").addEventListener("click",function(event){
-        });
+        }); 
         Browser.document.getElementById("action1").addEventListener("click",function(event){
         });
         Browser.document.getElementById("action2").addEventListener("click",function(event){

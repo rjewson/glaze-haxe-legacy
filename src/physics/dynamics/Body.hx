@@ -1,6 +1,7 @@
 package physics.dynamics;
 
 import physics.constraints.Constraint;
+import physics.dynamics.BodyType;
 import physics.geometry.AABB;
 import physics.geometry.GeometricShape;
 import physics.geometry.Vector2D;
@@ -69,6 +70,8 @@ class Body
 	public var isKinematic:Bool;
 	public var isOpaque:Bool;
 	
+	public var type:BodyType;
+
 	public var engine:PhysicsEngine;
 	
 	public var broadphaseData1:Int;

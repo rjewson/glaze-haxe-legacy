@@ -65,6 +65,10 @@ class Ray
 		return (lastIntersectDistance >= range);
 	}
 	
+	public function Seen3():Bool {
+		return (lastIntersectDistance >= range);
+	}
+
 	public function TestFeature(feature:Feature):Bool {
 		lastIntersectResult = false;  
 		return feature.shape.IntersectRay(this, feature);
