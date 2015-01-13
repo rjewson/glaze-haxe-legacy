@@ -35,7 +35,8 @@ class WorldData
 		collisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer(collisionLayerName));
 		
 		worldBounds = new physics.geometry.AABB(0,collisionData.h*tileSize,collisionData.w*tileSize,0);
-		worldCellSize = cast worldBounds.width();
+		worldCellSize = cast worldBounds.width() / 10;
+		// trace(worldBounds);
 	}
 	
 	public function InitalizeWorld():Void {

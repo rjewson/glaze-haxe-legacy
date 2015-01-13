@@ -49,9 +49,10 @@ class WorldPhysicsEngine extends ManagedGrid
 	
    	override public function Collide() {
    		super.Collide();
-        for (cell in grid.data) {        
-            for (i in 0...cell.dynamicItems.length) {
-           		var body = cell.dynamicItems[i];
+        for (cell in grid.data) {
+        	for (body in cell.dynamicItems) {
+            //for (i in 0...cell.dynamicItems.length) {
+           	//	var body = cell.dynamicItems[i];
 				for (bodyFeature in body.features) {
 					
 					// var cx = world.worldData.Index(body.position.x);

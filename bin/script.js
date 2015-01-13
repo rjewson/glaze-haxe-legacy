@@ -3621,6 +3621,46 @@ game.exile.entities.EntityFactory.prototype = {
 };
 var haxe = {};
 haxe.ds = {};
+haxe.ds.GenericCell = function(elt,next) {
+	this.elt = elt;
+	this.next = next;
+};
+haxe.ds.GenericCell.__name__ = ["haxe","ds","GenericCell"];
+haxe.ds.GenericCell.prototype = {
+	__class__: haxe.ds.GenericCell
+};
+haxe.ds.GenericStack = function() {
+};
+haxe.ds.GenericStack.__name__ = ["haxe","ds","GenericStack"];
+haxe.ds.GenericStack.prototype = {
+	add: function(item) {
+		this.head = new haxe.ds.GenericCell(item,this.head);
+	}
+	,remove: function(v) {
+		var prev = null;
+		var l = this.head;
+		while(l != null) {
+			if(l.elt == v) {
+				if(prev == null) this.head = l.next; else prev.next = l.next;
+				break;
+			}
+			prev = l;
+			l = l.next;
+		}
+		return l != null;
+	}
+	,iterator: function() {
+		var l = this.head;
+		return { hasNext : function() {
+			return l != null;
+		}, next : function() {
+			var k = l;
+			l = k.next;
+			return k.elt;
+		}};
+	}
+	,__class__: haxe.ds.GenericStack
+};
 haxe.ds.IntMap = function() {
 	this.h = { };
 };
@@ -4260,34 +4300,71 @@ physics.PhysicsEngine.prototype = {
 physics.collision = {};
 physics.collision.broadphase = {};
 physics.collision.broadphase.managedgrid = {};
-physics.collision.broadphase.managedgrid.Cell = function(index,x,y,w,h) {
+physics.collision.broadphase.managedgrid.Cell = function(manager,index,x,y,w,h) {
+	this.staticItemLength = 0;
+	this.dynamicItemLength = 0;
+	this.manager = manager;
 	this.index = index;
 	this.x = x;
 	this.y = y;
 	this.width = w;
 	this.height = h;
 	this.aabb = new physics.geometry.AABB(x,y + h,x + w,y);
-	this.dynamicItems = new Array();
-	this.sleepingItems = new Array();
-	this.staticItems = new Array();
+	this.dynamicItems = new haxe.ds.GenericStack();
+	this.sleepingItems = new haxe.ds.GenericStack();
+	this.staticItems = new haxe.ds.GenericStack();
 	this.adjacentCells = new Array();
 };
 physics.collision.broadphase.managedgrid.Cell.__name__ = ["physics","collision","broadphase","managedgrid","Cell"];
 physics.collision.broadphase.managedgrid.Cell.prototype = {
 	AddBody: function(body) {
-		body.broadphaseData1 = this.index;
-		if(body.isStatic) this.staticItems.push(body); else this.dynamicItems.push(body);
+		if(body.isStatic) {
+			this.staticItems.add(body);
+			this.staticItemLength++;
+		} else {
+			this.dynamicItems.add(body);
+			this.dynamicItemLength++;
+		}
 	}
 	,RemoveBody: function(body) {
-		if(body.isStatic) HxOverrides.remove(this.staticItems,body); else HxOverrides.remove(this.dynamicItems,body);
-		body.broadphaseData1 = -1;
+		if(body.isStatic) {
+			this.staticItems.remove(body);
+			this.staticItemLength--;
+		} else {
+			this.dynamicItems.remove(body);
+			this.dynamicItemLength--;
+		}
+	}
+	,Collide: function() {
+		var s1 = this.dynamicItems.head;
+		while(s1 != null) {
+			var item1 = s1.elt;
+			var s2 = s1.next;
+			while(s2 != null) {
+				var item2 = s2.elt;
+				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item2.aabb,item2.position)) this.manager.narrowphase.CollideBodies(item1,item2);
+				s2 = s2.next;
+			}
+			var s3 = this.staticItems.head;
+			while(s3 != null) {
+				var item3 = s3.elt;
+				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item3.aabb,item3.position)) this.manager.narrowphase.CollideBodies(item1,item3);
+				s3 = s3.next;
+			}
+			var s4 = this.sleepingItems.head;
+			while(s4 != null) {
+				var item4 = s4.elt;
+				if(physics.geometry.AABB.intersects(item1.aabb,item1.position,item4.aabb,item4.position)) this.manager.narrowphase.CollideBodies(item1,item4);
+				s4 = s4.next;
+			}
+			s1 = s1.next;
+		}
 	}
 	,SearchList: function(list,position,radius,result) {
 		var radiusSqrd = radius * radius;
-		var _g = 0;
-		while(_g < list.length) {
-			var body = list[_g];
-			++_g;
+		var $it0 = list.iterator();
+		while( $it0.hasNext() ) {
+			var body = $it0.next();
 			var dX = position.x - body.averageCenter.x;
 			var dY = position.y - body.averageCenter.y;
 			var dSqrd = dX * dX + dY * dY;
@@ -4317,17 +4394,17 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			var _g2 = this.grid.gridHeight;
 			while(_g3 < _g2) {
 				var x = _g3++;
-				this.grid.data.push(new physics.collision.broadphase.managedgrid.Cell(index++,x * this.grid.cellSize,y * this.grid.cellSize,this.grid.cellSize,this.grid.cellSize));
+				this.grid.data.push(new physics.collision.broadphase.managedgrid.Cell(this,index++,x * this.grid.cellSize,y * this.grid.cellSize,this.grid.cellSize,this.grid.cellSize));
 			}
 		}
 		var _g11 = 0;
 		var _g4 = this.grid.gridWidth;
 		while(_g11 < _g4) {
-			var y1 = _g11++;
+			var x1 = _g11++;
 			var _g31 = 0;
 			var _g21 = this.grid.gridHeight;
 			while(_g31 < _g21) {
-				var x1 = _g31++;
+				var y1 = _g31++;
 				var cell = this.grid.GetGridSafe(x1,y1);
 				cell.adjacentCells.push(this.grid.GetGridSafe(x1 - 1,y1));
 				cell.adjacentCells.push(this.grid.GetGridSafe(x1 - 1,y1 - 1));
@@ -4346,18 +4423,14 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 		while(_g < _g1.length) {
 			var cell = _g1[_g];
 			++_g;
-			var _g2 = 0;
-			var _g3 = cell.dynamicItems;
-			while(_g2 < _g3.length) {
-				var body = _g3[_g2];
-				++_g2;
+			var $it0 = cell.dynamicItems.iterator();
+			while( $it0.hasNext() ) {
+				var body = $it0.next();
 				body.Update(this.step);
-				if(!cell.aabb.containtsPoint(body.position)) {
-					cell.RemoveBody(body);
-					this.AddBodyToCell(body);
-				}
+				this.UpdateBodyInCells(body);
 			}
 		}
+		this.Log();
 	}
 	,Collide: function() {
 		var _g = 0;
@@ -4365,38 +4438,58 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 		while(_g < _g1.length) {
 			var cell = _g1[_g];
 			++_g;
-			var _g3 = 0;
-			var _g2 = cell.dynamicItems.length;
-			while(_g3 < _g2) {
-				var i = _g3++;
-				var bodyA = cell.dynamicItems[i];
-				var _g5 = i + 1;
-				var _g4 = cell.dynamicItems.length;
-				while(_g5 < _g4) {
-					var j = _g5++;
-					var bodyB = cell.dynamicItems[j];
-					this.narrowphase.CollideBodies(bodyA,bodyB);
-				}
-			}
+			cell.Collide();
 		}
 	}
 	,AddBody: function(body) {
 		physics.PhysicsEngine.prototype.AddBody.call(this,body);
-		this.AddBodyToCell(body);
-	}
-	,AddBodyToCell: function(body) {
-		var x = body.position.x * this.grid.invCellSize | 0;
-		var y = body.position.y * this.grid.invCellSize | 0;
-		var cell = this.grid.GetGridSafe(x,y);
-		if(cell != null) cell.AddBody(body);
+		body.broadphaseData1 = -1;
+		body.broadphaseData2 = 0;
+		this.UpdateBodyInCells(body);
 	}
 	,RemoveBody: function(body) {
 		var cell = this.grid.data[body.broadphaseData1];
-		var index = HxOverrides.indexOf(cell.dynamicItems,body,0);
-		if(index >= 0) {
-			cell.dynamicItems.splice(index,1);
-			return;
+		cell.RemoveBody(body);
+	}
+	,UpdateBodyInCells: function(body) {
+		var x = body.position.x * this.grid.invCellSize | 0;
+		var y = body.position.y * this.grid.invCellSize | 0;
+		var newOccupancy = 0;
+		var newCell = this.grid.GetGridSafe(x,y);
+		if(body.position.x + body.aabb.l < newCell.aabb.l) newOccupancy |= 1; else if(body.position.x + body.aabb.r > newCell.aabb.r) newOccupancy |= 16;
+		if(body.position.y + body.aabb.t < newCell.aabb.t) newOccupancy |= 4; else if(body.position.y + body.aabb.b > newCell.aabb.b) newOccupancy |= 64;
+		if(newOccupancy > 0) {
+			if((newOccupancy & 1) > 0 && (newOccupancy & 4) > 0) newOccupancy |= 2;
+			if((newOccupancy & 16) > 0 && (newOccupancy & 4) > 0) newOccupancy |= 8;
+			if((newOccupancy & 1) > 0 && (newOccupancy & 64) > 0) newOccupancy |= 128;
+			if((newOccupancy & 16) > 0 && (newOccupancy & 64) > 0) newOccupancy |= 32;
 		}
+		var oldCell = this.grid.data[body.broadphaseData1];
+		var oldOccupancy = body.broadphaseData2;
+		if(newCell == oldCell && newOccupancy == oldOccupancy) return;
+		var cell;
+		var offset;
+		if(oldCell != null) {
+			oldCell.RemoveBody(body);
+			var _g = 0;
+			while(_g < 8) {
+				var i = _g++;
+				offset = 1 << i;
+				if((oldOccupancy & offset) > 0) oldCell.adjacentCells[i].RemoveBody(body);
+			}
+		}
+		newCell.AddBody(body);
+		var _g1 = 0;
+		while(_g1 < 8) {
+			var i1 = _g1++;
+			offset = 1 << i1;
+			if((newOccupancy & offset) > 0) {
+				cell = newCell.adjacentCells[i1];
+				if(cell != null) cell.AddBody(body);
+			}
+		}
+		body.broadphaseData1 = newCell.index;
+		body.broadphaseData2 = newOccupancy;
 	}
 	,Search: function(position,radius,result) {
 		var _g = 0;
@@ -4405,6 +4498,24 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			var cell = _g1[_g];
 			++_g;
 			cell.SearchCell(position,radius,result);
+		}
+	}
+	,Log: function() {
+		console.log("Frame:" + this.step);
+		var _g1 = 0;
+		var _g = this.grid.gridHeight;
+		while(_g1 < _g) {
+			var y = _g1++;
+			var line = "";
+			var _g3 = 0;
+			var _g2 = this.grid.gridWidth;
+			while(_g3 < _g2) {
+				var x = _g3++;
+				var cell = this.grid.GetGridSafe(x,y);
+				line += cell.dynamicItemLength + ":" + cell.staticItemLength;
+				line += " | ";
+			}
+			console.log(line);
 		}
 	}
 	,__class__: physics.collision.broadphase.managedgrid.ManagedGrid
@@ -7353,7 +7464,7 @@ worldEngine.WorldData = function(tileSize,tmxMap,collisionLayerName) {
 	this.tileFactory = new worldEngine.tiles.TileFactory();
 	this.collisionData = engine.map.tmx.TmxLayer.layerToCollisionMap(tmxMap.getLayer(collisionLayerName));
 	this.worldBounds = new physics.geometry.AABB(0,this.collisionData.h * tileSize,this.collisionData.w * tileSize,0);
-	this.worldCellSize = this.worldBounds.width();
+	this.worldCellSize = this.worldBounds.width() / 10;
 };
 worldEngine.WorldData.__name__ = ["worldEngine","WorldData"];
 worldEngine.WorldData.prototype = {
@@ -7394,28 +7505,26 @@ worldEngine.WorldPhysicsEngine.prototype = $extend(physics.collision.broadphase.
 		while(_g < _g1.length) {
 			var cell = _g1[_g];
 			++_g;
-			var _g3 = 0;
-			var _g2 = cell.dynamicItems.length;
-			while(_g3 < _g2) {
-				var i = _g3++;
-				var body = cell.dynamicItems[i];
-				var _g4 = 0;
-				var _g5 = body.features;
-				while(_g4 < _g5.length) {
-					var bodyFeature = _g5[_g4];
-					++_g4;
+			var $it0 = cell.dynamicItems.iterator();
+			while( $it0.hasNext() ) {
+				var body = $it0.next();
+				var _g2 = 0;
+				var _g3 = body.features;
+				while(_g2 < _g3.length) {
+					var bodyFeature = _g3[_g2];
+					++_g2;
 					var cx = ((bodyFeature.shape.aabb.r + bodyFeature.shape.aabb.l) / 2 + body.position.x) * this.worldData.invTileSize | 0;
 					var cy = ((bodyFeature.shape.aabb.b + bodyFeature.shape.aabb.t) / 2 + body.position.y) * this.worldData.invTileSize | 0;
-					var _g6 = 0;
-					var _g7 = this.collisionOrderY;
-					while(_g6 < _g7.length) {
-						var y = _g7[_g6];
-						++_g6;
-						var _g8 = 0;
-						var _g9 = this.collisionOrderX;
-						while(_g8 < _g9.length) {
-							var x = _g9[_g8];
-							++_g8;
+					var _g4 = 0;
+					var _g5 = this.collisionOrderY;
+					while(_g4 < _g5.length) {
+						var y = _g5[_g4];
+						++_g4;
+						var _g6 = 0;
+						var _g7 = this.collisionOrderX;
+						while(_g6 < _g7.length) {
+							var x = _g7[_g6];
+							++_g6;
 							var tileID = this.collisionData.get(cx + x,cy + y);
 							if(tileID > 0) {
 								this.tempFeature.shape = this.worldData.tileFactory.tiles[tileID];
@@ -7859,8 +7968,15 @@ physics.Constants.FMAX = 1e99;
 physics.Constants.SLEEP_BIAS = 0.99332805041467;
 physics.Constants.SLEEP_EPSILON = 0.0009;
 physics.Constants.WAKE_MOTION = 10;
+physics.collision.broadphase.managedgrid.ManagedGrid.LEFT = 1;
+physics.collision.broadphase.managedgrid.ManagedGrid.LEFTUP = 2;
+physics.collision.broadphase.managedgrid.ManagedGrid.UP = 4;
+physics.collision.broadphase.managedgrid.ManagedGrid.UPRIGHT = 8;
+physics.collision.broadphase.managedgrid.ManagedGrid.RIGHT = 16;
+physics.collision.broadphase.managedgrid.ManagedGrid.RIGHTDOWN = 32;
+physics.collision.broadphase.managedgrid.ManagedGrid.DOWN = 64;
+physics.collision.broadphase.managedgrid.ManagedGrid.DOWNLEFT = 128;
 physics.dynamics.Body.nextBodyID = 0;
-physics.geometry.GeometricShape.nextUID = 0;
 physics.geometry.Ray.MAX_RANGE = 1e100;
 physics.geometry.Shapes.AXIS_ALIGNED_BOX_SHAPE = 0;
 physics.geometry.Shapes.CIRCLE_SHAPE = 1;

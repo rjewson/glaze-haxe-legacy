@@ -35,6 +35,8 @@ class Grid2D<T>
 	inline public function GetGrid(x:Int, y:Int):T {
 		return data[y * gridWidth + x];
 	}
+
+	// inline public function 
 	
 	inline public function GetGridSafe(x:Int, y:Int):T {
 		return ((x >= gridWidth) || (y >= gridHeight) || (x < 0) || (y < 0)) ? null : data[y * gridWidth + x];
