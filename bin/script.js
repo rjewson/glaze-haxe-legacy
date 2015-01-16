@@ -135,8 +135,6 @@ List.prototype = {
 var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
-	console.log("fish");
-	var vA = new math.Vector2Default(0,0);
 	var exile = new game.exile.Exile();
 	window.document.getElementById("stopbutton").addEventListener("click",function(event) {
 		exile.gameLoop.stop();
@@ -2637,6 +2635,55 @@ engine.components.Display.prototype = $extend(eco.core.Component.prototype,{
 	}
 	,__class__: engine.components.Display
 });
+engine.components.Holder = function(width,height,offsetX,offsetY) {
+	this.hold = false;
+	eco.core.Component.call(this);
+	this.holderSensor = new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(width,height),new physics.geometry.Vector2D(offsetX,offsetY));
+};
+engine.components.Holder.__name__ = ["engine","components","Holder"];
+engine.components.Holder.__super__ = eco.core.Component;
+engine.components.Holder.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "Holder";
+	}
+	,onStarted: function() {
+		this.body = this.owner.componentMap[engine.components.Physics.NAME].body;
+		this.holderFeature = this.body.AddFeature(this.holderSensor,null);
+		this.holderFeature.isSensor = true;
+		this.holderFeature.contactCallback = $bind(this,this.onHolderContact);
+		this.holderFeature.categoryBits = game.exile.entities.Filters.OBJECT_HOLDER_CATEGORY;
+		this.holderFeature.maskBits = game.exile.entities.Filters.OBJECT_CATEGORY;
+	}
+	,onHolderContact: function(arbiter) {
+		if(this.hold) this.holdBody(this.body.id == arbiter.feature1.body.id?arbiter.feature2.body:arbiter.feature1.body);
+	}
+	,holdBody: function(targetBody) {
+		if(this.heldBody != null) return;
+		this.heldBody = targetBody;
+		var _g = 0;
+		var _g1 = this.heldBody.features;
+		while(_g < _g1.length) {
+			var feature = _g1[_g];
+			++_g;
+			feature.isCollidable = false;
+		}
+	}
+	,releaseBody: function() {
+		if(this.heldBody == null) return;
+		var _g = 0;
+		var _g1 = this.heldBody.features;
+		while(_g < _g1.length) {
+			var feature = _g1[_g];
+			++_g;
+			feature.isCollidable = true;
+		}
+		this.heldBody = null;
+	}
+	,update: function(time) {
+		if(this.heldBody != null) this.heldBody.SetStaticPosition(this.body.position);
+	}
+	,__class__: engine.components.Holder
+});
 engine.components.Lifecycle = function(ttl) {
 	eco.core.Component.call(this);
 	this.ttl = ttl;
@@ -3339,6 +3386,7 @@ engine.systems.PhysicsSystem = function(worldData) {
 	eco.core.System.call(this);
 	this.physicsEngine = new worldEngine.WorldPhysicsEngine(60,60,new physics.collision.narrowphase.sat.SAT(),worldData);
 	this.physicsEngine.masslessForces.setTo(0,9);
+	this.removeList = new Array();
 };
 engine.systems.PhysicsSystem.__name__ = ["engine","systems","PhysicsSystem"];
 engine.systems.PhysicsSystem.__super__ = eco.core.System;
@@ -3351,15 +3399,17 @@ engine.systems.PhysicsSystem.prototype = $extend(eco.core.System.prototype,{
 		this.physicsEngine.AddBody(physics.body);
 	}
 	,componentRemoved: function(e,c) {
-		var physics = e.componentMap[c.NAME];
-		this.physicsEngine.RemoveBody(physics.body);
+		var physics = e.componentMap[engine.components.Physics.NAME];
+		this.removeList.push(physics.body);
 	}
 	,update: function(time) {
+		while(this.removeList.length > 0) this.physicsEngine.RemoveBody(this.removeList.pop());
 		this.physicsEngine.Step();
 	}
 	,__class__: engine.systems.PhysicsSystem
 });
 engine.systems.RenderSystem = function(camera,container,textureManager) {
+	this.flipFlop = true;
 	eco.core.System.call(this);
 	this.camera = camera;
 	this.container = container;
@@ -3420,6 +3470,7 @@ engine.view.View.prototype = {
 var game = {};
 game.exile = {};
 game.exile.Exile = function() {
+	this.flipFlop = false;
 	engine.core.BaseGame.call(this);
 	this.loadAssets(["data/sprites.json","data/sprites.png","data/testMap.tmx","data/spelunky0.png","data/spelunky1.png","data/spelunky-tiles.png"]);
 };
@@ -3445,6 +3496,7 @@ game.exile.Exile.prototype = $extend(engine.core.BaseGame.prototype,{
 		this.mainEngine.addEntity(game.exile.entities.EntityFactory.instance.create("player",50,50));
 		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.GunTurret(new physics.geometry.Vector2D(200,100))]));
 		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.GunTurret(new physics.geometry.Vector2D(400,400))]));
+		this.mainEngine.addEntity(eco.core.Entity.Create([new game.exile.components.items.GenericBox(new physics.geometry.Vector2D(400,400),null)]));
 	}
 	,tick: function(time) {
 		this.mainEngine.update(time);
@@ -3531,24 +3583,32 @@ game.exile.components.Player.prototype = $extend(eco.core.Component.prototype,{
 	get_name: function() {
 		return "Player";
 	}
+	,onAdded: function() {
+		this.owner.name = "Player";
+		this.position = new engine.components.Position(100,100,0);
+		this.controls = new engine.components.Controls();
+		this.physics = new engine.components.Physics(50,50,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))]);
+		this.physics.body.features[0].categoryBits = game.exile.entities.Filters.PLAYER_CATEGORY;
+		this.holder = new engine.components.Holder(32,70,0,0);
+		this.owner.add(this.position).add(this.physics).add(new engine.components.Display("character","character1.png")).add(new engine.components.CameraController()).add(this.controls).add(this.holder);
+	}
 	,onStarted: function() {
-		this.position = this.owner.componentMap[engine.components.Position.NAME];
-		this.controls = this.owner.componentMap[engine.components.Controls.NAME];
-		this.physics = this.owner.componentMap[engine.components.Physics.NAME];
 	}
 	,update: function(time) {
 		this.processInputs();
 	}
 	,processInputs: function() {
-		this.left = this.controls.digitalInput.keyMap[65] > 0;
-		this.right = this.controls.digitalInput.keyMap[68] > 0;
-		this.up = this.controls.digitalInput.keyMap[87] > 0;
-		this.down = this.controls.digitalInput.keyMap[83] > 0;
+		this.left = this.controls.digitalInput.PressedDuration(65);
+		this.right = this.controls.digitalInput.PressedDuration(68);
+		this.up = this.controls.digitalInput.PressedDuration(87);
+		this.down = this.controls.digitalInput.PressedDuration(83);
+		this.holder.hold = this.controls.digitalInput.keyMap[77] > 0;
+		if(this.controls.digitalInput.keyMap[78] > 0) this.holder.releaseBody();
 		this.force.setTo(0,0);
-		if(this.left) this.force.x -= 10; else this.force.x -= 0;
-		if(this.right) this.force.x += 10; else this.force.x += 0;
-		if(this.up) this.force.y -= 50; else this.force.y -= 0;
-		if(this.down) this.force.y += 10; else this.force.y += 0;
+		if(this.left > 0) this.force.x -= 10; else this.force.x -= 0;
+		if(this.right > 0) this.force.x += 10; else this.force.x += 0;
+		if(this.up > 0) this.force.y -= 50; else this.force.y -= 0;
+		if(this.down > 0) this.force.y += 10; else this.force.y += 0;
 		this.physics.body.AddForce(this.force);
 		if(this.controls.digitalInput.JustPressed(200)) {
 			var viewPos = this.controls.digitalInput.mousePosition.plus(this.controls.digitalInput.mouseOffset);
@@ -3565,8 +3625,8 @@ game.exile.components.ProjectileA = function(startPosition,startVelocity,group) 
 	var shape = new physics.geometry.Circle(6,new physics.geometry.Vector2D(0,0));
 	this.physics = new engine.components.Physics(startPosition.x,startPosition.y,0,0,[shape]);
 	this.physics.body.SetMass(0.1);
-	this.physics.body.group = group;
 	this.physics.body.features[0].contactCallback = $bind(this,this.OnContact);
+	this.physics.body.features[0].groupIndex = group;
 	this.physics.body.SetVelocity(startVelocity);
 };
 game.exile.components.ProjectileA.__name__ = ["game","exile","components","ProjectileA"];
@@ -3596,6 +3656,26 @@ game.exile.components.ProjectileA.prototype = $extend(eco.core.Component.prototy
 	}
 	,__class__: game.exile.components.ProjectileA
 });
+game.exile.components.items = {};
+game.exile.components.items.GenericBox = function(startPosition,startVelocity,group) {
+	if(group == null) group = 0;
+	eco.core.Component.call(this);
+};
+game.exile.components.items.GenericBox.__name__ = ["game","exile","components","items","GenericBox"];
+game.exile.components.items.GenericBox.__super__ = eco.core.Component;
+game.exile.components.items.GenericBox.prototype = $extend(eco.core.Component.prototype,{
+	get_name: function() {
+		return "GenericBox";
+	}
+	,onAdded: function() {
+		this.owner.name = "ProjectileA";
+		var physics1 = new engine.components.Physics(100,100,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(20,20),new physics.geometry.Vector2D(0,0))]);
+		physics1.body.features[0].categoryBits = game.exile.entities.Filters.OBJECT_CATEGORY;
+		physics1.body.features[0].maskBits = game.exile.entities.Filters.OBJECT_HOLDER_CATEGORY;
+		this.owner.add(new engine.components.Position()).add(physics1).add(new engine.components.Display("turret","turretA.png"));
+	}
+	,__class__: game.exile.components.items.GenericBox
+});
 game.exile.entities = {};
 game.exile.entities.EntityFactory = function() {
 };
@@ -3604,12 +3684,7 @@ game.exile.entities.EntityFactory.prototype = {
 	create: function(name,x,y) {
 		switch(name) {
 		case "player":
-			var player = new eco.core.Entity().add(new engine.components.Position(100,100,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(30,72),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display("character","character1.png")).add(new engine.components.CameraController()).add(new engine.components.Lifecycle(1000)).add(new engine.components.Controls()).add(new game.exile.components.Player());
-			player.events.add(function(type,data) {
-				console.log(data);
-			});
-			var physics1 = player.componentMap[engine.components.Physics.NAME];
-			physics1.body.group = 1;
+			var player = new eco.core.Entity().add(new game.exile.components.Player());
 			return player;
 		case "turret":
 			var turret = new eco.core.Entity().add(new engine.components.Position(0,0,0)).add(new engine.components.Physics(x,y,0,0,[new physics.geometry.Polygon(physics.geometry.Polygon.CreateRectangle(16,16),new physics.geometry.Vector2D(0,0))])).add(new engine.components.Display("character","projectile1.png"));
@@ -3619,6 +3694,8 @@ game.exile.entities.EntityFactory.prototype = {
 	}
 	,__class__: game.exile.entities.EntityFactory
 };
+game.exile.entities.Filters = function() { };
+game.exile.entities.Filters.__name__ = ["game","exile","entities","Filters"];
 var haxe = {};
 haxe.ds = {};
 haxe.ds.GenericCell = function(elt,next) {
@@ -4302,6 +4379,7 @@ physics.collision.broadphase = {};
 physics.collision.broadphase.managedgrid = {};
 physics.collision.broadphase.managedgrid.Cell = function(manager,index,x,y,w,h) {
 	this.staticItemLength = 0;
+	this.sleepingCount = 0;
 	this.dynamicItemLength = 0;
 	this.manager = manager;
 	this.index = index;
@@ -4426,11 +4504,12 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			var $it0 = cell.dynamicItems.iterator();
 			while( $it0.hasNext() ) {
 				var body = $it0.next();
-				body.Update(this.step);
-				this.UpdateBodyInCells(body);
+				if(body.broadphaseData1 == cell.index) {
+					body.Update(this.step);
+					this.UpdateBodyInCells(body);
+				}
 			}
 		}
-		this.Log();
 	}
 	,Collide: function() {
 		var _g = 0;
@@ -4450,6 +4529,13 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 	,RemoveBody: function(body) {
 		var cell = this.grid.data[body.broadphaseData1];
 		cell.RemoveBody(body);
+		var offset;
+		var _g = 0;
+		while(_g < 8) {
+			var i = _g++;
+			offset = 1 << i;
+			if((body.broadphaseData2 & offset) > 0) cell.adjacentCells[i].RemoveBody(body);
+		}
 	}
 	,UpdateBodyInCells: function(body) {
 		var x = body.position.x * this.grid.invCellSize | 0;
@@ -4498,6 +4584,20 @@ physics.collision.broadphase.managedgrid.ManagedGrid.prototype = $extend(physics
 			var cell = _g1[_g];
 			++_g;
 			cell.SearchCell(position,radius,result);
+		}
+		var startX = Math.max(0,(position.x - radius) * this.grid.invCellSize | 0);
+		var startY = Math.max(0,(position.y - radius) * this.grid.invCellSize | 0);
+		var endX = ((position.x + radius) * this.grid.invCellSize | 0) + 1;
+		var endY = ((position.y + radius) * this.grid.invCellSize | 0) + 1;
+		var _g2 = startX;
+		while(_g2 < endX) {
+			var x = _g2++;
+			var _g11 = startY;
+			while(_g11 < endY) {
+				var y = _g11++;
+				var cell1 = this.grid.GetGridSafe(x,y);
+				cell1.SearchCell(position,radius,result);
+			}
 		}
 	}
 	,Log: function() {
@@ -4661,8 +4761,11 @@ physics.collision.narrowphase.sat.SAT.prototype = {
 	}
 	,CollideFeatures: function(feature1,feature2,n) {
 		if(feature1.body == feature2.body) return false;
-		if((feature1.body.layers & feature2.body.layers) == 0) return false;
-		if(feature1.body.group > 0 && feature2.body.group > 0 && feature1.body.group == feature2.body.group) return false;
+		if(feature1.isCollidable == false || feature2.isCollidable == false) return false;
+		if(feature1.groupIndex > 0 && feature2.groupIndex > 0 && feature1.groupIndex == feature2.groupIndex) return false; else {
+			if((feature1.maskBits & feature2.categoryBits) == 0) return false;
+			if((feature1.categoryBits & feature2.maskBits) == 0) return false;
+		}
 		var s1 = feature1.shape;
 		var s2 = feature2.shape;
 		this.result.contactCount = 0;
@@ -4823,8 +4926,6 @@ physics.dynamics.Body = function() {
 	this.damping = 1;
 	this.masslessForcesFactor = 1;
 	this.radius = this.radiusSqrd = 0;
-	this.group = 0;
-	this.layers = 65535;
 	this.canKeepAlive = true;
 	this.allowedToSleep = true;
 	this.canSleep = true;
@@ -5103,11 +5204,14 @@ physics.dynamics.Contact.prototype = {
 	__class__: physics.dynamics.Contact
 };
 physics.dynamics.Feature = function(body,shape,material) {
+	this.groupIndex = 0;
+	this.maskBits = 65535;
+	this.categoryBits = 1;
 	this.body = body;
 	this.shape = shape;
 	this.material = material;
 	this.isSensor = false;
-	this.isCollidable = false;
+	this.isCollidable = true;
 	this.position = body.position;
 };
 physics.dynamics.Feature.__name__ = ["physics","dynamics","Feature"];
@@ -7491,6 +7595,8 @@ worldEngine.WorldPhysicsEngine = function(fps,pps,narrowphase,worldData) {
 	physics.collision.broadphase.managedgrid.ManagedGrid.call(this,fps,pps,narrowphase,Math.ceil(worldData.worldBounds.width() / worldData.worldCellSize),Math.ceil(worldData.worldBounds.height() / worldData.worldCellSize),worldData.worldCellSize);
 	this.tempFeature = new physics.dynamics.Feature(this.worldBody,null,new physics.dynamics.Material());
 	this.tempFeature.position = new physics.geometry.Vector2D();
+	this.tempFeature.categoryBits = -1;
+	this.tempFeature.maskBits = -1;
 	this.collisionData = worldData.collisionData;
 	this.collisionOrderX = [0,-1,1];
 	this.collisionOrderY = [2,1,0,-1,-2];
@@ -7930,6 +8036,7 @@ engine.ai.steering.behaviours.Seek.wanderResult = new physics.geometry.Vector2D(
 engine.components.CameraController.NAME = "CameraController";
 engine.components.Controls.NAME = "Controls";
 engine.components.Display.NAME = "Display";
+engine.components.Holder.NAME = "Holder";
 engine.components.Lifecycle.NAME = "Lifecycle";
 engine.components.ParticleEmitters.NAME = "ParticleEmitters";
 engine.components.Physics.NAME = "Physics";
@@ -7952,6 +8059,11 @@ game.exile.Exile.TILE_MAP_DATA_2 = "data/spelunky1.png";
 game.exile.components.GunTurret.NAME = "GunTurret";
 game.exile.components.Player.NAME = "Player";
 game.exile.components.ProjectileA.NAME = "ProjectileA";
+game.exile.components.items.GenericBox.NAME = "GenericBox";
+game.exile.entities.Filters.PLAYER_CATEGORY = 1;
+game.exile.entities.Filters.PLAYER_PROJECTILE = 2;
+game.exile.entities.Filters.OBJECT_HOLDER_CATEGORY = 4;
+game.exile.entities.Filters.OBJECT_CATEGORY = 8;
 haxe.xml.Parser.escapes = (function($this) {
 	var $r;
 	var h = new haxe.ds.StringMap();

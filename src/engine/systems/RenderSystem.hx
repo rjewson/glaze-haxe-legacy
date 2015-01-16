@@ -19,6 +19,7 @@ class RenderSystem extends System
     public var camera:Camera;
     public var cameraPosition:Position;
     public var textureManager:TextureManager;
+    private var flipFlop:Bool = true;
 
     public function new(camera:Camera,container:DisplayObjectContainer,textureManager:TextureManager) {
         super();

@@ -7,8 +7,6 @@ class Main
 {
 
 	public static function main() {
-trace("fish");
-        var vA = new Vector2(0,0);
 
         var exile = new game.exile.Exile();
 

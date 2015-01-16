@@ -49,12 +49,13 @@ class SAT implements INarrowphase
 	public function CollideFeatures(feature1 : Feature, feature2 : Feature , n:Vector2D = null) : Bool {
 		
 		if (feature1.body == feature2.body) return false;
-		// Shapes are on the same layer? exit...
-		if (feature1.body.layers & feature2.body.layers == 0) return false;
-		// Shapes are in the same group? exit...
-		if ((feature1.body.group > 0 && feature2.body.group > 0 && feature1.body.group == feature2.body.group)) return false;
-
-		//if ((feature1.group && feature2.group && feature1.group == feature2.group)) return false;
+		if (feature1.isCollidable ==false || feature2.isCollidable==false) return false;
+		if ((feature1.groupIndex > 0 && feature2.groupIndex > 0 && feature1.groupIndex == feature2.groupIndex)) {
+			return false; 
+		} else {
+			if ((feature1.maskBits & feature2.categoryBits) == 0) return false;
+			if ((feature1.categoryBits & feature2.maskBits) == 0) return false;			
+		}
 
 		// if (!(feature1.shape.aabb.intersects(feature2.shape.aabb))) return false;
 

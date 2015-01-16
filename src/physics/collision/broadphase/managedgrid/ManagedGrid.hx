@@ -59,11 +59,15 @@ class ManagedGrid extends PhysicsEngine
     override public function Update() {
         for (cell in grid.data) {        
             for (body in cell.dynamicItems) {
-                body.Update(step);
-                UpdateBodyInCells(body);
+                //Only update core cell bodies
+                if (body.broadphaseData1==cell.index) {
+                    body.Update(step);
+                    UpdateBodyInCells(body);                   
+                }
+
             }
         }
-        Log();
+        //Log();
     }
 
    override public function Collide() {
@@ -82,6 +86,14 @@ class ManagedGrid extends PhysicsEngine
     override public function RemoveBody(body : Body) : Void {
         var cell = grid.data[body.broadphaseData1];  
         cell.RemoveBody(body);
+        //TOD deduplicate this code
+        var offset:Int;
+        for (i in 0...8) {
+            offset = 1 << i;
+            if ((body.broadphaseData2 & offset) > 0) {
+                cell.adjacentCells[i].RemoveBody(body);
+            }
+        }      
     }
 
     public function UpdateBodyInCells(body:Body) {
@@ -91,7 +103,8 @@ class ManagedGrid extends PhysicsEngine
 
         var newOccupancy = 0;
         var newCell = grid.GetGridSafe(x,y);
-
+// trace(x,y);
+// trace(newCell.index);
         if ((body.position.x + body.aabb.l) < newCell.aabb.l) 
             newOccupancy |= LEFT;
         else if ((body.position.x + body.aabb.r) > newCell.aabb.r) 
@@ -123,6 +136,9 @@ class ManagedGrid extends PhysicsEngine
         if (newCell==oldCell && newOccupancy==oldOccupancy)
             //Do nothing
             return;
+
+        // if (newCell!=null && oldCell!=null) trace("C:",newCell.index,oldCell.index);
+        // trace("O:",newOccupancy,oldOccupancy);
         var cell:Cell;
         var offset:Int;
         //Remove it
@@ -155,6 +171,19 @@ class ManagedGrid extends PhysicsEngine
     override public function Search(position:Vector2D,radius:Float,result:Body->Float->Void):Void {
         for (cell in grid.data) {        
             cell.SearchCell(position,radius,result);
+        }
+
+        var startX = cast Math.max(0,grid.Index(position.x-radius));
+        var startY = cast Math.max(0,grid.Index(position.y-radius));
+        //TODO Is this right?
+        var endX = grid.Index(position.x+radius)+1;
+        var endY = grid.Index(position.y+radius)+1;
+
+        for (x in startX...endX) {
+            for (y in startY...endY) {
+                var cell = grid.GetGridSafe(x, y);
+                cell.SearchCell(position,radius,result);
+            }
         }
     }
 

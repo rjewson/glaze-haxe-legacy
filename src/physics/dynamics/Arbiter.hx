@@ -177,7 +177,7 @@ class Arbiter
 		}
 		
 		if (feature1.contactCallback!=null) feature1.contactCallback(this);
-		if (feature2.contactCallback != null) feature2.contactCallback(this);
+		if (feature2.contactCallback!=null) feature2.contactCallback(this);
 		
 		return !isSensor;
 		

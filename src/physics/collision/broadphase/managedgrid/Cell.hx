@@ -23,7 +23,11 @@ class Cell
     public var staticItems:GenericStack<Body>;
 
     public var dynamicItemLength:Int = 0;
+    public var sleepingCount:Int = 0;
     public var staticItemLength:Int = 0;
+
+    public var persistentActivity:Bool;
+    public var transientActivity:Bool;
 
     public var adjacentCells:Array<Cell>;
 
@@ -116,7 +120,6 @@ class Cell
                 var dSqrd : Float = dX * dX + dY * dY;
                 if (dSqrd <= (radiusSqrd - body.radiusSqrd)) {
                     result(body,dSqrd);
-                    //actionResultCollection.AddResult(body,dSqrd);
                 }
         }
     }

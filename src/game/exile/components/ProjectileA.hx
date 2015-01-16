@@ -33,8 +33,8 @@ class ProjectileA extends Component
         var shape = new Circle(6,new Vector2D(0,0));
         physics = new Physics(startPosition.x,startPosition.y,0,0,[shape]);
         physics.body.SetMass(0.1);
-        physics.body.group = group;
         physics.body.features[0].contactCallback = OnContact;
+        physics.body.features[0].groupIndex = group;
         physics.body.SetVelocity(startVelocity);
     }
 

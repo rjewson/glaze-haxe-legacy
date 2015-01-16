@@ -40,6 +40,8 @@ class WorldPhysicsEngine extends ManagedGrid
 
 		tempFeature = new Feature(worldBody, null, new Material());
 		tempFeature.position = new Vector2D();
+		tempFeature.categoryBits = 0xFFFFFFFF;
+		tempFeature.maskBits     = 0xFFFFFFFF;
 
 		collisionData = worldData.collisionData;
 

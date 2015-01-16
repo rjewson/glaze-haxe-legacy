@@ -67,6 +67,8 @@ class Exile extends BaseGame
 
     public var camera:Camera;
 
+    public var flipFlop:Bool = false;
+
     public function new() {
         super();
         loadAssets( [TEXTURE_CONFIG,TEXTURE_DATA,MAP_DATA,TILE_MAP_DATA_1,TILE_MAP_DATA_2,TILE_SPRITE_SHEET] );
@@ -110,6 +112,8 @@ class Exile extends BaseGame
         mainEngine.addEntity(EntityFactory.instance.create("player",50,50));
         mainEngine.addEntity(Create([new GunTurret(new Vector2D(200,100))]));
         mainEngine.addEntity(Create([new GunTurret(new Vector2D(400,400))]));
+        mainEngine.addEntity(Create([new game.exile.components.items.GenericBox(new Vector2D(400,400),null)]));
+
         // mainEngine.addEntity(factory.create("enemy",400,100));
     }
 
@@ -123,7 +127,8 @@ class Exile extends BaseGame
         //pointParticleEngine.EmitParticle(100,100,0,0,0,0,10000,1,false,false,null,0,64,64,0,0);
         // pointParticleEngine.EmitParticle(100,100,utils.Random.RandomFloat(-10,10),utils.Random.RandomFloat(-10,10),0,0,10000,1,false,false,null,0,64,64);
         //pointParticleEngine.Update();
-
+        // flipFlop=!flipFlop;
+        // if (!flipFlop) return;
         view.renderer.Render(view.camera.viewPortAABB);
         // lightGrid.renderLightGrid();
         // lightGrid.draw();

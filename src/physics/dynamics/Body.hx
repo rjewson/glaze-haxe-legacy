@@ -56,10 +56,10 @@ class Body
 	public var damping : Float;
 	public var masslessForcesFactor:Float;
 		
-	public var group : Int;
-	public var layers : Int;
+	// public var group : Int;
+	// public var layers : Int;
 	public var collisionProcessingMask : Int;
-	public var bodyTypeMask : Int;
+	//public var bodyTypeMask : Int;
 	
 	public var canKeepAlive:Bool;
 	public var allowedToSleep:Bool;
@@ -112,8 +112,8 @@ class Body
 		
 		radius = radiusSqrd = 0;
 		
-		group = 0;
-		layers = 0xFFFF;
+		//group = 0;
+		//layers = 0xFFFF;
 		
 		canKeepAlive = true;
 		allowedToSleep = true;

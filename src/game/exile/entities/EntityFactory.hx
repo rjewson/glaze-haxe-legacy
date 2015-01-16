@@ -27,19 +27,20 @@ class EntityFactory
         switch (name) {
             case "player":                
                 var player = new Entity()
-                .add(new Position(100,100,0))
-                .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
-                .add(new Display("character","character1.png"))
-                .add(new CameraController())
-                .add(new Lifecycle(1000))
-                .add(new Controls())
                 .add(new Player());
+                // .add(new Position(100,100,0))
+                // .add(new Physics(x,y,0,0,[new Polygon(Polygon.CreateRectangle(30,72),new Vector2D(0,0))]))
+                // .add(new Display("character","character1.png"))
+                // .add(new CameraController())
+                // .add(new Lifecycle(1000))
+                // .add(new Controls())
+                
 
-                player.events.add(function(type:String,data:Dynamic){
-                    trace(data);
-                });
-                var physics:Physics = cast player.getComponentByClass(Physics);
-                physics.body.group = 1;
+                // player.events.add(function(type:String,data:Dynamic){
+                //     trace(data);
+                // });
+                // var physics:Physics = cast player.getComponentByClass(Physics);
+                // physics.body.features[0].groupIndex = 1;
                 // spr.scale.x = -1;
                 // var player = new Entity()
                 //     .add(new Player())
